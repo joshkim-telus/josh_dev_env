@@ -1,0 +1,151 @@
+
+
+name: bq_whsia_churn_score_v2
+runtime: yaml
+description: Table to store wHSIA Churn scores
+
+config:
+  builder:
+    type: string
+  project:
+    type: string
+  staging_expiry:
+    value: 2025-12-31
+    type: string
+
+variables:
+  dataset_id: whsia_churn_dataset_v2
+
+resources:
+  # create a table #1: bq_whsia_churn_score_v2
+  whsia_churn-score-table:
+    type: gcp:bigquery:Table
+    properties:
+      datasetId: ${dataset_id}
+      tableId: bq_whsia_churn_score_v2
+      deletionProtection: False
+      timePartitioning:
+        type: DAY
+      labels:
+        env: default
+      schema: |
+        [
+          {
+            "name": "BAN",
+            "type": "INT64", 
+            "mode": "NULLABLE",
+            "description": ""
+          },
+          {
+            "name": "score_date",
+            "type": "DATE",
+            "mode": "NULLABLE",
+            "description": ""
+          },
+          {
+            "name": "model_id",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": ""
+          },
+          {
+            "name": "score", 
+            "type": "FLOAT64",
+            "mode": "NULLABLE",
+            "description": ""
+          }
+        ]
+        
+  whsia_churn-score-table-data-owner-1:
+    type: gcp:bigquery:IamMember
+    properties:
+      project: ${project}
+      datasetId: ${dataset_id}
+      tableId: ${whsia_churn-score-table.tableId}
+      role: roles/bigquery.dataOwner
+      member: user:josh.kim@telus.com
+      
+  whsia_churn-score-table-data-owner-2:
+    type: gcp:bigquery:IamMember
+    properties:
+      project: ${project}
+      datasetId: ${dataset_id}
+      tableId: ${whsia_churn-score-table.tableId}
+      role: roles/bigquery.dataOwner
+      member: user:murod.khamraev@telus.com
+      
+  whsia_churn-score-table-data-owner-3:
+    type: gcp:bigquery:IamMember
+    properties:
+      project: ${project}
+      datasetId: ${dataset_id}
+      tableId: ${whsia_churn-score-table.tableId}
+      role: roles/bigquery.dataOwner
+      member: user:yimin.nie@telus.com
+      
+      
+
+  # create a table #2: bq_whsia_churn_targets_v2
+  whsia_churn-targets-table:
+    type: gcp:bigquery:Table
+    properties:
+      datasetId: ${dataset_id}
+      tableId: bq_whsia_churn_targets_v2
+      deletionProtection: False
+      timePartitioning:
+        type: DAY
+      labels:
+        env: default
+      schema: |
+        [
+          {
+            "name": "YEAR_MONTH",
+            "type": "STRING", 
+            "mode": "NULLABLE",
+            "description": ""
+          },
+          {
+            "name": "BAN",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": ""
+          },
+          {
+            "name": "product_acq_ind",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": ""
+          }
+        ]
+        
+  whsia_churn-targets-table-data-owner-1:
+    type: gcp:bigquery:IamMember
+    properties:
+      project: ${project}
+      datasetId: ${dataset_id}
+      tableId: ${whsia_churn-targets-table.tableId}
+      role: roles/bigquery.dataOwner
+      member: user:josh.kim@telus.com
+      
+  whsia_churn-targets-table-data-owner-2:
+    type: gcp:bigquery:IamMember
+    properties:
+      project: ${project}
+      datasetId: ${dataset_id}
+      tableId: ${whsia_churn-targets-table.tableId}
+      role: roles/bigquery.dataViewer
+      member: user:murod.khamraev@telus.com
+      
+  whsia_churn-targets-table-data-owner-3:
+    type: gcp:bigquery:IamMember
+    properties:
+      project: ${project}
+      datasetId: ${dataset_id}
+      tableId: ${whsia_churn-targets-table.tableId}
+      role: roles/bigquery.dataViewer
+      member: user:yimin.nie@telus.com
+
+
+
+
+

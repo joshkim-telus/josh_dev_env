@@ -1,0 +1,18 @@
+
+
+
+SELECT   bus_bacct_num
+        ,decile_grp_num
+        ,percentile_pct
+        ,scor_qty
+        ,predict_modl_id
+FROM
+`cio-datahub-enterprise-pr-183a.ent_cust_cust.bq_predict_modl_scor_snpsht`
+WHERE
+predict_modl_id IN ('5060')
+and part_load_dt = '2023-03-31'
+GROUP BY   bus_bacct_num
+        ,decile_grp_num
+        ,percentile_pct
+        ,scor_qty
+        ,predict_modl_id

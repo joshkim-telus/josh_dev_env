@@ -1,0 +1,49 @@
+name: whsia-churn
+runtime: yaml
+description: gcs bucket for whsia_churn model (V2)
+
+config:
+  builder:
+    type: string
+  project:
+    type: string
+  staging_expiry:
+    value: 2025-12-31
+    type: string
+    
+variables:
+  bucket_name: bkt_whsia_churn_v2
+
+resources:
+  whsia-churn-bucket:
+    type: gcp:storage:Bucket
+    properties:
+      name: ${project}_${bucket_name}
+      location: northamerica-northeast1
+      uniformBucketLevelAccess: true
+      project: ${project}
+      storageClass: STANDARD
+      forceDestroy: True
+      
+  whsia-churn-bucket-member:
+    type: gcp:storage:BucketIAMMember
+    properties:
+      bucket: ${["whsia-churn-bucket"].name}
+      role: roles/storage.objectAdmin
+      member: user:josh.kim@telus.com
+      condition:
+        title: expires_after_2025_12_31
+        description: Expiring at midnight of 2025-12-31
+        expression: request.time < timestamp("2026-01-01T00:00:00Z")
+        
+  whsia-churn-bucket-member-1:
+    type: gcp:storage:BucketIAMMember
+    properties:
+      bucket: ${["whsia-churn-bucket"].name}
+      role: roles/storage.objectViewer
+      member: user:murod.khamraev@telus.com
+      condition:
+        title: expires_after_2025_12_31
+        description: Expiring at midnight of 2025-12-31
+        expression: request.time < timestamp("2026-01-01T00:00:00Z")
+        

@@ -1,0 +1,63 @@
+
+
+
+name: whsia-churn # change this
+runtime: yaml
+description: bigquery dataset for whsia_churn model (V2) # change this
+
+config:
+  builder:
+    type: string
+  project:
+    type: string
+  staging_expiry:
+    value: 2025-12-31
+    type: string
+
+resources:
+  # start - note: dataset object is just as an example, teams should organize datasets in their own parent folder
+  whsia-churn-dataset:
+    type: gcp:bigquery:Dataset
+    properties:
+      datasetId: whsia_churn_dataset_v2
+      friendlyName: whsia_churn_dataset
+      description: bigquery dataset for whsia_churn model (V2)
+      location: northamerica-northeast1
+      deleteContentsOnDestroy: true
+
+  dataset-iam-user-1:
+    type: gcp:bigquery:DatasetIamMember
+    properties:
+      project: ${project}
+      datasetId: whsia_churn_dataset_v2
+      role: roles/bigquery.dataViewer
+      member: user:josh.kim@telus.com
+    options:
+      dependsOn:
+        - ${whsia-churn-dataset}
+
+  dataset-iam-user-2:
+    type: gcp:bigquery:DatasetIamMember
+    properties:
+      project: ${project}
+      datasetId: whsia_churn_dataset_v2
+      role: roles/bigquery.dataViewer
+      member: user:murod.khamraev@telus.com
+    options:
+      dependsOn:
+        - ${whsia-churn-dataset}
+        
+  dataset-iam-user-3:
+    type: gcp:bigquery:DatasetIamMember
+    properties:
+      project: ${project}
+      datasetId: whsia_churn_dataset_v2
+      role: roles/bigquery.dataViewer
+      member: user:yimin.nie@telus.com
+    options:
+      dependsOn:
+        - ${whsia-churn-dataset}
+
+
+
+
