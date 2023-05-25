@@ -2,18 +2,17 @@ from kfp.v2.dsl import (Artifact, Output, Input, HTML, component)
 
 @component(
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
-    output_component_file="promo_expiry_list_model_promo_expiry_list_view.yaml".format(SERVICE_TYPE),
+    output_component_file="call_to_retention_model_gpon_copper_view.yaml".format(SERVICE_TYPE),
 )
-def create_input_account_promo_expiry_list_view(view_name: str,
-                                           score_date: str,
-                                           dataset_id: str,
-                                           project_id: str,
-                                           region: str,
-                                           resource_bucket: str,
-                                           query_path: str, 
-                                           score_date_this_month_start_dash: str, 
-                                           score_date_this_month_end_dash: str
-                                           ):
+def create_input_account_gpon_copper_view(view_name: str,
+                                          score_date: str,
+                                          score_date_delta: str,
+                                          dataset_id: str,
+                                          project_id: str,
+                                          region: str,
+                                          resource_bucket: str,
+                                          query_path: str
+                                          ):
 
     from google.cloud import bigquery
     from google.cloud import storage
@@ -42,12 +41,8 @@ def create_input_account_promo_expiry_list_view(view_name: str,
 
     create_base_feature_set_query = content.format(score_date=score_date,
                                                    score_date_delta=score_date_delta,
-                                                   view_name=view_name,
-                                                   dataset_id=dataset_id,
-                                                   project_id=project_id,
-                                                   score_date_this_month_start_dash=score_date_this_month_start_dash, 
-                                                   score_date_this_month_end_dash=score_date_this_month_end_dash
                                                    )
+
     shared_dataset_ref = bq_client.dataset(dataset_id)
     base_feature_set_view_ref = shared_dataset_ref.table(view_name)
     base_feature_set_view = bigquery.Table(base_feature_set_view_ref)

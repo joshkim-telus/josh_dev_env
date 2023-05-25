@@ -2,29 +2,21 @@ from kfp.v2.dsl import (Artifact, Output, Input, HTML, component)
 
 @component(
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
-    output_component_file="promo_expiry_list_model_account_consl_view.yaml".format(SERVICE_TYPE),
+    output_component_file="call_to_retention_model_promo_expiry_list_view.yaml".format(SERVICE_TYPE),
 )
-
-def create_input_account_consl_view(view_name: str,
-                                    score_date: str,
-                                    score_date_delta: str,
-                                    project_id: str,
-                                    dataset_id: str,
-                                    region: str,
-                                    resource_bucket: str,
-                                    query_path: str,
-                                    ):
+def create_input_account_promo_expiry_list_view(view_name: str,
+                                           score_date: str,
+                                           dataset_id: str,
+                                           project_id: str,
+                                           region: str,
+                                           resource_bucket: str,
+                                           query_path: str, 
+                                           promo_expiry_start: str, 
+                                           promo_expiry_end: str
+                                           ):
 
     from google.cloud import bigquery
     from google.cloud import storage
-
-    def if_tbl_exists(client, table_ref):
-        from google.cloud.exceptions import NotFound
-        try:
-            client.get_table(table_ref)
-            return True
-        except NotFound:
-            return False
 
     bq_client = bigquery.Client(project=project_id)
     dataset = bq_client.dataset(dataset_id)
@@ -37,16 +29,24 @@ def create_input_account_consl_view(view_name: str,
     content = blob.download_as_string()
     content = str(content, 'utf-8')
 
+    def if_tbl_exists(client, table_ref):
+        from google.cloud.exceptions import NotFound
+        try:
+            client.get_table(table_ref)
+            return True
+        except NotFound:
+            return False
+
     if if_tbl_exists(bq_client, table_ref):
         bq_client.delete_table(table_ref)
-
-    # content = open(query_path, 'r').read()
 
     create_base_feature_set_query = content.format(score_date=score_date,
                                                    score_date_delta=score_date_delta,
                                                    view_name=view_name,
                                                    dataset_id=dataset_id,
                                                    project_id=project_id,
+                                                   promo_expiry_start=promo_expiry_start, 
+                                                   promo_expiry_end=promo_expiry_end
                                                    )
     shared_dataset_ref = bq_client.dataset(dataset_id)
     base_feature_set_view_ref = shared_dataset_ref.table(view_name)

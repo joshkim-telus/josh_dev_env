@@ -2,20 +2,20 @@ from kfp.v2.dsl import (Artifact, Output, Input, HTML, component)
 
 @component(
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
-    output_component_file="promo_expiry_list_model_ffh_billing_view.yaml".format(SERVICE_TYPE),
+    output_component_file="call_to_retention_model_ffh_billing_view.yaml".format(SERVICE_TYPE),
 )
 def create_input_account_ffh_billing_view(view_name: str,
-                                              v_report_date: str,
-                                              v_start_date: str,
-                                              v_end_date: str,
-                                              v_bill_year: str,
-                                              v_bill_month: str,
-                                              dataset_id: str,
-                                              project_id: str,
-                                              region: str,
-                                              resource_bucket: str,
-                                              query_path: str
-                                              ):
+                                          v_report_date: str,
+                                          v_start_date: str,
+                                          v_end_date: str,
+                                          v_bill_year: str,
+                                          v_bill_month: str,
+                                          dataset_id: str,
+                                          project_id: str,
+                                          region: str,
+                                          resource_bucket: str,
+                                          query_path: str
+                                          ):
     from google.cloud import bigquery
     from google.cloud import storage
 
