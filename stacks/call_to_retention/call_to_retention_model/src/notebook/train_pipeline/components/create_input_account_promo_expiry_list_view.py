@@ -6,6 +6,7 @@ from kfp.v2.dsl import (Artifact, Output, Input, HTML, component)
 )
 def create_input_account_promo_expiry_list_view(view_name: str,
                                            score_date: str,
+                                           score_date_delta: str,
                                            dataset_id: str,
                                            project_id: str,
                                            region: str,

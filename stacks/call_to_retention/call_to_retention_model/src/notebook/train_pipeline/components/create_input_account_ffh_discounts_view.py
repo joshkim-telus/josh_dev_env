@@ -51,5 +51,6 @@ def create_input_account_ffh_discounts_view(view_name: str,
     shared_dataset_ref = bq_client.dataset(dataset_id)
     base_feature_set_view_ref = shared_dataset_ref.table(view_name)
     base_feature_set_view = bigquery.Table(base_feature_set_view_ref)
-    base_feature_set_view.view_query = create_base_feature_set_query.format(project_id)
+    # base_feature_set_view.view_query = create_base_feature_set_query.format(project_id)
+    base_feature_set_view.view_query = create_base_feature_set_query
     base_feature_set_view = bq_client.create_table(base_feature_set_view)

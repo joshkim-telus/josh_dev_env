@@ -2,17 +2,17 @@ from kfp.v2.dsl import (Artifact, Output, Input, HTML, component)
 
 @component(
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
-    output_component_file="promo_expiry_list_xgb_train_model.yaml",
+    output_component_file="call_to_retention_xgb_train_model.yaml",
 )
 def train_and_save_model(
-        file_bucket: str,
-        service_type: str,
-        score_date_dash: str,
-        score_date_val_dash: str,
-        project_id: str,
-        dataset_id: str,
-        metrics: Output[Metrics],
-        metricsc: Output[ClassificationMetrics],
+            resource_bucket: str,
+            service_type: str,
+            score_date_dash: str,
+            score_date_val_dash: str,
+            project_id: str,
+            dataset_id: str,
+            metrics: Output[Metrics],
+            metricsc: Output[ClassificationMetrics]
 ):
 
     import gc
@@ -25,58 +25,54 @@ def train_and_save_model(
     from sklearn.model_selection import train_test_split
 
     def get_lift(prob, y_test, q):
-        result = pd.DataFrame(columns=['Prob', 'CrossSell'])
+        result = pd.DataFrame(columns=['Prob', 'Call_To_Retention'])
         result['Prob'] = prob
-        result['CrossSell'] = y_test
+        result['Call_To_Retention'] = y_test
         result['Decile'] = pd.qcut(result['Prob'], q, labels=[i for i in range(q, 0, -1)])
-        add = pd.DataFrame(result.groupby('Decile')['CrossSell'].mean()).reset_index()
-        add.columns = ['Decile', 'avg_real_cross_sell_rate']
+        add = pd.DataFrame(result.groupby('Decile')['Call_To_Retention'].mean()).reset_index()
+        add.columns = ['Decile', 'avg_real_call_to_retention_rate']
         result = result.merge(add, on='Decile', how='left')
         result.sort_values('Decile', ascending=True, inplace=True)
         lg = pd.DataFrame(result.groupby('Decile')['Prob'].mean()).reset_index()
-        lg.columns = ['Decile', 'avg_model_pred_cross_sell_rate']
+        lg.columns = ['Decile', 'avg_model_pred_call_to_retention_rate']
         lg.sort_values('Decile', ascending=False, inplace=True)
-        lg['avg_cross_sell_rate_total'] = result['CrossSell'].mean()
+        lg['avg_call_to_retention_rate_total'] = result['Call_To_Retention'].mean()
         lg = lg.merge(add, on='Decile', how='left')
-        lg['lift'] = lg['avg_real_cross_sell_rate'] / lg['avg_cross_sell_rate_total']
+        lg['lift'] = lg['avg_real_call_to_retention_rate'] / lg['avg_call_to_retention_rate_total']
 
         return lg
 
-    df_train = pd.read_csv('gs://{}/{}_train.csv.gz'.format(file_bucket, service_type),
+    df_train = pd.read_csv('gs://{}/{}_train.csv.gz'.format(resource_bucket, service_type),
                            compression='gzip')  
-    df_test = pd.read_csv('gs://{}/{}_validation.csv.gz'.format(file_bucket, service_type),  
+    df_test = pd.read_csv('gs://{}/{}_validation.csv.gz'.format(resource_bucket, service_type),  
                           compression='gzip')
 
     #set up df_train
     client = bigquery.Client(project=project_id)
-    sql_train = ''' SELECT * FROM `{}.{}.bq_tos_cross_sell_targets` '''.format(project_id, dataset_id) 
+    sql_train = ''' SELECT * FROM `{}.{}.bq_call_to_retention_targets` '''.format(project_id, dataset_id) 
     df_target_train = client.query(sql_train).to_dataframe()
     df_target_train = df_target_train.loc[
         df_target_train['YEAR_MONTH'] == '-'.join(score_date_dash.split('-')[:2])]  # score_date_dash = '2022-08-31'
-
     df_target_train['ban'] = df_target_train['ban'].astype('int64')
     df_target_train = df_target_train.groupby('ban').tail(1)
-
-    df_train = df_train.merge(df_target_train[['ban', 'product_acq_ind']], on='ban', how='left')
-    df_train.rename(columns={'product_acq_ind': 'target'}, inplace=True)
+    df_train = df_train.merge(df_target_train[['ban', 'target_ind']], on='ban', how='left')
+    df_train.rename(columns={'target_ind': 'target'}, inplace=True)
     df_train.dropna(subset=['target'], inplace=True)
     df_train['target'] = df_train['target'].astype(int)
+    print(df_train.shape)
 
     #set up df_test
-    client = get_gcp_bqclient(project_id)
-    sql_test = ''' SELECT * FROM `{}.{}.bq_tos_cross_sell_targets` '''.format(project_id, dataset_id) 
+    sql_test = ''' SELECT * FROM `{}.{}.bq_call_to_retention_targets` '''.format(project_id, dataset_id) 
     df_target_test = client.query(sql_test).to_dataframe()
     df_target_test = df_target_test.loc[
         df_target_test['YEAR_MONTH'] == '-'.join(score_date_val_dash.split('-')[:2])]  # score_date_dash = '2022-09-30'
-
-    #set up df_train and df_test (add 'target')
     df_target_test['ban'] = df_target_test['ban'].astype('int64')
     df_target_test = df_target_test.groupby('ban').tail(1)
-
-    df_test = df_test.merge(df_target_test[['ban', 'product_acq_ind']], on='ban', how='left')
-    df_test.rename(columns={'product_acq_ind': 'target'}, inplace=True)
+    df_test = df_test.merge(df_target_test[['ban', 'target_ind']], on='ban', how='left')
+    df_test.rename(columns={'target_ind': 'target'}, inplace=True)
     df_test.dropna(subset=['target'], inplace=True)
     df_test['target'] = df_test['target'].astype(int)
+    print(df_train.shape)
 
     #set up features (list)
     cols_1 = df_train.columns.values
@@ -135,7 +131,7 @@ def train_and_save_model(
 
     pred_prb = xgb_model.predict_proba(X_test, ntree_limit=xgb_model.best_iteration)[:, 1]
     lg = get_lift(pred_prb, y_test, 10)
-    lg.to_csv('gs://{}/lift_on_scoring_data_{}.csv'.format(file_bucket, create_time, index=False))
+    lg.to_csv('gs://{}/lift_on_scoring_data_{}.csv'.format(resource_bucket, create_time, index=False))
 
     # save the model in GCS
     from datetime import datetime
@@ -150,7 +146,7 @@ def train_and_save_model(
     handle.close()
 
     storage_client = storage.Client()
-    bucket = storage_client.get_bucket(file_bucket)
+    bucket = storage_client.get_bucket(resource_bucket)
 
     MODEL_PATH = '{}_xgb_models/'.format(service_type)
     blob = bucket.blob(MODEL_PATH)
@@ -163,4 +159,4 @@ def train_and_save_model(
 
     print(f"....model loaded to GCS done at {str(create_time)}")
 
-    time.sleep(300)
+    time.sleep(120)
