@@ -5,7 +5,7 @@ from kfp.v2.dsl import (Artifact, Output, Input, HTML, component)
     output_component_file="call_to_retention_xgb_train_model.yaml",
 )
 def train_and_save_model(
-            resource_bucket: str,
+            file_bucket: str,
             service_type: str,
             score_date_dash: str,
             score_date_val_dash: str,
@@ -42,9 +42,9 @@ def train_and_save_model(
 
         return lg
 
-    df_train = pd.read_csv('gs://{}/{}_train.csv.gz'.format(resource_bucket, service_type),
+    df_train = pd.read_csv('gs://{}/{}_train.csv.gz'.format(file_bucket, service_type),
                            compression='gzip')  
-    df_test = pd.read_csv('gs://{}/{}_validation.csv.gz'.format(resource_bucket, service_type),  
+    df_test = pd.read_csv('gs://{}/{}_validation.csv.gz'.format(file_bucket, service_type),  
                           compression='gzip')
 
     #set up df_train
@@ -72,7 +72,7 @@ def train_and_save_model(
     df_test.rename(columns={'target_ind': 'target'}, inplace=True)
     df_test.dropna(subset=['target'], inplace=True)
     df_test['target'] = df_test['target'].astype(int)
-    print(df_train.shape)
+    print(df_test.shape)
 
     #set up features (list)
     cols_1 = df_train.columns.values
@@ -131,7 +131,6 @@ def train_and_save_model(
 
     pred_prb = xgb_model.predict_proba(X_test, ntree_limit=xgb_model.best_iteration)[:, 1]
     lg = get_lift(pred_prb, y_test, 10)
-    lg.to_csv('gs://{}/lift_on_scoring_data_{}.csv'.format(resource_bucket, create_time, index=False))
 
     # save the model in GCS
     from datetime import datetime
@@ -140,13 +139,14 @@ def train_and_save_model(
     models_dict['create_time'] = create_time
     models_dict['model'] = xgb_model
     models_dict['features'] = features
+    lg.to_csv('gs://{}/lift_on_scoring_data_{}.csv'.format(file_bucket, create_time, index=False))
 
     with open('model_dict.pkl', 'wb') as handle:
         pickle.dump(models_dict, handle)
     handle.close()
 
     storage_client = storage.Client()
-    bucket = storage_client.get_bucket(resource_bucket)
+    bucket = storage_client.get_bucket(file_bucket)
 
     MODEL_PATH = '{}_xgb_models/'.format(service_type)
     blob = bucket.blob(MODEL_PATH)

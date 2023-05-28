@@ -12,7 +12,7 @@ def preprocess(
         hs_usage_view: str, 
         demo_income_view: str, 
         gpon_copper_view: str, 
-        price_plan_view: str, 
+        # price_plan_view: str, 
         clckstrm_telus_view: str, 
         call_history_view: str, 
         save_data_path: str,
@@ -124,21 +124,21 @@ def preprocess(
     gc.collect()
     print('......df_gpon_copper done')
 
-    #8.df_price_plan
-    price_plan_data_set = f"{project_id}.{dataset_id}.{price_plan_view}"
-    build_df_price_plan = '''SELECT * FROM `{price_plan_data_set}`'''.format(price_plan_data_set=price_plan_data_set)
-    df_price_plan = client.query(build_df_price_plan).to_dataframe()
-    df_price_plan = df_price_plan.set_index('ban')
-    df_pp_dummies = pd.get_dummies(df_price_plan[['price_plan']])
-    df_pp_dummies.columns = df_pp_dummies.columns.str.replace('&', 'and')
-    df_pp_dummies.columns = df_pp_dummies.columns.str.replace(' ', '_')
-    df_price_plan = df_price_plan.join(df_pp_dummies)
-    df_price_plan.drop(columns=['price_plan'], axis=1, inplace=True)
-    print(df_price_plan.columns)
-    df_join = df_join.join(df_price_plan.add_prefix('infra_')).fillna(0)
-    del df_price_plan
-    gc.collect()
-    print('......df_price_plan done')
+#     #8.df_price_plan
+#     price_plan_data_set = f"{project_id}.{dataset_id}.{price_plan_view}"
+#     build_df_price_plan = '''SELECT * FROM `{price_plan_data_set}`'''.format(price_plan_data_set=price_plan_data_set)
+#     df_price_plan = client.query(build_df_price_plan).to_dataframe()
+#     df_price_plan = df_price_plan.set_index('ban')
+#     df_pp_dummies = pd.get_dummies(df_price_plan[['price_plan']])
+#     df_pp_dummies.columns = df_pp_dummies.columns.str.replace('&', 'and')
+#     df_pp_dummies.columns = df_pp_dummies.columns.str.replace(' ', '_')
+#     df_price_plan = df_price_plan.join(df_pp_dummies)
+#     df_price_plan.drop(columns=['price_plan'], axis=1, inplace=True)
+#     print(df_price_plan.columns)
+#     df_join = df_join.join(df_price_plan.add_prefix('infra_')).fillna(0)
+#     del df_price_plan
+#     gc.collect()
+#     print('......df_price_plan done')
 
     #9.df_clckstrm_telus
     clckstrm_telus_data_set = f"{project_id}.{dataset_id}.{clckstrm_telus_view}" 

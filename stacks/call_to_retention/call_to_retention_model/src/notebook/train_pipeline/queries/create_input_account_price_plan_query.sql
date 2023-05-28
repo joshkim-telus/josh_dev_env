@@ -2,15 +2,19 @@
 
 
 
-
 -- LATEST PARTITION DATE FOR bq_prod_instnc_snpsht
 WITH cte_max_prod_instnc_date AS(
   SELECT DATE_SUB(PARSE_DATE('%Y%m%d', "{score_date}"),INTERVAL "{score_date_delta}" DAY) AS max_date 
 )
 
+SELECT ban 
+, price_plan
 
-SELECT DISTINCT prod.bacct_bus_bacct_num
+FROM 
+(
+SELECT DISTINCT prod.bacct_bus_bacct_num as ban 
 , REGEXP_EXTRACT(sub.bus_pp_catlg_itm_nm, r'Internet\s*\d+') as price_plan
+, ROW_NUMBER() OVER(PARTITION BY prod.bacct_bus_bacct_num) as row_rank
 FROM `cio-datahub-enterprise-pr-183a.ent_cust_cust.bq_prod_instnc_snpsht` AS prod
  INNER JOIN `cio-datahub-enterprise-pr-183a.ent_cust_cust.bq_prod_instnc_subscn_item_profl_snpsht` AS sub
     ON sub.bus_prod_instnc_id = prod.BUS_PROD_INSTNC_ID
@@ -22,9 +26,10 @@ FROM `cio-datahub-enterprise-pr-183a.ent_cust_cust.bq_prod_instnc_snpsht` AS pro
    AND prod.PI_PROD_INSTNC_TYP_CD = 'HSIC' --internet
    AND prod.PI_PROD_INSTNC_STAT_CD = 'A' --active products
    AND REGEXP_CONTAINS(sub.bus_pp_catlg_itm_nm, r'Internet\s(\d+)\s?(\w*)$')
+) 
 
+WHERE row_rank = 1 
 
-
-
-
+GROUP BY ban
+, price_plan
 

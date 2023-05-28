@@ -52,7 +52,7 @@ ON disc.bill_chrg_dtl_id = dtl.bill_chrg_dtl_id
 WHERE dtl.bill_itm_sum_lvl_cd = 'D'
 )
 
-SELECT *
+SELECT ban
      , ROUND(-tot_disc_amt / (CASE WHEN tot_chrg_amt > 0 THEN tot_chrg_amt ELSE 1 END) * 100, 2) as tot_disc_pct
      , ROUND(-sing_disc_amt / (CASE WHEN sing_chrg_amt > 0 THEN sing_chrg_amt ELSE 1 END) * 100, 2) as sing_disc_pct
      , ROUND(-hsic_disc_amt / (CASE WHEN hsic_chrg_amt > 0 THEN hsic_chrg_amt ELSE 1 END) * 100, 2) as hsic_disc_pct

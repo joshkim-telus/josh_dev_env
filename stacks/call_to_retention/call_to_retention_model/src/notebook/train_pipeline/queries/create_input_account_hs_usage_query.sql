@@ -50,10 +50,7 @@ temp_hs_usage_rank AS (
   SELECT ban,
         SUM(CASE WHEN months_back = 0 THEN hs_tot_gb ELSE 0 END) AS hs_tot_gb_0,
         SUM(CASE WHEN months_back = 1 THEN hs_tot_gb ELSE 0 END) AS hs_tot_gb_1,
-        SUM(CASE WHEN months_back = 2 THEN hs_tot_gb ELSE 0 END) AS hs_tot_gb_2,
-        SUM(CASE WHEN months_back = 3 THEN hs_tot_gb ELSE 0 END) AS hs_tot_gb_3,
-        SUM(CASE WHEN months_back = 4 THEN hs_tot_gb ELSE 0 END) AS hs_tot_gb_4,
-        SUM(CASE WHEN months_back = 5 THEN hs_tot_gb ELSE 0 END) AS hs_tot_gb_5
+        SUM(CASE WHEN months_back = 2 THEN hs_tot_gb ELSE 0 END) AS hs_tot_gb_2
     FROM temp_hs_usage_rank
   GROUP BY ban
   ; 
