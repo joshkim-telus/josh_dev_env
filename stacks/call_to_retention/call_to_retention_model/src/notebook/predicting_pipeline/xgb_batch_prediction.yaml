@@ -1,0 +1,114 @@
+name: Batch prediction
+inputs:
+- {name: project_id, type: String}
+- {name: dataset_id, type: String}
+- {name: file_bucket, type: String}
+- {name: service_type, type: String}
+- {name: score_table, type: String}
+- {name: score_date_dash, type: String}
+- {name: temp_score_table, type: String}
+outputs:
+- {name: metrics, type: Metrics}
+- {name: metricsc, type: ClassificationMetrics}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/vertex_pipelines/kfp-xgboost-slim:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef batch_prediction(\n        project_id: str,\n        dataset_id:\
+      \ str,\n        file_bucket: str,\n        service_type: str,\n        score_table:\
+      \ str,\n        score_date_dash: str,\n        temp_score_table: str,\n    \
+      \    metrics: Output[Metrics],\n        metricsc: Output[ClassificationMetrics],\n\
+      ): \n    import time\n    import pandas as pd\n    import pickle\n    from google.cloud\
+      \ import bigquery\n    from google.cloud import storage\n\n    MODEL_ID = '5090'\n\
+      \n    def if_tbl_exists(bq_client, table_ref):\n        from google.cloud.exceptions\
+      \ import NotFound\n        try:\n            bq_client.get_table(table_ref)\n\
+      \            return True\n        except NotFound:\n            return False\n\
+      \n    def upsert_table(project_id, dataset_id, table_id, sql, result):\n   \
+      \     new_values = ',\\n'.join(result.apply(lambda row: row_format(row), axis=1))\n\
+      \        new_sql = sql.format(proj_id=project_id, dataset_id=dataset_id, table_id=table_id,\n\
+      \                             new_values=new_values)\n        bq_client = bigquery.Client(project=project_id)\n\
+      \        code = bq_client.query(new_sql)\n        time.sleep(5)\n\n    def row_format(row):\n\
+      \        values = row.values\n        new_values = \"\"\n        v = str(values[0])\
+      \ if not pd.isnull(values[0]) else 'NULL'\n        if 'str' in str(type(values[0])):\n\
+      \            new_values += f\"'{v}'\"\n        else:\n            new_values\
+      \ += f\"{v}\"\n\n        for i in range(1, len(values)):\n            v = str(values[i])\
+      \ if not pd.isnull(values[i]) else 'NULL'\n            if 'str' in str(type(values[i])):\n\
+      \                new_values += f\",'{v}'\"\n            else:\n            \
+      \    new_values += f\",{v}\"\n        return '(' + new_values + ')'\n\n    def\
+      \ generate_sql_file(ll):\n        s = 'MERGE INTO `{proj_id}.{dataset_id}.{table_id}`\
+      \ a'\n        s += \" USING UNNEST(\"\n        s += \"[struct<\"\n        for\
+      \ i in range(len(ll) - 1):\n            v = ll[i]\n            s += \"{} {},\"\
+      .format(v[0], v[1])\n        s += \"{} {}\".format(ll[-1][0], ll[-1][1])\n \
+      \       s += \">{new_values}]\"\n        s += \") b\"\n        s += \" ON a.ban\
+      \ = b.ban and a.score_date = b.score_date\"\n        s += \" WHEN MATCHED THEN\"\
+      \n        s += \" UPDATE SET \"\n        s += \"a.{}=b.{},\".format(ll[0][0],\
+      \ ll[0][0])\n        for i in range(1, len(ll) - 1):\n            v = ll[i]\n\
+      \            s += \"a.{}=b.{},\".format(v[0], v[0])\n        s += \"a.{}=b.{}\"\
+      .format(ll[-1][0], ll[-1][0])\n        s += \" WHEN NOT MATCHED THEN\"\n   \
+      \     s += \" INSERT(\"\n        for i in range(len(ll) - 1):\n            v\
+      \ = ll[i]\n            s += \"{},\".format(v[0])\n        s += \"{})\".format(ll[-1][0])\n\
+      \        s += \" VALUES(\"\n        for i in range(len(ll) - 1):\n         \
+      \   s += \"b.{},\".format(ll[i][0])\n        s += \"b.{}\".format(ll[-1][0])\n\
+      \        s += \")\"\n\n        return s\n\n    MODEL_PATH = '{}_xgb_models/'.format(service_type)\n\
+      \    df_score = pd.read_csv('gs://{}/{}_score.csv.gz'.format(file_bucket, service_type),\
+      \ compression='gzip')\n    df_score.dropna(subset=['ban'], inplace=True)\n \
+      \   df_score.reset_index(drop=True, inplace=True)\n    print('......scoring\
+      \ data loaded:{}'.format(df_score.shape))\n    time.sleep(10)\n\n    storage_client\
+      \ = storage.Client()\n    bucket = storage_client.get_bucket(file_bucket)\n\
+      \    blobs = storage_client.list_blobs(file_bucket, prefix='{}{}_models_xgb_'.format(MODEL_PATH,\
+      \ service_type))\n\n    model_lists = []\n    for blob in blobs:\n        model_lists.append(blob.name)\n\
+      \n    blob = bucket.blob(model_lists[-1])\n    blob_in = blob.download_as_string()\n\
+      \    model_dict = pickle.loads(blob_in)\n    model_xgb = model_dict['model']\n\
+      \    features = model_dict['features']\n    print('...... model loaded')\n \
+      \   time.sleep(10)\n\n    ll = [('ban', 'string'), ('score_date', 'string'),\
+      \ ('model_id', 'string'), ('score', 'float64')]\n    sql = generate_sql_file(ll)\n\
+      \n    df_score['ban'] = df_score['ban'].astype(int)\n    print('.... scoring\
+      \ for {} promo expiry bans base'.format(len(df_score)))\n\n    # get full score\
+      \ to cave into bucket\n    pred_prob = model_xgb.predict_proba(df_score[features],\
+      \ ntree_limit=model_xgb.best_iteration)[:, 1]\n    result = pd.DataFrame(columns=['ban',\
+      \ 'score_date', 'model_id', 'score'])\n    result['score'] = list(pred_prob)\n\
+      \    result['score'] = result['score'].fillna(0.0).astype('float64')\n    result['ban']\
+      \ = list(df_score['ban'])\n    result['ban'] = result['ban'].astype('str')\n\
+      \    result['score_date'] = score_date_dash\n    result['model_id'] = MODEL_ID\n\
+      \n    result.to_csv('gs://{}/ucar/{}_prediction.csv.gz'.format(file_bucket,\
+      \ service_type), compression='gzip',\n                  index=False)\n    time.sleep(60)\n\
+      \n    table_ref = f'{project_id}.{dataset_id}.{score_table}'\n    client = bigquery.Client(project=project_id)\n\
+      \    table = client.get_table(table_ref)\n    schema = table.schema\n\n    ll\
+      \ = []\n    for item in schema:\n        col = item.name\n        d_type = item.field_type\n\
+      \        if 'float' in str(d_type).lower():\n            d_type = 'FLOAT64'\n\
+      \        ll.append((col, d_type))\n\n        if 'integer' in str(d_type).lower():\n\
+      \            result[col] = result[col].fillna(0).astype(int)\n        if 'float'\
+      \ in str(d_type).lower():\n            result[col] = result[col].fillna(0.0).astype(float)\n\
+      \        if 'string' in str(d_type).lower():\n            result[col] = result[col].fillna('').astype(str)\n\
+      \n    table_ref = '{}.{}.{}'.format(project_id, dataset_id, temp_score_table)\n\
+      \    if if_tbl_exists(client, table_ref):\n        client.delete_table(table_ref)\n\
+      \n    client.create_table(table_ref)\n    config = bigquery.LoadJobConfig(schema=schema)\n\
+      \    config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE\n \
+      \   bq_table_instance = client.load_table_from_dataframe(result, table_ref,\
+      \ job_config=config)\n    time.sleep(5)\n\n    drop_sql = f\"\"\" delete from\
+      \ `{project_id}.{dataset_id}.{temp_score_table}` where score_date = '{score_date_dash}'\
+      \ \"\"\"  # .format(project_id, dataset_id, score_date_dash)\n    client.query(drop_sql)\n\
+      \n    load_sql = f\"\"\"insert into `{project_id}.{dataset_id}.{score_table}`\n\
+      \                  select * from `{project_id}.{dataset_id}.{temp_score_table}`\"\
+      \"\"\n    client.query(load_sql)\n\n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - batch_prediction

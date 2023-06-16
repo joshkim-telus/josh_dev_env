@@ -9,8 +9,6 @@ inputs:
 - {name: promo_expiry_end, type: String}
 - {name: v_start_date, type: String}
 - {name: v_end_date, type: String}
-outputs:
-- {name: col_list, type: JsonArray}
 implementation:
   container:
     image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest
@@ -36,10 +34,16 @@ implementation:
       \             dataset_id: str,\n                      region: str,\n       \
       \               promo_expiry_start: str, \n                      promo_expiry_end:\
       \ str, \n                      v_start_date: str,\n                      v_end_date:\
-      \ str) -> NamedTuple(\"output\", [(\"col_list\", list)]):\n\n    from google.cloud\
+      \ str):\n# -> NamedTuple(\"output\", [(\"col_list\", list)])\n\n    from google.cloud\
       \ import bigquery\n    import logging \n    from datetime import datetime\n\
       \    # For wb\n    # import google.oauth2.credentials\n    # CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\
-      \n    client = bigquery.Client(project=project_id, location=region)\n    job_config\
+      \n    def get_gcp_bqclient(project_id, use_local_credential=True):\n       \
+      \ token = os.popen('gcloud auth print-access-token').read()\n        token =\
+      \ re.sub(f'\\n$', '', token)\n        credentials = google.oauth2.credentials.Credentials(token)\n\
+      \n        bq_client = bigquery.Client(project=project_id)\n        if use_local_credential:\n\
+      \            bq_client = bigquery.Client(project=project_id, credentials=credentials)\n\
+      \        return bq_client\n\n    client = get_gcp_bqclient(project_id)\n   \
+      \ # client = bigquery.Client(project=project_id, location=region)\n    job_config\
       \ = bigquery.QueryJobConfig()\n\n    # Change dataset / table + sp table name\
       \ to version in bi-layer\n    query =\\\n        f'''\n            DECLARE score_date\
       \ DATE DEFAULT \"{score_date}\";\n            DECLARE promo_expiry_start DATE\

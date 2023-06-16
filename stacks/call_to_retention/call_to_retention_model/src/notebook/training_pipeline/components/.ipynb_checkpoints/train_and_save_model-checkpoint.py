@@ -11,8 +11,8 @@ def train_and_save_model(
             score_date_val_dash: str,
             project_id: str,
             dataset_id: str,
-            metrics: Output[Metrics],
-            metricsc: Output[ClassificationMetrics]
+            # metrics: Output[Metrics],
+            # metricsc: Output[ClassificationMetrics]
 ):
 
     import gc
