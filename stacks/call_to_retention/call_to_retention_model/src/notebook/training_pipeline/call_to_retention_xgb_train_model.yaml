@@ -6,6 +6,9 @@ inputs:
 - {name: score_date_val_dash, type: String}
 - {name: project_id, type: String}
 - {name: dataset_id, type: String}
+outputs:
+- {name: metrics, type: Metrics}
+- {name: metricsc, type: ClassificationMetrics}
 implementation:
   container:
     image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest
@@ -29,7 +32,7 @@ implementation:
       \ import *\n\ndef train_and_save_model(\n            file_bucket: str,\n   \
       \         service_type: str,\n            score_date_dash: str,\n          \
       \  score_date_val_dash: str,\n            project_id: str,\n            dataset_id:\
-      \ str,\n            # metrics: Output[Metrics],\n            # metricsc: Output[ClassificationMetrics]\n\
+      \ str,\n            metrics: Output[Metrics],\n            metricsc: Output[ClassificationMetrics]\n\
       ):\n\n    import gc\n    import time\n    import pandas as pd\n    import numpy\
       \ as np\n    import pickle\n    from google.cloud import storage\n    from google.cloud\
       \ import bigquery\n    from sklearn.model_selection import train_test_split\n\

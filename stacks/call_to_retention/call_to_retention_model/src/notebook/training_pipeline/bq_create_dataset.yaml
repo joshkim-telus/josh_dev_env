@@ -39,19 +39,24 @@ implementation:
       \ str) -> NamedTuple(\"output\", [(\"col_list\", list)]):\n\n    from google.cloud\
       \ import bigquery\n    import logging \n    from datetime import datetime\n\
       \    # For wb\n    # import google.oauth2.credentials\n    # CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\
-      \n    client = bigquery.Client(project=project_id, location=region)\n    job_config\
-      \ = bigquery.QueryJobConfig()\n\n    # Change dataset / table + sp table name\
-      \ to version in bi-layer\n    query =\\\n        f'''\n            DECLARE score_date\
-      \ DATE DEFAULT \"{score_date}\";\n            DECLARE promo_expiry_start DATE\
-      \ DEFAULT \"{promo_expiry_start}\";\n            DECLARE promo_expiry_end DATE\
-      \ DEFAULT \"{promo_expiry_end}\";\n            DECLARE start_date DATE DEFAULT\
-      \ \"{v_start_date}\";\n            DECLARE end_date DATE DEFAULT \"{v_end_date}\"\
-      ;\n\n            -- Change dataset / sp name to the version in the bi_layer\n\
-      \            CALL {dataset_id}.bq_sp_ctr_pipeline_dataset(score_date, promo_expiry_start,\
-      \ promo_expiry_end, start_date, end_date);\n\n            SELECT\n         \
-      \       *\n            FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS\n   \
-      \         WHERE table_name='bq_ctr_pipeline_dataset'\n\n        '''\n\n    df\
-      \ = client.query(query, job_config=job_config).to_dataframe()\n    logging.info(df.to_string())\n\
+      \n    def get_gcp_bqclient(project_id, use_local_credential=True):\n       \
+      \ token = os.popen('gcloud auth print-access-token').read()\n        token =\
+      \ re.sub(f'\\n$', '', token)\n        credentials = google.oauth2.credentials.Credentials(token)\n\
+      \n        bq_client = bigquery.Client(project=project_id)\n        if use_local_credential:\n\
+      \            bq_client = bigquery.Client(project=project_id, credentials=credentials)\n\
+      \        return bq_client\n\n    client = get_gcp_bqclient(project_id)\n   \
+      \ job_config = bigquery.QueryJobConfig()\n\n    # Change dataset / table + sp\
+      \ table name to version in bi-layer\n    query =\\\n        f'''\n         \
+      \   DECLARE score_date DATE DEFAULT \"{score_date}\";\n            DECLARE promo_expiry_start\
+      \ DATE DEFAULT \"{promo_expiry_start}\";\n            DECLARE promo_expiry_end\
+      \ DATE DEFAULT \"{promo_expiry_end}\";\n            DECLARE start_date DATE\
+      \ DEFAULT \"{v_start_date}\";\n            DECLARE end_date DATE DEFAULT \"\
+      {v_end_date}\";\n\n            -- Change dataset / sp name to the version in\
+      \ the bi_layer\n            CALL {dataset_id}.bq_sp_ctr_pipeline_dataset(score_date,\
+      \ promo_expiry_start, promo_expiry_end, start_date, end_date);\n\n         \
+      \   SELECT\n                *\n            FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS\n\
+      \            WHERE table_name='bq_ctr_pipeline_dataset'\n\n        '''\n\n \
+      \   df = client.query(query, job_config=job_config).to_dataframe()\n    logging.info(df.to_string())\n\
       \n    logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n             {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]}\
       \ on \\\n             {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d\
       \ %H:%M:%S') } !\")\n\n    ######################################## Save column\

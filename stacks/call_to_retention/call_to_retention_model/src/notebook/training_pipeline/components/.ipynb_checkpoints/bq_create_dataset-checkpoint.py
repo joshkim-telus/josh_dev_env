@@ -26,7 +26,17 @@ def bq_create_dataset(score_date: str,
     # import google.oauth2.credentials
     # CREDENTIALS = google.oauth2.credentials.Credentials(token)
     
-    client = bigquery.Client(project=project_id, location=region)
+    def get_gcp_bqclient(project_id, use_local_credential=True):
+        token = os.popen('gcloud auth print-access-token').read()
+        token = re.sub(f'\n$', '', token)
+        credentials = google.oauth2.credentials.Credentials(token)
+
+        bq_client = bigquery.Client(project=project_id)
+        if use_local_credential:
+            bq_client = bigquery.Client(project=project_id, credentials=credentials)
+        return bq_client
+
+    client = get_gcp_bqclient(project_id)
     job_config = bigquery.QueryJobConfig()
     
     # Change dataset / table + sp table name to version in bi-layer
