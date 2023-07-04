@@ -6,7 +6,6 @@ inputs:
 - {name: service_type, type: String}
 - {name: score_table, type: String}
 - {name: score_date_dash, type: String}
-- {name: temp_table, type: String}
 outputs:
 - {name: metrics, type: Metrics}
 - {name: metricsc, type: ClassificationMetrics}
@@ -43,7 +42,6 @@ implementation:
               service_type: str,
               score_table: str,
               score_date_dash: str,
-              temp_table: str,
               metrics: Output[Metrics],
               metricsc: Output[ClassificationMetrics],
       ):
@@ -56,7 +54,7 @@ implementation:
           from google.cloud import bigquery
           from google.cloud import storage
 
-          MODEL_ID = '5090'
+          MODEL_ID = '5060'
 
           def if_tbl_exists(bq_client, table_ref):
               from google.cloud.exceptions import NotFound
@@ -150,7 +148,7 @@ implementation:
           sql = generate_sql_file(ll)
 
           df_score['ban'] = df_score['ban'].astype(int)
-          print('.... scoring for {} promo expiry bans base'.format(len(df_score)))
+          print('.... scoring for {} tos cross sell bans base'.format(len(df_score)))
 
           # get full score to cave into bucket
           pred_prob = model_xgb.predict_proba(df_score[features], ntree_limit=model_xgb.best_iteration)[:, 1]
@@ -166,43 +164,38 @@ implementation:
                         index=False)
           time.sleep(60)
 
-          table_ref = f'{project_id}.{dataset_id}.{score_table}'
-          client = bigquery.Client(project=project_id)
-          table = client.get_table(table_ref)
-          schema = table.schema
+          batch_size = 1000
+          n_batchs = int(df_score.shape[0] / batch_size) + 1
+          print('...... will upsert {} batches'.format(n_batchs))
 
-          ll = []
-          for item in schema:
-              col = item.name
-              d_type = item.field_type
-              if 'float' in str(d_type).lower():
-                  d_type = 'FLOAT64'
-              ll.append((col, d_type))
+          # start batch prediction
+          all_scores = np.array(result['score'].values)
+          for i in range(n_batchs):
 
-              if 'integer' in str(d_type).lower():
-                  result[col] = result[col].fillna(0).astype(int)
-              if 'float' in str(d_type).lower():
-                  result[col] = result[col].fillna(0.0).astype(float)
-              if 'string' in str(d_type).lower():
-                  result[col] = result[col].fillna('').astype(str)
+              s, e = i * batch_size, (i + 1) * batch_size
+              if e >= df_score.shape[0]:
+                  e = df_score.shape[0]
 
-          table_ref = '{}.{}.{}'.format(project_id, dataset_id, temp_table)
-          client = bigquery.Client(project=project_id)
-          if if_tbl_exists(client, table_ref):
-              client.delete_table(table_ref)
+              df_temp = df_score.iloc[s:e]
+              pred_prob = all_scores[s:e]
+              batch_result = pd.DataFrame(columns=['ban', 'score_date', 'model_id', 'score'])
+              batch_result['score'] = list(pred_prob)
+              batch_result['score'] = batch_result['score'].fillna(0.0).astype('float64')
+              batch_result['ban'] = list(df_temp['ban'])
+              batch_result['ban'] = batch_result['ban'].astype('str')
+              batch_result['score_date'] = score_date_dash
+              batch_result['model_id'] = MODEL_ID
 
-          client.create_table(table_ref)
-          config = bigquery.LoadJobConfig(schema=schema)
-          config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
-          bq_table_instance = client.load_table_from_dataframe(result, table_ref, job_config=config)
-          time.sleep(5)
+              upsert_table(project_id,
+                           dataset_id,
+                           score_table,
+                           sql,
+                           batch_result,
+                           )
+              if i % 20 == 0:
+                  print('predict for batch {} done'.format(i), end=' ')
 
-          drop_sql = f"""delete from `{project_id}.{dataset_id}.{score_table}` where score_date = '{score_date_dash}'"""  # .format(project_id, dataset_id, score_date_dash)
-          client.query(drop_sql)
-          #
-          load_sql = f"""insert into `{project_id}.{dataset_id}.{score_table}`
-                        select * from `{project_id}.{dataset_id}.{temp_table}`"""
-          client.query(load_sql)
+          time.sleep(120)
 
     args:
     - --executor_input

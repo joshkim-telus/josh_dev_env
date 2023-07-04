@@ -1,0 +1,240 @@
+{
+  "pipelineSpec": {
+    "components": {
+      "comp-double-square": {
+        "executorLabel": "exec-double-square",
+        "inputDefinitions": {
+          "parameters": {
+            "num": {
+              "type": "INT"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "parameters": {
+            "double": {
+              "type": "INT"
+            },
+            "square": {
+              "type": "INT"
+            },
+            "value": {
+              "type": "INT"
+            }
+          }
+        }
+      },
+      "comp-input-integer": {
+        "executorLabel": "exec-input-integer",
+        "inputDefinitions": {
+          "parameters": {
+            "num": {
+              "type": "INT"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "parameters": {
+            "Output": {
+              "type": "INT"
+            }
+          }
+        }
+      },
+      "comp-show-results": {
+        "executorLabel": "exec-show-results",
+        "inputDefinitions": {
+          "parameters": {
+            "double": {
+              "type": "INT"
+            },
+            "num": {
+              "type": "INT"
+            },
+            "square": {
+              "type": "INT"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "parameters": {
+            "Output": {
+              "type": "STRING"
+            }
+          }
+        }
+      }
+    },
+    "deploymentSpec": {
+      "executors": {
+        "exec-double-square": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "double_square"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef double_square(\n    num: int\n) -> NamedTuple(\n    \"Outputs\",\n    [\n        (\"value\", int),  # Return parameters\n        (\"double\", int),\n        (\"square\", int)\n    ],\n):\n    double = num * 2 \n    square = num * num\n\n    print(f\"input value: {num}, double: {double}, square: {square}\") \n    return (num, double, square)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
+            "resources": {
+              "cpuLimit": 4.0,
+              "memoryLimit": 4.0
+            }
+          }
+        },
+        "exec-input-integer": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "input_integer"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef input_integer(num: int) -> int:\n    return num\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
+            "resources": {
+              "cpuLimit": 4.0,
+              "memoryLimit": 4.0
+            }
+          }
+        },
+        "exec-show-results": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "show_results"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef show_results(\n    num: int,\n    double: int,\n    square: int\n) -> str:\n    print(\"Here is the output: \")\n\n    end_str = f\"The double of {num} is {double}, and the square of {num} is {square}\"\n\n    return end_str\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest"
+          }
+        }
+      }
+    },
+    "pipelineInfo": {
+      "name": "demo-pipeline"
+    },
+    "root": {
+      "dag": {
+        "tasks": {
+          "double-square": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-double-square"
+            },
+            "inputs": {
+              "parameters": {
+                "num": {
+                  "componentInputParameter": "num"
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "double-square"
+            }
+          },
+          "input-integer": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-input-integer"
+            },
+            "inputs": {
+              "parameters": {
+                "num": {
+                  "componentInputParameter": "num"
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "input-integer"
+            }
+          },
+          "show-results": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-show-results"
+            },
+            "dependentTasks": [
+              "double-square",
+              "input-integer"
+            ],
+            "inputs": {
+              "parameters": {
+                "double": {
+                  "taskOutputParameter": {
+                    "outputParameterKey": "double",
+                    "producerTask": "double-square"
+                  }
+                },
+                "num": {
+                  "taskOutputParameter": {
+                    "outputParameterKey": "Output",
+                    "producerTask": "input-integer"
+                  }
+                },
+                "square": {
+                  "taskOutputParameter": {
+                    "outputParameterKey": "square",
+                    "producerTask": "double-square"
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "show-results"
+            }
+          }
+        }
+      },
+      "inputDefinitions": {
+        "parameters": {
+          "num": {
+            "type": "INT"
+          }
+        }
+      }
+    },
+    "schemaVersion": "2.0.0",
+    "sdkVersion": "kfp-1.8.11"
+  },
+  "runtimeConfig": {
+    "gcsOutputDirectory": "gs://divg-josh-pr-d1cc3a-default",
+    "parameters": {
+      "num": {
+        "intValue": "5"
+      }
+    }
+  }
+}

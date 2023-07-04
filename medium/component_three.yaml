@@ -1,0 +1,49 @@
+name: Show results
+inputs:
+- {name: num, type: Integer}
+- {name: double, type: Integer}
+- {name: square, type: Integer}
+outputs:
+- {name: Output, type: String}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - |2+
+
+      import kfp
+      from kfp.v2 import dsl
+      from kfp.v2.dsl import *
+      from typing import *
+
+      def show_results(
+          num: int,
+          double: int,
+          square: int
+      ) -> str:
+          print("Here is the output: ")
+
+          end_str = f"The double of {num} is {double}, and the square of {num} is {square}"
+
+          return end_str
+
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - show_results

@@ -1,3 +1,6 @@
+import os 
+import re 
+
 import kfp
 from kfp import dsl
 # from kfp.v2.dsl import (Model, Input, component)
@@ -20,25 +23,15 @@ def bq_create_dataset(score_date: str,
                       v_end_date: str) -> NamedTuple("output", [("col_list", list)]):
  
     from google.cloud import bigquery
-    import logging 
     from datetime import datetime
+    import logging 
     # For wb
     # import google.oauth2.credentials
     # CREDENTIALS = google.oauth2.credentials.Credentials(token)
     
-    def get_gcp_bqclient(project_id, use_local_credential=True):
-        token = os.popen('gcloud auth print-access-token').read()
-        token = re.sub(f'\n$', '', token)
-        credentials = google.oauth2.credentials.Credentials(token)
-
-        bq_client = bigquery.Client(project=project_id)
-        if use_local_credential:
-            bq_client = bigquery.Client(project=project_id, credentials=credentials)
-        return bq_client
-
-    client = get_gcp_bqclient(project_id)
+    client = bigquery.Client(project=project_id)
     job_config = bigquery.QueryJobConfig()
-    
+
     # Change dataset / table + sp table name to version in bi-layer
     query =\
         f'''

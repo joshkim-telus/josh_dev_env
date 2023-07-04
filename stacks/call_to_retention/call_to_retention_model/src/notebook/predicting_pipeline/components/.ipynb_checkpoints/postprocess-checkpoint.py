@@ -10,13 +10,18 @@ def postprocess(
         dataset_id: str,
         service_type: str,
         score_date_dash: str,
+        temp_table: str, 
+        token: str
 ):
+    import google
     import time
     from datetime import date
     from dateutil.relativedelta import relativedelta
     import pandas as pd
     from google.cloud import bigquery
-
+    from google.oauth2 import credentials
+    from google.oauth2 import service_account
+    
     def if_tbl_exists(client, table_ref):
         from google.cloud.exceptions import NotFound
         try:
@@ -25,7 +30,7 @@ def postprocess(
         except NotFound:
             return False
 
-    MODEL_ID = '5060'
+    MODEL_ID = '5090'
     file_name = 'gs://{}/ucar/{}_prediction.csv.gz'.format(file_bucket, service_type)
     df_orig = pd.read_csv(file_name, compression='gzip')
     df_orig.dropna(subset=['ban'], inplace=True)
@@ -34,10 +39,11 @@ def postprocess(
     df_orig.ban = df_orig.ban.astype(int)
     df_orig = df_orig.rename(columns={'ban': 'bus_bacct_num', 'score': 'score_num'})
     df_orig.score_num = df_orig.score_num.astype(float)
-    df_orig['decile_grp_num'] = pd.qcut(df_orig['score_num'], q=10, labels=False)
-    df_orig.decile_grp_num = df_orig.decile_grp_num + 1
-    df_orig['percentile_pct'] = df_orig.score_num.rank(pct=True)
-    df_orig['predict_model_nm'] = 'FFH TOS CROSS SELL Model - DIVG'
+    df_orig['decile_grp_num'] = pd.qcut(df_orig['score_num'], q=10, labels=[i for i in range(10, 0, -1)])
+    df_orig.decile_grp_num = df_orig.decile_grp_num.astype(int)
+    df_orig['percentile_pct'] = (1 - df_orig.score_num.rank(pct=True))*100
+    df_orig['percentile_pct'] = df_orig['percentile_pct'].apply(round, 0).astype(int)
+    df_orig['predict_model_nm'] = 'FFH CALL TO RETENTION Model - DIVG'
     df_orig['model_type_cd'] = 'FFH'
     df_orig['subscriber_no'] = ""
     df_orig['prod_instnc_resrc_str'] = ""
@@ -87,7 +93,9 @@ def postprocess(
     WHERE cust_id_rank = 1
     """
 
-    client = bigquery.Client(project=project_id)
+    CREDENTIALS = google.oauth2.credentials.Credentials(token) # get credentials from token
+    
+    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
     df_cust = client.query(get_cust_id).to_dataframe()
     df_final = df_orig.set_index('bus_bacct_num').join(df_cust.set_index('bacct_bus_bacct_num')).reset_index()
     df_final = df_final.rename(columns={'index': 'bus_bacct_num', 'cust_bus_cust_id': 'cust_id'})
@@ -95,54 +103,52 @@ def postprocess(
     df_final.to_csv(file_name, compression='gzip', index=False)
     time.sleep(120)
 
-    # ------------------- directly write into UCAR score tables -----------------
-    df_final['segment_fr_nm'] = ''
-    df_final['create_ts'] = pd.Timestamp.now()
-    df_final['create_dt'] = pd.Timestamp('today')
-    df_final['month_used_dt'] = pd.Timestamp('today')
-    df_final['scoring_ts'] = pd.Timestamp(date.today() - relativedelta(days=5))
-    df_final['scoring_dt'] = date.today() - relativedelta(days=5)
-    df_final.rename(columns={'cust_id': 'customer_id'}, inplace=True)
+#     # ------------------- directly write into UCAR score tables -----------------
+#     df_final['segment_fr_nm'] = ''
+#     df_final['create_ts'] = pd.Timestamp.now()
+#     df_final['create_dt'] = pd.Timestamp('today')
+#     df_final['month_used_dt'] = pd.Timestamp('today')
+#     df_final['scoring_ts'] = pd.Timestamp(date.today() - relativedelta(days=5))
+#     df_final['scoring_dt'] = date.today() - relativedelta(days=5)
+#     df_final.rename(columns={'cust_id': 'customer_id'}, inplace=True)
 
-    table_ref = 'bi-stg-mobilityds-pr-db8ce2.ucar_ingestion.bq_product_instance_model_score_orc'  # UCAR's score table
-    client = bigquery.Client(project=project_id)
-    table = client.get_table(table_ref)
-    schema = table.schema
+#     table_ref = 'bi-stg-mobilityds-pr-db8ce2.ucar_ingestion.bq_product_instance_model_score_orc'  # UCAR's score table
+#     table = client.get_table(table_ref)
+#     schema = table.schema
 
-    ll = []
-    for item in schema:
-        col = item.name
-        d_type = item.field_type
-        if 'float' in str(d_type).lower():
-            d_type = 'FLOAT64'
-        ll.append((col, d_type))
+#     ll = []
+#     for item in schema:
+#         col = item.name
+#         d_type = item.field_type
+#         if 'float' in str(d_type).lower():
+#             d_type = 'FLOAT64'
+#         ll.append((col, d_type))
 
-        if 'integer' in str(d_type).lower():
-            df_final[col] = df_final[col].fillna(0).astype(int)
-        if 'float' in str(d_type).lower():
-            df_final[col] = df_final[col].fillna(0.0).astype(float)
-        if 'string' in str(d_type).lower():
-            df_final[col] = df_final[col].fillna('').astype(str)
+#         if 'integer' in str(d_type).lower():
+#             df_final[col] = df_final[col].fillna(0).astype(int)
+#         if 'float' in str(d_type).lower():
+#             df_final[col] = df_final[col].fillna(0.0).astype(float)
+#         if 'string' in str(d_type).lower():
+#             df_final[col] = df_final[col].fillna('').astype(str)
 
-    table_ref = '{}.{}.temp_tos_crosssell'.format(project_id, dataset_id)
-    client = bigquery.Client(project=project_id)
-    if if_tbl_exists(client, table_ref):
-        client.delete_table(table_ref)
+#     table_ref = '{}.{}.{}'.format(project_id, dataset_id, temp_table)
+#     if if_tbl_exists(client, table_ref):
+#         client.delete_table(table_ref)
 
-    client.create_table(table_ref)
-    config = bigquery.LoadJobConfig(schema=schema)
-    config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
-    bq_table_instance = client.load_table_from_dataframe(df_final, table_ref, job_config=config)
-    time.sleep(20)
+#     client.create_table(table_ref)
+#     config = bigquery.LoadJobConfig(schema=schema)
+#     config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
+#     bq_table_instance = client.load_table_from_dataframe(df_final, table_ref, job_config=config)
+#     time.sleep(20)
 
-    insert_sql = 'select '
-    for col, d_type in ll[:-1]:
-        insert_sql += '{},'.format(col)
-    insert_sql += '{}'.format(ll[-1][0])
-    insert_sql += ' from `{}.{}.temp_tos_crosssell`'.format(project_id, dataset_id)
-    insert_sql = 'insert into `bi-stg-mobilityds-pr-db8ce2.ucar_ingestion.bq_product_instance_model_score_orc` ' + insert_sql
-    client = bigquery.Client(project=project_id)
-    code = client.query(insert_sql)
-    print(code.result())
-    time.sleep(20)
+# #     insert_sql = 'select '
+# #     for col, d_type in ll[:-1]:
+# #         insert_sql += '{},'.format(col)
+# #     insert_sql += '{}'.format(ll[-1][0])
+# #     insert_sql += ' from `{}.{}.temp_call_to_retention`'.format(project_id, dataset_id)
+# #     insert_sql = 'insert into `bi-stg-mobilityds-pr-db8ce2.ucar_ingestion.bq_product_instance_model_score_orc` ' + insert_sql
+# #     client = bigquery.Client(project=project_id)
+# #     code = client.query(insert_sql)
+# #     print(code.result())
+# #     time.sleep(20)
     

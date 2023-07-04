@@ -1,3 +1,6 @@
+import os 
+import re 
+
 import kfp
 from kfp import dsl
 # from kfp.v2.dsl import (Model, Input, component)
@@ -17,18 +20,39 @@ def bq_create_dataset(score_date: str,
                       promo_expiry_start: str, 
                       promo_expiry_end: str, 
                       v_start_date: str,
-                      v_end_date: str) -> NamedTuple("output", [("col_list", list)]):
+                      v_end_date: str,
+                      token: str) -> NamedTuple("output", [("col_list", list)]):
  
+    import google
     from google.cloud import bigquery
-    import logging 
     from datetime import datetime
+    import logging 
+    import os 
+    import re 
+    from google.oauth2 import credentials
+    from google.oauth2 import service_account
     # For wb
     # import google.oauth2.credentials
     # CREDENTIALS = google.oauth2.credentials.Credentials(token)
     
-    client = bigquery.Client(project=project_id, location=region)
-    job_config = bigquery.QueryJobConfig()
+    #def get_gcp_bqclient(project_id, use_local_credential=True):
+        #token = os.popen('gcloud auth print-access-token').read()
+        #token = re.sub(f'\n$', '', token)
+        #credentials = google.oauth2.credentials.Credentials(token)
+
+        #bq_client = bigquery.Client(project=project_id)
+        #if use_local_credential:
+            #bq_client = bigquery.Client(project=project_id, credentials=credentials)
+        #return bq_client
+
+    #client = get_gcp_bqclient(project_id)
+    #job_config = bigquery.QueryJobConfig()
     
+    CREDENTIALS = google.oauth2.credentials.Credentials(token) # get credentials from token
+    
+    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
+    job_config = bigquery.QueryJobConfig()
+
     # Change dataset / table + sp table name to version in bi-layer
     query =\
         f'''
