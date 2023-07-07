@@ -48,7 +48,7 @@ def bq_create_dataset(score_date: str,
             SELECT
                 *
             FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS
-            WHERE table_name='bq_ctr_pipeline_dataset'
+            WHERE table_name='bq_telus_rewards_pipeline_dataset'
             
         '''
     
