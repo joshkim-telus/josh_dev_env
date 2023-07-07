@@ -74,7 +74,7 @@ def train_and_save_model(
     df_test = df_test.merge(df_target_test[['ban', 'target_ind']], on='ban', how='left')
     df_test.rename(columns={'target_ind': 'target'}, inplace=True)
     # df_test.dropna(subset=['target'], inplace=True)
-    df_train.fillna(0, inplace=True) 
+    df_test.fillna(0, inplace=True) 
     df_test['target'] = df_test['target'].astype(int)
     print(df_test.shape)
 

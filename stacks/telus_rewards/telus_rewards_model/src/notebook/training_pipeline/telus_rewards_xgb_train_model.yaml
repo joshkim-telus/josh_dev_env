@@ -61,7 +61,7 @@ implementation:
       \    df_train.rename(columns={'target_ind': 'target'}, inplace=True)\n    #\
       \ df_train.dropna(subset=['target'], inplace=True)\n    df_train.fillna(0, inplace=True)\n\
       \    df_train['target'] = df_train['target'].astype(int)\n    print(df_train.shape)\n\
-      \n    #set up df_test\n    sql_test = ''' SELECT * FROM `{}.{}.bq_call_to_retention_targets`\
+      \n    #set up df_test\n    sql_test = ''' SELECT * FROM `{}.{}.bq_telus_rwrd_redemption_targets`\
       \ '''.format(project_id, dataset_id) \n    df_target_test = client.query(sql_test).to_dataframe()\n\
       \    df_target_test = df_target_test.loc[\n        df_target_test['YEAR_MONTH']\
       \ == '-'.join(score_date_val_dash.split('-')[:2])]  # score_date_dash = '2022-09-30'\n\
