@@ -18,7 +18,7 @@ def bq_create_dataset(score_date: str,
                       promo_expiry_end: str, 
                       v_start_date: str,
                       v_end_date: str, 
-                      token:str) -> NamedTuple("output", [("col_list", list)]):
+                      token: str) -> NamedTuple("output", [("col_list", list)]):
  
     import google
     from google.cloud import bigquery
@@ -27,16 +27,12 @@ def bq_create_dataset(score_date: str,
     import os 
     import re 
     from google.oauth2 import credentials
-    from google.oauth2 import service_account
-    # For wb
-    # import google.oauth2.credentials
-    # CREDENTIALS = google.oauth2.credentials.Credentials(token)
 
     CREDENTIALS = google.oauth2.credentials.Credentials(token) # get credentials from token
     
     client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
     job_config = bigquery.QueryJobConfig()
-    
+
     # Change dataset / table + sp table name to version in bi-layer
     query =\
         f'''
@@ -47,12 +43,12 @@ def bq_create_dataset(score_date: str,
             DECLARE end_date DATE DEFAULT "{v_end_date}";
         
             -- Change dataset / sp name to the version in the bi_layer
-            CALL {dataset_id}.bq_sp_ctr_pipeline_dataset(score_date, promo_expiry_start, promo_expiry_end, start_date, end_date);
+            CALL {dataset_id}.bq_sp_telus_rewards_pipeline_dataset(score_date, promo_expiry_start, promo_expiry_end, start_date, end_date);
 
             SELECT
                 *
             FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS
-            WHERE table_name='bq_ctr_pipeline_dataset'
+            WHERE table_name='bq_telus_rewards_pipeline_dataset'
             
         '''
     
@@ -68,7 +64,7 @@ def bq_create_dataset(score_date: str,
         f'''
            SELECT
                 *
-            FROM {dataset_id}.bq_ctr_pipeline_dataset
+            FROM {dataset_id}.bq_telus_rewards_pipeline_dataset
 
         '''
     
