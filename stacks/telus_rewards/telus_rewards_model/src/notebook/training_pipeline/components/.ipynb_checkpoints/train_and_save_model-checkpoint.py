@@ -1,8 +1,10 @@
 from kfp.v2.dsl import (Artifact, Output, Input, HTML, component)
+from kfp.v2.dsl import (Artifact, Dataset, Input, InputPath, Model, Output, OutputPath, ClassificationMetrics,
+                        Metrics, component)
 
 @component(
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
-    output_component_file="call_to_retention_xgb_train_model.yaml",
+    output_component_file="telus_rewards_xgb_train_model.yaml",
 )
 def train_and_save_model(
             file_bucket: str,
@@ -11,8 +13,8 @@ def train_and_save_model(
             score_date_val_dash: str,
             project_id: str,
             dataset_id: str,
-            # metrics: Output[Metrics],
-            # metricsc: Output[ClassificationMetrics]
+            metrics: Output[Metrics],
+            metricsc: Output[ClassificationMetrics]
 ):
 
     import gc
@@ -25,23 +27,23 @@ def train_and_save_model(
     from sklearn.model_selection import train_test_split
 
     def get_lift(prob, y_test, q):
-        result = pd.DataFrame(columns=['Prob', 'Call_To_Retention'])
+        result = pd.DataFrame(columns=['Prob', 'Redemption'])
         result['Prob'] = prob
-        result['Call_To_Retention'] = y_test
+        result['Redemption'] = y_test
         result['Decile'] = pd.qcut(result['Prob'], q, labels=[i for i in range(q, 0, -1)])
-        add = pd.DataFrame(result.groupby('Decile')['Call_To_Retention'].mean()).reset_index()
-        add.columns = ['Decile', 'avg_real_call_to_retention_rate']
+        add = pd.DataFrame(result.groupby('Decile')['Redemption'].mean()).reset_index()
+        add.columns = ['Decile', 'avg_real_redemption_rate']
         result = result.merge(add, on='Decile', how='left')
         result.sort_values('Decile', ascending=True, inplace=True)
         lg = pd.DataFrame(result.groupby('Decile')['Prob'].mean()).reset_index()
-        lg.columns = ['Decile', 'avg_model_pred_call_to_retention_rate']
+        lg.columns = ['Decile', 'avg_model_pred_redemption_rate']
         lg.sort_values('Decile', ascending=False, inplace=True)
-        lg['avg_call_to_retention_rate_total'] = result['Call_To_Retention'].mean()
+        lg['avg_redemption_rate_total'] = result['Redemption'].mean()
         lg = lg.merge(add, on='Decile', how='left')
-        lg['lift'] = lg['avg_real_call_to_retention_rate'] / lg['avg_call_to_retention_rate_total']
+        lg['lift'] = lg['avg_real_redemption_rate'] / lg['avg_redemption_rate_total']
 
-        return lg
-
+        return lg    
+    
     df_train = pd.read_csv('gs://{}/{}_train.csv.gz'.format(file_bucket, service_type),
                            compression='gzip')  
     df_test = pd.read_csv('gs://{}/{}_validation.csv.gz'.format(file_bucket, service_type),  
@@ -49,7 +51,7 @@ def train_and_save_model(
 
     #set up df_train
     client = bigquery.Client(project=project_id)
-    sql_train = ''' SELECT * FROM `{}.{}.bq_call_to_retention_targets` '''.format(project_id, dataset_id) 
+    sql_train = ''' SELECT * FROM `{}.{}.bq_telus_rwrd_redemption_targets` '''.format(project_id, dataset_id) 
     df_target_train = client.query(sql_train).to_dataframe()
     df_target_train = df_target_train.loc[
         df_target_train['YEAR_MONTH'] == '-'.join(score_date_dash.split('-')[:2])]  # score_date_dash = '2022-08-31'
@@ -57,7 +59,8 @@ def train_and_save_model(
     df_target_train = df_target_train.groupby('ban').tail(1)
     df_train = df_train.merge(df_target_train[['ban', 'target_ind']], on='ban', how='left')
     df_train.rename(columns={'target_ind': 'target'}, inplace=True)
-    df_train.dropna(subset=['target'], inplace=True)
+    # df_train.dropna(subset=['target'], inplace=True)
+    df_train.fillna(0, inplace=True)
     df_train['target'] = df_train['target'].astype(int)
     print(df_train.shape)
 
@@ -70,7 +73,8 @@ def train_and_save_model(
     df_target_test = df_target_test.groupby('ban').tail(1)
     df_test = df_test.merge(df_target_test[['ban', 'target_ind']], on='ban', how='left')
     df_test.rename(columns={'target_ind': 'target'}, inplace=True)
-    df_test.dropna(subset=['target'], inplace=True)
+    # df_test.dropna(subset=['target'], inplace=True)
+    df_train.fillna(0, inplace=True) 
     df_test['target'] = df_test['target'].astype(int)
     print(df_test.shape)
 
@@ -81,7 +85,7 @@ def train_and_save_model(
     features = [f for f in cols if f not in ['ban', 'target']]
 
     #train test split
-    df_train, df_val = train_test_split(df_train, shuffle=True, test_size=0.2, random_state=42,
+    df_train, df_val = train_test_split(df_train, shuffle=True, test_size=0.3, random_state=42,
                                         stratify=df_train['target']
                                         )
 
