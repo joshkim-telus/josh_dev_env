@@ -1,0 +1,5 @@
+PROJECT_ID: "bi-stg-divg-speech-pr-9d940b"
+BUCKET_NAME: "bi-stg-divg-speech-pr-9d940b_bkt_call_to_retention"
+DATASET_ID: "call_to_retention_dataset"
+RESOURCES_BUCKET: "notebook-scripts-2a28"
+FILE_BUCKET: "bi-stg-divg-speech-pr-9d940b_bkt_call_to_retention"

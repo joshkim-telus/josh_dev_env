@@ -1,0 +1,81 @@
+import kfp
+from kfp import dsl
+# from kfp.v2.dsl import (Model, Input, component)
+from kfp.v2.dsl import (Artifact, Dataset, Input, InputPath, Model, Output,HTML,
+                        OutputPath, ClassificationMetrics, Metrics, component)
+from typing import NamedTuple
+# Create Training Dataset for training pipeline
+@component(
+    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
+    output_component_file="bq_create_dataset.yaml",
+)
+def bq_create_dataset(score_date: str,
+                      score_date_delta: int,
+                      project_id: str,
+                      dataset_id: str,
+                      region: str,
+                      promo_expiry_start: str, 
+                      promo_expiry_end: str, 
+                      v_start_date: str,
+                      v_end_date: str) -> NamedTuple("output", [("col_list", list)]):
+ 
+    from google.cloud import bigquery
+    import logging 
+    from datetime import datetime
+    # For wb
+    # import google.oauth2.credentials
+    # CREDENTIALS = google.oauth2.credentials.Credentials(token)
+    
+    def get_gcp_bqclient(project_id, use_local_credential=True):
+        token = os.popen('gcloud auth print-access-token').read()
+        token = re.sub(f'\n$', '', token)
+        credentials = google.oauth2.credentials.Credentials(token)
+
+        bq_client = bigquery.Client(project=project_id)
+        if use_local_credential:
+            bq_client = bigquery.Client(project=project_id, credentials=credentials)
+        return bq_client
+
+    client = get_gcp_bqclient(project_id)
+    job_config = bigquery.QueryJobConfig()
+    
+    # Change dataset / table + sp table name to version in bi-layer
+    query =\
+        f'''
+            DECLARE score_date DATE DEFAULT "{score_date}";
+            DECLARE promo_expiry_start DATE DEFAULT "{promo_expiry_start}";
+            DECLARE promo_expiry_end DATE DEFAULT "{promo_expiry_end}";
+            DECLARE start_date DATE DEFAULT "{v_start_date}";
+            DECLARE end_date DATE DEFAULT "{v_end_date}";
+        
+            -- Change dataset / sp name to the version in the bi_layer
+            CALL {dataset_id}.bq_sp_ctr_pipeline_dataset(score_date, promo_expiry_start, promo_expiry_end, start_date, end_date);
+
+            SELECT
+                *
+            FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS
+            WHERE table_name='bq_ctr_pipeline_dataset'
+            
+        '''
+    
+    df = client.query(query, job_config=job_config).to_dataframe()
+    logging.info(df.to_string())
+    
+    logging.info(f"Loaded {df.total_rows[0]} rows into \
+             {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \
+             {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S') } !")
+    
+    ######################################## Save column list_##########################
+    query =\
+        f'''
+           SELECT
+                *
+            FROM {dataset_id}.bq_ctr_pipeline_dataset
+
+        '''
+    
+    df = client.query(query, job_config=job_config).to_dataframe()
+    
+    col_list = list([col for col in df.columns])
+    return (col_list,)
+    

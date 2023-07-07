@@ -1,0 +1,5 @@
+PROJECT_ID: "bi-srv-divg-speech-pr-79f6e9"
+BUCKET_NAME: "bi-srv-divg-speech-pr-79f6e9_bkt_call_to_retention"
+DATASET_ID: "call_to_retention_dataset"
+RESOURCES_BUCKET: "notebook-scripts-3fdc"
+FILE_BUCKET: "bi-srv-divg-speech-pr-79f6e9_bkt_call_to_retention"
