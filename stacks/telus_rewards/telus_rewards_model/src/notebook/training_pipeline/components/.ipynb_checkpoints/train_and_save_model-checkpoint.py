@@ -65,7 +65,7 @@ def train_and_save_model(
     print(df_train.shape)
 
     #set up df_test
-    sql_test = ''' SELECT * FROM `{}.{}.bq_call_to_retention_targets` '''.format(project_id, dataset_id) 
+    sql_test = ''' SELECT * FROM `{}.{}.bq_telus_rwrd_redemption_targets` '''.format(project_id, dataset_id) 
     df_target_test = client.query(sql_test).to_dataframe()
     df_target_test = df_target_test.loc[
         df_target_test['YEAR_MONTH'] == '-'.join(score_date_val_dash.split('-')[:2])]  # score_date_dash = '2022-09-30'
