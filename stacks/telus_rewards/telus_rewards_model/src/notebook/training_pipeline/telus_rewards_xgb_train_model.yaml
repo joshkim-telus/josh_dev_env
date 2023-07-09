@@ -69,7 +69,7 @@ implementation:
       \ = df_target_test.groupby('ban').tail(1)\n    df_test = df_test.merge(df_target_test[['ban',\
       \ 'target_ind']], on='ban', how='left')\n    df_test.rename(columns={'target_ind':\
       \ 'target'}, inplace=True)\n    # df_test.dropna(subset=['target'], inplace=True)\n\
-      \    df_train.fillna(0, inplace=True) \n    df_test['target'] = df_test['target'].astype(int)\n\
+      \    df_test.fillna(0, inplace=True) \n    df_test['target'] = df_test['target'].astype(int)\n\
       \    print(df_test.shape)\n\n    #set up features (list)\n    cols_1 = df_train.columns.values\n\
       \    cols_2 = df_test.columns.values\n    cols = set(cols_1).intersection(set(cols_2))\n\
       \    features = [f for f in cols if f not in ['ban', 'target']]\n\n    #train\
