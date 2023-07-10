@@ -27,7 +27,8 @@ implementation:
       \ import *\n\ndef preprocess(\n        pipeline_dataset: str, \n        save_data_path:\
       \ str,\n        project_id: str,\n        dataset_id: str\n):\n    from google.cloud\
       \ import bigquery\n    import pandas as pd\n    import gc\n    import time\n\
-      \n    client = bigquery.Client(project=project_id)\n\n    # pipeline_dataset\
+      \n    # CREDENTIALS = google.oauth2.credentials.Credentials(token) # get credentials\
+      \ from token\n\n    client = bigquery.Client(project=project_id)\n\n    # pipeline_dataset\
       \ \n    pipeline_dataset_name = f\"{project_id}.{dataset_id}.{pipeline_dataset}\"\
       \ \n    build_df_pipeline_dataset = f'SELECT * FROM `{pipeline_dataset_name}`'\n\
       \    df_pipeline_dataset = client.query(build_df_pipeline_dataset).to_dataframe()\n\

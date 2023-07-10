@@ -15,6 +15,8 @@ def preprocess(
     import gc
     import time
 
+    # CREDENTIALS = google.oauth2.credentials.Credentials(token) # get credentials from token
+    
     client = bigquery.Client(project=project_id)
 
     # pipeline_dataset 
