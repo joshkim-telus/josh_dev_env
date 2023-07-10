@@ -104,7 +104,19 @@ implementation:
       \n    model_name_onbkt = '{}{}_models_xgb_{}'.format(MODEL_PATH, service_type,\
       \ models_dict['create_time'])\n    blob = bucket.blob(model_name_onbkt)\n  \
       \  blob.upload_from_filename('model_dict.pkl')\n\n    print(f\"....model loaded\
-      \ to GCS done at {str(create_time)}\")\n\n    time.sleep(120)\n\n"
+      \ to GCS done at {str(create_time)}\")\n\n    from sklearn.preprocessing import\
+      \ normalize\n\n    #predictions on X_test\n    pred_prb = xgb_model.predict_proba(X_test,\
+      \ ntree_limit=xgb_model.best_iteration)[:, 1]\n    pred_prb = np.array(normalize([pred_prb]))[0]\n\
+      \n    #join ban_test, X_test, y_test and pred_prb and print to csv\n    #CHECK\
+      \ THE SIZE OF EACH COMPONENT BEFORE JOINING\n    q=10\n    df_ban_test = ban_test.to_frame()\n\
+      \    df_test_exp = df_ban_test.join(X_test) \n    df_test_exp['y_test'] = y_test\n\
+      \    df_test_exp['y_pred_proba'] = pred_prb\n    df_test_exp['y_pred'] = (df_test_exp['y_pred_proba']\
+      \ > 0.5).astype(int)\n    df_test_exp['decile'] = pd.qcut(df_test_exp['y_pred_proba'],\
+      \ q, labels=[i for i in range(q, 0, -1)])\n\n    lg = get_lift(pred_prb, y_test,\
+      \ q)\n\n    df_test_exp.to_csv('gs://{}/df_test_exp.csv'.format(file_bucket,\
+      \ index=True))\n    print(\"....df_test_exp done\")\n\n    lg.to_csv('gs://{}/lift_on_scoring_data.csv'.format(file_bucket,\
+      \ index=False))\n    print(\"....lift_to_csv done\")\n\n    time.sleep(120)\n\
+      \n"
     args:
     - --executor_input
     - {executorInput: null}
