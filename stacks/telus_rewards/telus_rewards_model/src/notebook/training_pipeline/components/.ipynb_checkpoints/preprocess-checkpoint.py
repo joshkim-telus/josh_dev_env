@@ -8,16 +8,21 @@ def preprocess(
         pipeline_dataset: str, 
         save_data_path: str,
         project_id: str,
-        dataset_id: str
+        dataset_id: str, 
+        token: str
 ):
-    from google.cloud import bigquery
     import pandas as pd
     import gc
     import time
+    import google
+    from google.cloud import bigquery
+    from datetime import datetime
+    import logging 
+    from google.oauth2 import credentials
 
-    # CREDENTIALS = google.oauth2.credentials.Credentials(token) # get credentials from token
+    CREDENTIALS = google.oauth2.credentials.Credentials(token) # get credentials from token
     
-    client = bigquery.Client(project=project_id)
+    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
 
     # pipeline_dataset 
     pipeline_dataset_name = f"{project_id}.{dataset_id}.{pipeline_dataset}" 

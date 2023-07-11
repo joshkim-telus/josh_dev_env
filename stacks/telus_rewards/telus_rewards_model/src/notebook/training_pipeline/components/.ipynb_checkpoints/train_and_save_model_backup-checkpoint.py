@@ -55,7 +55,6 @@ def train_and_save_model(
     df_target_train = client.query(sql_train).to_dataframe()
     df_target_train = df_target_train.loc[
         df_target_train['YEAR_MONTH'] == '-'.join(score_date_dash.split('-')[:2])]  # score_date_dash = '2022-08-31'
-    # df_target_train = df_target_train.loc[df_target_train['YEAR_MONTH'] == '2022-Q3']  # score_date_dash = '2022-08-31'
     df_target_train['ban'] = df_target_train['ban'].astype('int64')
     df_target_train = df_target_train.groupby('ban').tail(1)
     df_train = df_train.merge(df_target_train[['ban', 'target_ind']], on='ban', how='left')
@@ -70,7 +69,6 @@ def train_and_save_model(
     df_target_test = client.query(sql_test).to_dataframe()
     df_target_test = df_target_test.loc[
         df_target_test['YEAR_MONTH'] == '-'.join(score_date_val_dash.split('-')[:2])]  # score_date_dash = '2022-09-30'
-    # df_target_test = df_target_test.loc[df_target_test['YEAR_MONTH'] == '2023-Q1']  # score_date_dash = '2022-08-31'
     df_target_test['ban'] = df_target_test['ban'].astype('int64')
     df_target_test = df_target_test.groupby('ban').tail(1)
     df_test = df_test.merge(df_target_test[['ban', 'target_ind']], on='ban', how='left')
@@ -164,29 +162,5 @@ def train_and_save_model(
     blob.upload_from_filename('model_dict.pkl')
 
     print(f"....model loaded to GCS done at {str(create_time)}")
-
-    from sklearn.preprocessing import normalize
-
-    #predictions on X_test
-    pred_prb = xgb_model.predict_proba(X_test, ntree_limit=xgb_model.best_iteration)[:, 1]
-    pred_prb = np.array(normalize([pred_prb]))[0]
-
-    #join ban_test, X_test, y_test and pred_prb and print to csv
-    #CHECK THE SIZE OF EACH COMPONENT BEFORE JOINING
-    q=10
-    df_ban_test = ban_test.to_frame()
-    df_test_exp = df_ban_test.join(X_test) 
-    df_test_exp['y_test'] = y_test
-    df_test_exp['y_pred_proba'] = pred_prb
-    df_test_exp['y_pred'] = (df_test_exp['y_pred_proba'] > 0.5).astype(int)
-    df_test_exp['decile'] = pd.qcut(df_test_exp['y_pred_proba'], q, labels=[i for i in range(q, 0, -1)])
-
-    lg = get_lift(pred_prb, y_test, q)
-
-    df_test_exp.to_csv('gs://{}/df_test_exp.csv'.format(file_bucket, index=True))
-    print("....df_test_exp done")
-
-    lg.to_csv('gs://{}/lift_on_scoring_data.csv'.format(file_bucket, index=False))
-    print("....lift_to_csv done")
 
     time.sleep(120)
