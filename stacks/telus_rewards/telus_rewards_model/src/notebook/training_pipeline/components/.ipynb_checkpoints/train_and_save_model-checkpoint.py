@@ -110,20 +110,34 @@ def train_and_save_model(
     import xgboost as xgb
     from sklearn.metrics import roc_auc_score
 
+    # xgb_model = xgb.XGBClassifier(
+    #     learning_rate=0.01,
+    #     n_estimators=100,
+    #     max_depth=8,
+    #     min_child_weight=1,
+    #     gamma=0,
+    #     subsample=0.8,
+    #     colsample_bytree=0.8,
+    #     objective='binary:logistic',
+    #     nthread=4,
+    #     scale_pos_weight=1
+    #     # seed=27
+    # )
+
     xgb_model = xgb.XGBClassifier(
-        learning_rate=0.01,
-        n_estimators=100,
-        max_depth=8,
+        learning_rate=0.02,
+        n_estimators=1000,
+        max_depth=10,
         min_child_weight=1,
         gamma=0,
         subsample=0.8,
         colsample_bytree=0.8,
         objective='binary:logistic',
         nthread=4,
-        scale_pos_weight=1
-        # seed=27
+        scale_pos_weight=1,
+        seed=27
     )
-
+    
     xgb_model.fit(X_train, y_train)
     print('xgb training done')
 
@@ -169,7 +183,7 @@ def train_and_save_model(
 
     #predictions on X_test
     pred_prb = xgb_model.predict_proba(X_test, ntree_limit=xgb_model.best_iteration)[:, 1]
-    pred_prb = np.array(normalize([pred_prb]))[0]
+    # pred_prb = np.array(normalize([pred_prb]))[0]
 
     #join ban_test, X_test, y_test and pred_prb and print to csv
     #CHECK THE SIZE OF EACH COMPONENT BEFORE JOINING

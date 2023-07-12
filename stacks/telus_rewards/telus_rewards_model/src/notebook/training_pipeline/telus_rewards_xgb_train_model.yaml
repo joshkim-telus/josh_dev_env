@@ -84,14 +84,18 @@ implementation:
       \n    ban_test = df_test['ban']\n    X_test = df_test[features]\n    y_test\
       \ = np.squeeze(df_test['target'].values)\n\n    del df_train, df_val, df_test\n\
       \    gc.collect()\n\n    # build model and fit in training data\n    import\
-      \ xgboost as xgb\n    from sklearn.metrics import roc_auc_score\n\n    xgb_model\
-      \ = xgb.XGBClassifier(\n        learning_rate=0.01,\n        n_estimators=100,\n\
-      \        max_depth=8,\n        min_child_weight=1,\n        gamma=0,\n     \
-      \   subsample=0.8,\n        colsample_bytree=0.8,\n        objective='binary:logistic',\n\
-      \        nthread=4,\n        scale_pos_weight=1\n        # seed=27\n    )\n\n\
-      \    xgb_model.fit(X_train, y_train)\n    print('xgb training done')\n\n   \
-      \ from sklearn.preprocessing import normalize\n\n    #predictions on X_val\n\
-      \    y_pred = xgb_model.predict_proba(X_val, ntree_limit=xgb_model.best_iteration)[:,\
+      \ xgboost as xgb\n    from sklearn.metrics import roc_auc_score\n\n    # xgb_model\
+      \ = xgb.XGBClassifier(\n    #     learning_rate=0.01,\n    #     n_estimators=100,\n\
+      \    #     max_depth=8,\n    #     min_child_weight=1,\n    #     gamma=0,\n\
+      \    #     subsample=0.8,\n    #     colsample_bytree=0.8,\n    #     objective='binary:logistic',\n\
+      \    #     nthread=4,\n    #     scale_pos_weight=1\n    #     # seed=27\n \
+      \   # )\n\n    xgb_model = xgb.XGBClassifier(\n        learning_rate=0.02,\n\
+      \        n_estimators=1000,\n        max_depth=10,\n        min_child_weight=1,\n\
+      \        gamma=0,\n        subsample=0.8,\n        colsample_bytree=0.8,\n \
+      \       objective='binary:logistic',\n        nthread=4,\n        scale_pos_weight=1,\n\
+      \        seed=27\n    )\n\n    xgb_model.fit(X_train, y_train)\n    print('xgb\
+      \ training done')\n\n    from sklearn.preprocessing import normalize\n\n   \
+      \ #predictions on X_val\n    y_pred = xgb_model.predict_proba(X_val, ntree_limit=xgb_model.best_iteration)[:,\
       \ 1]\n    y_pred_label = (y_pred > 0.5).astype(int)\n    auc = roc_auc_score(y_val,\
       \ y_pred_label)\n    metrics.log_metric(\"AUC\", auc)\n\n    pred_prb = xgb_model.predict_proba(X_test,\
       \ ntree_limit=xgb_model.best_iteration)[:, 1]\n    lg = get_lift(pred_prb, y_test,\
@@ -109,7 +113,7 @@ implementation:
       \  blob.upload_from_filename('model_dict.pkl')\n\n    print(f\"....model loaded\
       \ to GCS done at {str(create_time)}\")\n\n    from sklearn.preprocessing import\
       \ normalize\n\n    #predictions on X_test\n    pred_prb = xgb_model.predict_proba(X_test,\
-      \ ntree_limit=xgb_model.best_iteration)[:, 1]\n    pred_prb = np.array(normalize([pred_prb]))[0]\n\
+      \ ntree_limit=xgb_model.best_iteration)[:, 1]\n    # pred_prb = np.array(normalize([pred_prb]))[0]\n\
       \n    #join ban_test, X_test, y_test and pred_prb and print to csv\n    #CHECK\
       \ THE SIZE OF EACH COMPONENT BEFORE JOINING\n    q=10\n    df_ban_test = ban_test.to_frame()\n\
       \    df_test_exp = df_ban_test.join(X_test) \n    df_test_exp['y_test'] = y_test\n\

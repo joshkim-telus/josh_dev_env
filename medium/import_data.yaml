@@ -1,0 +1,39 @@
+name: Import data
+inputs:
+- {name: project_id, type: String}
+- {name: dataset_id, type: String}
+- {name: file_bucket, type: String}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef import_data(\n            project_id: str,\n            dataset_id:\
+      \ str,\n            file_bucket: str, \n):\n    # Import Libraries\n    import\
+      \ pandas as pd\n    import numpy as np\n    from sklearn.datasets import load_breast_cancer\n\
+      \n    # import the entire dataset into 'data'\n    data = load_breast_cancer()\
+      \ \n\n    # save the data in df, including the targets\n    df = pd.DataFrame(data\
+      \ = data.data, columns = data.feature_names) \n    df['target'] = pd.Series(data.target)\
+      \ \n\n    # save df in cloud storage \n    save_path = f'gs://{file_bucket}/{dataset_id}/{dataset_id}_data.csv'\n\
+      \    df.to_csv(save_path, index=True) \n\n    print(f'{dataset_id}_data.csv\
+      \ saved in {save_path}')\n\n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - import_data
