@@ -1,0 +1,46 @@
+name: Model evaluation
+inputs:
+- {name: accuracy, type: Float}
+- {name: f1_score, type: Float}
+- {name: roc_auc, type: Float}
+- {name: accuracy_threshold, type: Float}
+- {name: f1_score_threshold, type: Float}
+- {name: roc_auc_threshold, type: Float}
+outputs:
+- {name: pass_fail, type: String}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef model_evaluation(\n            accuracy: float, \n       \
+      \     f1_score: float, \n            roc_auc: float, \n            accuracy_threshold:\
+      \ float, \n            f1_score_threshold: float, \n            roc_auc_threshold:\
+      \ float\n            ) -> NamedTuple(\n                \"Output\", [(\"pass_fail\"\
+      , str)]\n            ):\n\n    # Set checker to True\n    checker = True\n\n\
+      \    # Set checker to False if any of the eval metrics is below threshold\n\
+      \    if accuracy < accuracy_threshold: \n        checker = False \n    if f1_score\
+      \ < f1_score_threshold: \n        checker = False \n    if roc_auc < roc_auc_threshold:\
+      \ \n        checker = False \n\n    # if checker == True, return \"Pass\", otherwise\
+      \ return \"Fail\"\n    if checker == True: \n        return (\"Pass\",) \n \
+      \   else: \n        return (\"Fail\",)\n\n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - model_evaluation

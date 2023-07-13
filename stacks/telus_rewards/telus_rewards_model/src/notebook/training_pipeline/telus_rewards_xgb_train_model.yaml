@@ -56,7 +56,7 @@ implementation:
       \ \n    df_target_train = client.query(sql_train).to_dataframe()\n    # df_target_train\
       \ = df_target_train.loc[\n    #     df_target_train['YEAR_MONTH'] == '-'.join(score_date_dash.split('-')[:2])]\
       \  # score_date_dash = '2022-08-31'\n    df_target_train = df_target_train.loc[df_target_train['YEAR_MONTH']\
-      \ == '2022-H2']  # score_date_dash = '2022-08-31'\n    df_target_train['ban']\
+      \ == '2022-Q3']  # score_date_dash = '2022-08-31'\n    df_target_train['ban']\
       \ = df_target_train['ban'].astype('int64')\n    df_target_train = df_target_train.groupby('ban').tail(1)\n\
       \    df_train = df_train.merge(df_target_train[['ban', 'target_ind']], on='ban',\
       \ how='left')\n    df_train.rename(columns={'target_ind': 'target'}, inplace=True)\n\
@@ -84,18 +84,14 @@ implementation:
       \n    ban_test = df_test['ban']\n    X_test = df_test[features]\n    y_test\
       \ = np.squeeze(df_test['target'].values)\n\n    del df_train, df_val, df_test\n\
       \    gc.collect()\n\n    # build model and fit in training data\n    import\
-      \ xgboost as xgb\n    from sklearn.metrics import roc_auc_score\n\n    # xgb_model\
-      \ = xgb.XGBClassifier(\n    #     learning_rate=0.01,\n    #     n_estimators=100,\n\
-      \    #     max_depth=8,\n    #     min_child_weight=1,\n    #     gamma=0,\n\
-      \    #     subsample=0.8,\n    #     colsample_bytree=0.8,\n    #     objective='binary:logistic',\n\
-      \    #     nthread=4,\n    #     scale_pos_weight=1\n    #     # seed=27\n \
-      \   # )\n\n    xgb_model = xgb.XGBClassifier(\n        learning_rate=0.02,\n\
-      \        n_estimators=1000,\n        max_depth=10,\n        min_child_weight=1,\n\
-      \        gamma=0,\n        subsample=0.8,\n        colsample_bytree=0.8,\n \
-      \       objective='binary:logistic',\n        nthread=4,\n        scale_pos_weight=1,\n\
-      \        seed=27\n    )\n\n    xgb_model.fit(X_train, y_train)\n    print('xgb\
-      \ training done')\n\n    from sklearn.preprocessing import normalize\n\n   \
-      \ #predictions on X_val\n    y_pred = xgb_model.predict_proba(X_val, ntree_limit=xgb_model.best_iteration)[:,\
+      \ xgboost as xgb\n    from sklearn.metrics import roc_auc_score\n\n    xgb_model\
+      \ = xgb.XGBClassifier(\n        learning_rate=0.05,\n        n_estimators=100,\n\
+      \        max_depth=8,\n        min_child_weight=1,\n        gamma=0,\n     \
+      \   subsample=0.8,\n        colsample_bytree=0.8,\n        objective='binary:logistic',\n\
+      \        nthread=4,\n        scale_pos_weight=1\n        # seed=27\n    )\n\n\
+      \    xgb_model.fit(X_train, y_train)\n    print('xgb training done')\n\n   \
+      \ from sklearn.preprocessing import normalize\n\n    #predictions on X_val\n\
+      \    y_pred = xgb_model.predict_proba(X_val, ntree_limit=xgb_model.best_iteration)[:,\
       \ 1]\n    y_pred_label = (y_pred > 0.5).astype(int)\n    auc = roc_auc_score(y_val,\
       \ y_pred_label)\n    metrics.log_metric(\"AUC\", auc)\n\n    pred_prb = xgb_model.predict_proba(X_test,\
       \ ntree_limit=xgb_model.best_iteration)[:, 1]\n    lg = get_lift(pred_prb, y_test,\
