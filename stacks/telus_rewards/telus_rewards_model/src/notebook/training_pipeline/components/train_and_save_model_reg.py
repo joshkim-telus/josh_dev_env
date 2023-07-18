@@ -51,11 +51,11 @@ def train_and_save_model(
 
     #set up df_train
     client = bigquery.Client(project=project_id)
-    sql_train = ''' SELECT * FROM `{}.{}.bq_telus_rwrd_redemption_targets` '''.format(project_id, dataset_id) 
+    sql_train = ''' SELECT * FROM `{}.{}.bq_telus_rwrd_redemption_targets_reg` '''.format(project_id, dataset_id) 
     df_target_train = client.query(sql_train).to_dataframe()
     # df_target_train = df_target_train.loc[
     #     df_target_train['YEAR_MONTH'] == '-'.join(score_date_dash.split('-')[:2])]  # score_date_dash = '2022-08-31'
-    df_target_train = df_target_train.loc[df_target_train['YEAR_MONTH'] == '2022-0708']  # score_date_dash = '2022-08-31'
+    df_target_train = df_target_train.loc[df_target_train['YEAR_MONTH'] == '2022-H1']  # score_date_dash = '2022-08-31'
     df_target_train['ban'] = df_target_train['ban'].astype('int64')
     df_target_train = df_target_train.groupby('ban').tail(1)
     df_train = df_train.merge(df_target_train[['ban', 'target_ind']], on='ban', how='left')
@@ -66,7 +66,7 @@ def train_and_save_model(
     print(df_train.shape)
 
     #set up df_test
-    sql_test = ''' SELECT * FROM `{}.{}.bq_telus_rwrd_redemption_targets` '''.format(project_id, dataset_id) 
+    sql_test = ''' SELECT * FROM `{}.{}.bq_telus_rwrd_redemption_targets_reg` '''.format(project_id, dataset_id) 
     df_target_test = client.query(sql_test).to_dataframe()
     # df_target_test = df_target_test.loc[
     #     df_target_test['YEAR_MONTH'] == '-'.join(score_date_val_dash.split('-')[:2])]  # score_date_dash = '2022-09-30'
@@ -110,7 +110,7 @@ def train_and_save_model(
     import xgboost as xgb
     from sklearn.metrics import roc_auc_score
 
-    xgb_model = xgb.XGBClassifier(
+    xgb_model = xgb.XGBRegressor(
         learning_rate=0.02,
         n_estimators=1000,
         max_depth=8,
