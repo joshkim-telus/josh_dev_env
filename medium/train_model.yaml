@@ -3,13 +3,16 @@ inputs:
 - {name: dataset_id, type: String}
 - {name: file_bucket, type: String}
 - {name: save_path, type: String}
+- {name: col_list, type: JsonArray}
 outputs:
+- {name: model, type: Model}
 - {name: metrics, type: Metrics}
 - {name: metricsc, type: ClassificationMetrics}
 - {name: accuracy, type: Float}
 - {name: f1_score, type: Float}
 - {name: roc_auc, type: Float}
 - {name: X_y_val_index, type: JsonArray}
+- {name: model_location, type: String}
 implementation:
   container:
     image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest
@@ -31,45 +34,75 @@ implementation:
       python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
     - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
       \ import *\n\ndef model_training(\n            dataset_id: str,\n          \
-      \  file_bucket: str, \n            save_path: str,\n            metrics: Output[Metrics],\n\
-      \            metricsc: Output[ClassificationMetrics]\n    ) -> NamedTuple(\n\
-      \        \"Outputs\",\n        [\n            (\"accuracy\", float),  # Return\
-      \ parameters\n            (\"f1_score\", float),\n            (\"roc_auc\",\
-      \ float), \n            (\"X_y_val_index\", list), \n        ],\n    ):\n  \
-      \  # Import Libraries\n    import pandas as pd\n    import numpy as np\n   \
-      \ import matplotlib.pyplot as plt\n    import seaborn as sns\n    from sklearn.datasets\
+      \  file_bucket: str, \n            save_path: str,\n            model: Output[Model],\n\
+      \            metrics: Output[Metrics],\n            metricsc: Output[ClassificationMetrics],\
+      \ \n            col_list: list \n    ) -> NamedTuple(\n        \"Outputs\",\n\
+      \        [\n            (\"accuracy\", float),  # Return parameters\n      \
+      \      (\"f1_score\", float),\n            (\"roc_auc\", float), \n        \
+      \    (\"X_y_val_index\", list), \n            (\"model_location\", str)\n  \
+      \      ],\n    ):\n    # Import Libraries\n    import gc\n    import time\n\
+      \    from datetime import datetime\n    import pandas as pd\n    import numpy\
+      \ as np\n    import matplotlib.pyplot as plt\n    import seaborn as sns\n  \
+      \  import xgboost as xgb\n    import pickle\n    import logging\n    from google.cloud\
+      \ import storage\n    from google.cloud import bigquery\n    from sklearn.datasets\
       \ import load_breast_cancer\n    from sklearn.model_selection import train_test_split\n\
-      \    import xgboost as xgb\n    from sklearn.metrics import roc_auc_score, accuracy_score,\
-      \ precision_score, recall_score, f1_score, roc_curve, confusion_matrix\n\n \
-      \   # Read csv that was saved in 'import_data' component\n    df = pd.read_csv(save_path)\
-      \  \n\n    # X and y\n    y = np.squeeze(df['target'].values)\n    X = df.drop(columns='target')\n\
+      \    from sklearn.metrics import roc_auc_score, accuracy_score, precision_score,\
+      \ recall_score, f1_score, roc_curve, confusion_matrix\n\n    # Read csv that\
+      \ was saved in 'import_data' component\n    df = pd.read_csv(save_path)  \n\n\
+      \    # X and y\n    y = np.squeeze(df['target'].values)\n    X = df.drop(columns='target')\n\
       \n    # Create the training and test sets\n    X_train, X_test, y_train, y_test\
       \ = train_test_split(X, y, test_size=0.3, random_state=123)\n\n    # Reserve\
       \ some samples for final validation\n    X_test, X_val, y_test, y_val = train_test_split(X_test,\
-      \ y_test, test_size=0.2, random_state=123)\n\n    # Instantiate the XGB Classifier:\
-      \ xgb_model\n    xgb_model = xgb.XGBClassifier(\n        learning_rate=0.01,\n\
-      \        n_estimators=100,\n        max_depth=8,\n        min_child_weight=1,\n\
-      \        max_delta_step=1, \n        colsample_bytree=0.9,\n        subsample=0.9,\n\
-      \        objective='binary:logistic',\n        nthread=4,\n        scale_pos_weight=1,\
-      \ \n        eval_metric='auc', \n        base_score=0.5\n    )\n\n    # Fit\
-      \ the classifier to the training set\n    xgb_model.fit(X_train, y_train)\n\n\
-      \    # Predict based on X_test\n    y_pred = xgb_model.predict(X_test)\n   \
-      \ y_pred_proba = xgb_model.predict_proba(X_test)[:, 1]\n\n    # Model accuracy\
-      \ \n    accuracy = accuracy_score(y_test, y_pred)\n    print(\"Accuracy:\",\
-      \ accuracy)\n\n    # Precision & Recall \n    precision = precision_score(y_test,\
-      \ y_pred)\n    recall = recall_score(y_test, y_pred)\n\n    # F1 Score \n  \
-      \  f1_score = f1_score(y_test, y_pred)\n    print(\"F1 Score:\", f1_score)\n\
-      \n    # ROC AUC Score\n    roc_auc = roc_auc_score(y_test, y_pred_proba)\n \
-      \   print(\"ROC AUC Score:\", roc_auc)\n\n    # Log eval metrics\n    metrics.log_metric(\"\
+      \ y_test, test_size=0.2, random_state=123)\n\n    X_val = X_val.loc[:, col_list]\n\
+      \n    # export X_val and y_val to GCS for scoring\n    X_val.to_csv(f'gs://{file_bucket}/{dataset_id}/{dataset_id}_X_val.csv',\
+      \ index=False)\n\n    y_val_df = pd.DataFrame(y_val, columns = ['target']) \n\
+      \    y_val_df.to_csv(f'gs://{file_bucket}/{dataset_id}/{dataset_id}_y_val.csv',\
+      \ index=False)\n\n    # Instantiate the XGB Classifier: xgb_model\n    xgb_model\
+      \ = xgb.XGBClassifier(\n        learning_rate=0.01,\n        n_estimators=100,\n\
+      \        max_depth=8,\n        min_child_weight=1,\n        max_delta_step=1,\
+      \ \n        colsample_bytree=0.9,\n        subsample=0.9,\n        objective='binary:logistic',\n\
+      \        nthread=4,\n        scale_pos_weight=1, \n        eval_metric='auc',\
+      \ \n        base_score=0.5\n    )\n\n    # Fit the classifier to the training\
+      \ set\n    xgb_model.fit(X_train, y_train)\n\n    # Predict based on X_test\n\
+      \    y_pred = xgb_model.predict(X_test)\n    y_pred_proba = xgb_model.predict_proba(X_test)[:,\
+      \ 1]\n\n    # Model accuracy \n    accuracy = accuracy_score(y_test, y_pred)\n\
+      \    print(\"Accuracy:\", accuracy)\n\n    # Precision & Recall \n    precision\
+      \ = precision_score(y_test, y_pred)\n    recall = recall_score(y_test, y_pred)\n\
+      \n    # F1 Score \n    f1_score = f1_score(y_test, y_pred)\n    print(\"F1 Score:\"\
+      , f1_score)\n\n    # ROC AUC Score\n    roc_auc = roc_auc_score(y_test, y_pred_proba)\n\
+      \    print(\"ROC AUC Score:\", roc_auc)\n\n    # Log eval metrics\n    metrics.log_metric(\"\
       Model\", \"XGBClassifier\")\n    metrics.log_metric(\"Size\", df.shape[0])\n\
-      \    metrics.log_metric(\"Accuracy\",(accuracy * 100.0))\n    metrics.log_metric(\"\
-      AUC\", roc_auc)\n    metrics.log_metric(\"F1_Score\", f1_score)\n\n    # Compute\
-      \ fpr, tpr, thresholds for the ROC Curve\n    fpr, tpr, thresholds = roc_curve(\n\
-      \        y_true=y_test, y_score=y_pred_proba, pos_label=True\n    )\n\n    #\
-      \ Log classification metrics\n    metricsc.log_roc_curve(fpr.tolist(), tpr.tolist(),\
-      \ thresholds.tolist())\n    metricsc.log_confusion_matrix(['Malignant', 'Benign'],\
-      \ confusion_matrix(y_test, y_pred).tolist())\n\n    return (accuracy, f1_score,\
-      \ roc_auc, list(X_val.index))\n\n"
+      \    metrics.log_metric(\"Accuracy\",accuracy)\n    metrics.log_metric(\"AUC\"\
+      , roc_auc)\n    metrics.log_metric(\"Precision\", precision) \n    metrics.log_metric(\"\
+      Recall\", recall) \n    metrics.log_metric(\"F1_Score\", f1_score)\n\n    #\
+      \ Compute fpr, tpr, thresholds for the ROC Curve\n    fpr, tpr, thresholds =\
+      \ roc_curve(\n        y_true=y_test, y_score=y_pred_proba, pos_label=True\n\
+      \    )\n\n    # Log classification metrics\n    metricsc.log_roc_curve(fpr.tolist(),\
+      \ tpr.tolist(), thresholds.tolist())\n    metricsc.log_confusion_matrix(['Malignant',\
+      \ 'Benign'], confusion_matrix(y_test, y_pred).tolist())\n\n    # added to model_training\
+      \ component: save model artifacts in GCS bucket\n    model_artifacts = {}\n\
+      \    create_time = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\n    # model_artifacts['create_time']\
+      \ = create_time\n    model_artifacts['model'] = xgb_model\n    # model_artifacts['col_list']\
+      \ = col_list\n\n    # create and write model_artifacts.pkl\n    with open('model_artifacts.pkl',\
+      \ 'wb') as pkl_file:\n        pickle.dump(model_artifacts, pkl_file)\n\n   \
+      \     # Use the 'pickle.dump()' method to serialize and store the 'model_artifacts'\
+      \ data\n        pickle.dump(model_artifacts, pkl_file)\n\n    # create a gcs\
+      \ bucket instance\n    storage_client = storage.Client()\n    bucket = storage_client.get_bucket(file_bucket)\n\
+      \n    # define the folder path where the models will be saved. create one if\
+      \ not found. \n    model_path = 'breast_cancer_models/'\n    blob = bucket.blob(model_path)\n\
+      \    if not blob.exists(storage_client):\n        blob.upload_from_string('')\n\
+      \n    # set model name and upload 'model_artifacts.pkl' to the folder in gcs\
+      \ bucket \n    model_name = 'breast_cancer_models_{}'.format(create_time)\n\
+      \    model_location = f'{model_path}{model_name}'\n    blob = bucket.blob(model_location)\n\
+      \    blob.upload_from_filename('model_artifacts.pkl')\n\n    print(f\"Model\
+      \ artifacts loaded to GCS Bucket: {model_location}\")\n\n#     model.metadata['accuracy']\
+      \ = accuracy\n#     model.metadata['precision'] = precision\n#     model.metadata['recall']\
+      \ = recall\n#     model.metadata['f1_score'] = f1_score\n#     model.metadata['auc']\
+      \ = roc_auc\n\n    model.uri = f'gs://{file_bucket}/{model_location}'\n\n# \
+      \    # Log additional model details \n#     with open(model.path, 'w') as output_file:\n\
+      #         output_file.write(f'You can enter additional model details here')\n\
+      #     output_file.close()\n\n    time.sleep(120)\n\n    return (accuracy, f1_score,\
+      \ roc_auc, list(X_val.index), model_location)\n\n"
     args:
     - --executor_input
     - {executorInput: null}

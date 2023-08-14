@@ -33,13 +33,17 @@ implementation:
       \         service_type: str,\n            score_date_dash: str,\n          \
       \  score_date_val_dash: str,\n            project_id: str,\n            dataset_id:\
       \ str,\n            metrics: Output[Metrics],\n            metricsc: Output[ClassificationMetrics]\n\
-      ):\n\n    import gc\n    import time\n    import pandas as pd\n    import numpy\
-      \ as np\n    import pickle\n    from google.cloud import storage\n    from google.cloud\
-      \ import bigquery\n    from sklearn.model_selection import train_test_split\n\
-      \n    def get_lift(prob, y_test, q):\n        result = pd.DataFrame(columns=['Prob',\
-      \ 'Redemption'])\n        result['Prob'] = prob\n        result['Redemption']\
-      \ = y_test\n        result['Decile'] = pd.qcut(result['Prob'], q, labels=[i\
-      \ for i in range(q, 0, -1)])\n        add = pd.DataFrame(result.groupby('Decile')['Redemption'].mean()).reset_index()\n\
+      \    ): \n    # ) -> NamedTuple(\n    #     \"Outputs\",\n    #     [\n    #\
+      \         (\"accuracy\", float),  # Return parameters\n    #         (\"precision\"\
+      , float),  # Return parameters\n    #         (\"recall\", float),  # Return\
+      \ parameters\n    #         (\"f1_score\", float),\n    #         (\"roc_auc\"\
+      , float)\n    #     ],\n    # ):\n\n    import gc\n    import time\n    import\
+      \ pandas as pd\n    import numpy as np\n    import pickle\n    from google.cloud\
+      \ import storage\n    from google.cloud import bigquery\n    from sklearn.model_selection\
+      \ import train_test_split\n\n    def get_lift(prob, y_test, q):\n        result\
+      \ = pd.DataFrame(columns=['Prob', 'Redemption'])\n        result['Prob'] = prob\n\
+      \        result['Redemption'] = y_test\n        result['Decile'] = pd.qcut(result['Prob'],\
+      \ q, labels=[i for i in range(q, 0, -1)])\n        add = pd.DataFrame(result.groupby('Decile')['Redemption'].mean()).reset_index()\n\
       \        add.columns = ['Decile', 'avg_real_redemption_rate']\n        result\
       \ = result.merge(add, on='Decile', how='left')\n        result.sort_values('Decile',\
       \ ascending=True, inplace=True)\n        lg = pd.DataFrame(result.groupby('Decile')['Prob'].mean()).reset_index()\n\
@@ -52,29 +56,28 @@ implementation:
       \ = pd.read_csv('gs://{}/{}_validation.csv.gz'.format(file_bucket, service_type),\
       \  \n                          compression='gzip')\n\n    #set up df_train\n\
       \    client = bigquery.Client(project=project_id)\n    sql_train = ''' SELECT\
-      \ * FROM `{}.{}.bq_telus_rwrd_redemption_targets_reg` '''.format(project_id,\
-      \ dataset_id) \n    df_target_train = client.query(sql_train).to_dataframe()\n\
-      \    # df_target_train = df_target_train.loc[\n    #     df_target_train['YEAR_MONTH']\
-      \ == '-'.join(score_date_dash.split('-')[:2])]  # score_date_dash = '2022-08-31'\n\
-      \    df_target_train = df_target_train.loc[df_target_train['YEAR_MONTH'] ==\
-      \ '2022-H1']  # score_date_dash = '2022-08-31'\n    df_target_train['ban'] =\
-      \ df_target_train['ban'].astype('int64')\n    df_target_train = df_target_train.groupby('ban').tail(1)\n\
+      \ * FROM `{}.{}.bq_telus_rwrd_redemption_targets` '''.format(project_id, dataset_id)\
+      \ \n    df_target_train = client.query(sql_train).to_dataframe()\n    # df_target_train\
+      \ = df_target_train.loc[\n    #     df_target_train['YEAR_MONTH'] == '-'.join(score_date_dash.split('-')[:2])]\
+      \  # score_date_dash = '2022-08-31'\n    df_target_train = df_target_train.loc[df_target_train['YEAR_MONTH']\
+      \ == '2022-H2']  # score_date_dash = '2022-08-31'\n    df_target_train['ban']\
+      \ = df_target_train['ban'].astype('int64')\n    df_target_train = df_target_train.groupby('ban').tail(1)\n\
       \    df_train = df_train.merge(df_target_train[['ban', 'target_ind']], on='ban',\
       \ how='left')\n    df_train.rename(columns={'target_ind': 'target'}, inplace=True)\n\
       \    # df_train.dropna(subset=['target'], inplace=True)\n    df_train.fillna(0,\
       \ inplace=True)\n    df_train['target'] = df_train['target'].astype(int)\n \
       \   print(df_train.shape)\n\n    #set up df_test\n    sql_test = ''' SELECT\
-      \ * FROM `{}.{}.bq_telus_rwrd_redemption_targets_reg` '''.format(project_id,\
-      \ dataset_id) \n    df_target_test = client.query(sql_test).to_dataframe()\n\
-      \    # df_target_test = df_target_test.loc[\n    #     df_target_test['YEAR_MONTH']\
-      \ == '-'.join(score_date_val_dash.split('-')[:2])]  # score_date_dash = '2022-09-30'\n\
-      \    df_target_test = df_target_test.loc[df_target_test['YEAR_MONTH'] == '2023-H1']\
-      \  # score_date_dash = '2022-08-31'\n    df_target_test['ban'] = df_target_test['ban'].astype('int64')\n\
-      \    df_target_test = df_target_test.groupby('ban').tail(1)\n    df_test = df_test.merge(df_target_test[['ban',\
-      \ 'target_ind']], on='ban', how='left')\n    df_test.rename(columns={'target_ind':\
-      \ 'target'}, inplace=True)\n    # df_test.dropna(subset=['target'], inplace=True)\n\
-      \    df_test.fillna(0, inplace=True) \n    df_test['target'] = df_test['target'].astype(int)\n\
-      \    print(df_test.shape)\n\n    #set up features (list)\n    cols_1 = df_train.columns.values\n\
+      \ * FROM `{}.{}.bq_telus_rwrd_redemption_targets` '''.format(project_id, dataset_id)\
+      \ \n    df_target_test = client.query(sql_test).to_dataframe()\n    # df_target_test\
+      \ = df_target_test.loc[\n    #     df_target_test['YEAR_MONTH'] == '-'.join(score_date_val_dash.split('-')[:2])]\
+      \  # score_date_dash = '2022-09-30'\n    df_target_test = df_target_test.loc[df_target_test['YEAR_MONTH']\
+      \ == '2023-H1']  # score_date_dash = '2022-08-31'\n    df_target_test['ban']\
+      \ = df_target_test['ban'].astype('int64')\n    df_target_test = df_target_test.groupby('ban').tail(1)\n\
+      \    df_test = df_test.merge(df_target_test[['ban', 'target_ind']], on='ban',\
+      \ how='left')\n    df_test.rename(columns={'target_ind': 'target'}, inplace=True)\n\
+      \    # df_test.dropna(subset=['target'], inplace=True)\n    df_test.fillna(0,\
+      \ inplace=True) \n    df_test['target'] = df_test['target'].astype(int)\n  \
+      \  print(df_test.shape)\n\n    #set up features (list)\n    cols_1 = df_train.columns.values\n\
       \    cols_2 = df_test.columns.values\n    cols = set(cols_1).intersection(set(cols_2))\n\
       \    features = [f for f in cols if f not in ['ban', 'target']]\n\n    #train\
       \ test split\n    df_train, df_val = train_test_split(df_train, shuffle=True,\
@@ -83,23 +86,39 @@ implementation:
       \    X_train = df_train[features]\n    y_train = np.squeeze(df_train['target'].values)\n\
       \n    ban_val = df_val['ban']\n    X_val = df_val[features]\n    y_val = np.squeeze(df_val['target'].values)\n\
       \n    ban_test = df_test['ban']\n    X_test = df_test[features]\n    y_test\
-      \ = np.squeeze(df_test['target'].values)\n\n    del df_train, df_val, df_test\n\
+      \ = np.squeeze(df_test['target'].values)\n\n    # del df_train, df_val, df_test\n\
       \    gc.collect()\n\n    # build model and fit in training data\n    import\
-      \ xgboost as xgb\n    from sklearn.metrics import roc_auc_score\n\n    xgb_model\
-      \ = xgb.XGBRegressor(\n        learning_rate=0.02,\n        n_estimators=1000,\n\
+      \ xgboost as xgb\n    from sklearn.metrics import roc_auc_score, accuracy_score,\
+      \ precision_score, recall_score, f1_score, log_loss \n    from sklearn.metrics\
+      \ import classification_report, confusion_matrix, roc_curve\n\n    xgb_model\
+      \ = xgb.XGBClassifier(\n        learning_rate=0.02,\n        n_estimators=100,\n\
       \        max_depth=8,\n        min_child_weight=1,\n        gamma=0,\n     \
       \   subsample=0.8,\n        colsample_bytree=0.8,\n        objective='binary:logistic',\n\
       \        nthread=4,\n        scale_pos_weight=1\n        # seed=27\n    )\n\n\
       \    xgb_model.fit(X_train, y_train)\n    print('xgb training done')\n\n   \
       \ from sklearn.preprocessing import normalize\n\n    #predictions on X_val\n\
       \    y_pred = xgb_model.predict_proba(X_val, ntree_limit=xgb_model.best_iteration)[:,\
-      \ 1]\n    y_pred_label = (y_pred > 0.5).astype(int)\n    auc = roc_auc_score(y_val,\
-      \ y_pred_label)\n    metrics.log_metric(\"AUC\", auc)\n\n    pred_prb = xgb_model.predict_proba(X_test,\
-      \ ntree_limit=xgb_model.best_iteration)[:, 1]\n    lg = get_lift(pred_prb, y_test,\
-      \ 10)\n\n    # save the model in GCS\n    from datetime import datetime\n  \
-      \  models_dict = {}\n    create_time = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\"\
-      )\n    models_dict['create_time'] = create_time\n    models_dict['model'] =\
-      \ xgb_model\n    models_dict['features'] = features\n    lg.to_csv('gs://{}/lift_on_scoring_data_{}.csv'.format(file_bucket,\
+      \ 1]\n    y_pred_label = (y_pred > 0.5).astype(int)\n\n    # calculate metrics\n\
+      \    auc = roc_auc_score(y_val, y_pred_label)\n    accuracy = accuracy_score(y_val,\
+      \ y_pred_label) \n    precision = precision_score(y_val, y_pred_label) \n  \
+      \  recall = recall_score(y_val, y_pred_label) \n    f1 = f1_score(y_val, y_pred_label)\
+      \ \n    log_loss = log_loss(y_val, y_pred_label) \n\n    # Log eval metrics\n\
+      \    metrics.log_metric(\"Model\", \"XGBClassifier\")\n    metrics.log_metric(\"\
+      Size\", X_test.shape[0])\n    metrics.log_metric(\"Accuracy\", (accuracy * 100.0))\n\
+      \    metrics.log_metric(\"AUC\", auc)\n    metrics.log_metric(\"Precision\"\
+      , precision)\n    metrics.log_metric(\"Recall\", recall)\n    metrics.log_metric(\"\
+      F1_Score\", f1)\n    metrics.log_metric(\"log loss\", log_loss)\n\n#     # Compute\
+      \ fpr, tpr, thresholds for the ROC Curve\n#     fpr, tpr, thresholds = roc_curve(\n\
+      #         y_true=y_val, y_score=y_pred, pos_label=True\n#     )\n\n#     # Log\
+      \ classification metrics\n#     metricsc.log_roc_curve(fpr.tolist(), tpr.tolist(),\
+      \ thresholds.tolist())\n#     metricsc.log_confusion_matrix(['no redemption',\
+      \ 'redemption'], confusion_matrix(y_val, y_pred_label).tolist())\n\n    pred_prb\
+      \ = xgb_model.predict_proba(X_test, ntree_limit=xgb_model.best_iteration)[:,\
+      \ 1]\n    lg = get_lift(pred_prb, y_test, 10)\n\n    # save the model in GCS\n\
+      \    from datetime import datetime\n    models_dict = {}\n    create_time =\
+      \ datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\n    models_dict['create_time']\
+      \ = create_time\n    models_dict['model'] = xgb_model\n    models_dict['features']\
+      \ = features\n    lg.to_csv('gs://{}/lift_on_scoring_data_{}.csv'.format(file_bucket,\
       \ create_time, index=False))\n\n    with open('model_dict.pkl', 'wb') as handle:\n\
       \        pickle.dump(models_dict, handle)\n    handle.close()\n\n    storage_client\
       \ = storage.Client()\n    bucket = storage_client.get_bucket(file_bucket)\n\n\

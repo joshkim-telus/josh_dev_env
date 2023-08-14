@@ -1,6 +1,7 @@
 from kfp.v2.dsl import (Artifact, Output, Input, HTML, component)
 from kfp.v2.dsl import (Artifact, Dataset, Input, InputPath, Model, Output, OutputPath, ClassificationMetrics,
                         Metrics, component)
+from typing import NamedTuple
 
 @component(
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
@@ -15,7 +16,17 @@ def train_and_save_model(
             dataset_id: str,
             metrics: Output[Metrics],
             metricsc: Output[ClassificationMetrics]
-):
+    ): 
+    # ) -> NamedTuple(
+    #     "Outputs",
+    #     [
+    #         ("accuracy", float),  # Return parameters
+    #         ("precision", float),  # Return parameters
+    #         ("recall", float),  # Return parameters
+    #         ("f1_score", float),
+    #         ("roc_auc", float)
+    #     ],
+    # ):
 
     import gc
     import time
@@ -55,7 +66,7 @@ def train_and_save_model(
     df_target_train = client.query(sql_train).to_dataframe()
     # df_target_train = df_target_train.loc[
     #     df_target_train['YEAR_MONTH'] == '-'.join(score_date_dash.split('-')[:2])]  # score_date_dash = '2022-08-31'
-    df_target_train = df_target_train.loc[df_target_train['YEAR_MONTH'] == '2022-0708']  # score_date_dash = '2022-08-31'
+    df_target_train = df_target_train.loc[df_target_train['YEAR_MONTH'] == '2022-H2']  # score_date_dash = '2022-08-31'
     df_target_train['ban'] = df_target_train['ban'].astype('int64')
     df_target_train = df_target_train.groupby('ban').tail(1)
     df_train = df_train.merge(df_target_train[['ban', 'target_ind']], on='ban', how='left')
@@ -103,16 +114,17 @@ def train_and_save_model(
     X_test = df_test[features]
     y_test = np.squeeze(df_test['target'].values)
 
-    del df_train, df_val, df_test
+    # del df_train, df_val, df_test
     gc.collect()
 
     # build model and fit in training data
     import xgboost as xgb
-    from sklearn.metrics import roc_auc_score
+    from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score, f1_score, log_loss 
+    from sklearn.metrics import classification_report, confusion_matrix, roc_curve
 
     xgb_model = xgb.XGBClassifier(
         learning_rate=0.02,
-        n_estimators=1000,
+        n_estimators=100,
         max_depth=8,
         min_child_weight=1,
         gamma=0,
@@ -132,9 +144,34 @@ def train_and_save_model(
     #predictions on X_val
     y_pred = xgb_model.predict_proba(X_val, ntree_limit=xgb_model.best_iteration)[:, 1]
     y_pred_label = (y_pred > 0.5).astype(int)
+    
+    # calculate metrics
     auc = roc_auc_score(y_val, y_pred_label)
+    accuracy = accuracy_score(y_val, y_pred_label) 
+    precision = precision_score(y_val, y_pred_label) 
+    recall = recall_score(y_val, y_pred_label) 
+    f1 = f1_score(y_val, y_pred_label) 
+    log_loss = log_loss(y_val, y_pred_label) 
+    
+    # Log eval metrics
+    metrics.log_metric("Model", "XGBClassifier")
+    metrics.log_metric("Size", X_test.shape[0])
+    metrics.log_metric("Accuracy", (accuracy * 100.0))
     metrics.log_metric("AUC", auc)
+    metrics.log_metric("Precision", precision)
+    metrics.log_metric("Recall", recall)
+    metrics.log_metric("F1_Score", f1)
+    metrics.log_metric("log loss", log_loss)
 
+#     # Compute fpr, tpr, thresholds for the ROC Curve
+#     fpr, tpr, thresholds = roc_curve(
+#         y_true=y_val, y_score=y_pred, pos_label=True
+#     )
+    
+#     # Log classification metrics
+#     metricsc.log_roc_curve(fpr.tolist(), tpr.tolist(), thresholds.tolist())
+#     metricsc.log_confusion_matrix(['no redemption', 'redemption'], confusion_matrix(y_val, y_pred_label).tolist())
+    
     pred_prb = xgb_model.predict_proba(X_test, ntree_limit=xgb_model.best_iteration)[:, 1]
     lg = get_lift(pred_prb, y_test, 10)
 
@@ -190,3 +227,5 @@ def train_and_save_model(
     print("....lift_to_csv done")
 
     time.sleep(120)
+
+    # return (accuracy, precision, recall, f1, auc)

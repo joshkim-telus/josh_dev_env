@@ -43,7 +43,7 @@ def bq_create_dataset(score_date: str,
             DECLARE end_date DATE DEFAULT "{v_end_date}";
         
             -- Change dataset / sp name to the version in the bi_layer
-            CALL {dataset_id}.bq_sp_telus_rewards_pipeline_dataset(score_date, promo_expiry_start, promo_expiry_end, start_date, end_date);
+            CALL {dataset_id}.bq_sp_ctr_pipeline_dataset(score_date, promo_expiry_start, promo_expiry_end, start_date, end_date);
 
             SELECT
                 *
@@ -64,7 +64,7 @@ def bq_create_dataset(score_date: str,
         f'''
            SELECT
                 *
-            FROM {dataset_id}.bq_telus_rewards_pipeline_dataset
+            FROM {dataset_id}.bq_ctr_pipeline_dataset
 
         '''
     

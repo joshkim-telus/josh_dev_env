@@ -1,0 +1,40 @@
+name: Load ml model to nb
+inputs:
+- {name: project_id, type: String}
+- {name: region, type: String}
+- {name: model_name, type: String}
+outputs:
+- {name: model, type: Artifact}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef load_ml_model_to_nb(\n                project_id: str, \n\
+      \                region: str, \n                model_name: str, \n        \
+      \        model: Output[Artifact]):\n\n    from google.cloud import aiplatform\n\
+      \n    model_uid = aiplatform.Model.list(\n                                 \
+      \   filter=f'display_name={model_name}', \n                                \
+      \    order_by=\"update_time\",\n                                    location=region)[-1].resource_name\n\
+      \    model.uri = model_uid\n    model.metadata['resourceName'] = model_uid\n\
+      \n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - load_ml_model_to_nb

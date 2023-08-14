@@ -1,4 +1,6 @@
 from kfp.v2.dsl import (Artifact, Output, Input, HTML, component)
+from kfp.v2.dsl import (Artifact, Dataset, Input, InputPath, Model, Output, OutputPath, ClassificationMetrics,
+                        Metrics, component)
 
 @component(
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
@@ -11,8 +13,8 @@ def train_and_save_model(
             score_date_val_dash: str,
             project_id: str,
             dataset_id: str,
-            # metrics: Output[Metrics],
-            # metricsc: Output[ClassificationMetrics]
+            metrics: Output[Metrics],
+            metricsc: Output[ClassificationMetrics]
 ):
 
     import gc

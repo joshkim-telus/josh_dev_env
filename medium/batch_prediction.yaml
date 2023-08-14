@@ -1,0 +1,75 @@
+name: Batch prediction
+inputs:
+- {name: project_id, type: String}
+- {name: dataset_id, type: String}
+- {name: file_bucket, type: String}
+- {name: val_index, type: JsonArray}
+- {name: save_path, type: String}
+- {name: model, type: Model}
+outputs:
+- {name: metrics, type: Metrics}
+- {name: metricsc, type: ClassificationMetrics}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef batch_prediction(\n        project_id: str,\n        dataset_id:\
+      \ str,\n        file_bucket: str,\n        val_index: list, \n        save_path:\
+      \ str, \n        model: Input[Model],\n        metrics: Output[Metrics],\n \
+      \       metricsc: Output[ClassificationMetrics],\n):\n    import time\n    import\
+      \ pandas as pd\n    import numpy as np\n    import pickle\n    from datetime\
+      \ import date\n    from dateutil.relativedelta import relativedelta\n    from\
+      \ google.cloud import bigquery\n    from google.cloud import storage\n    from\
+      \ sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score,\
+      \ f1_score, roc_curve, confusion_matrix\n\n    # Read csv that was saved in\
+      \ 'import_data' component\n    df = pd.read_csv(save_path)  \n\n    # X and\
+      \ y\n    X = df.drop(columns='target')\n    y = df['target']\n\n    X_val =\
+      \ X.loc[val_index] \n    y_val = np.squeeze(y.iloc[val_index].values) \n\n \
+      \   time.sleep(10)\n\n    print(str(model.uri))\n    print(str(model.location))\n\
+      \n    model_path = 'breast_cancer_models/'\n\n    storage_client = storage.Client()\n\
+      \    bucket = storage_client.get_bucket(file_bucket)\n    blobs = storage_client.list_blobs(file_bucket,\
+      \ prefix='{}breast_cancer_models'.format(model_path))\n\n    model_lists = []\n\
+      \    for blob in blobs:\n        model_lists.append(blob.name)\n\n    blob =\
+      \ bucket.blob(model_lists[-1])\n    blob_in = blob.download_as_string()\n  \
+      \  model_dict = pickle.loads(blob_in)\n    model_xgb = model_dict['model']\n\
+      \    features = model_dict['col_list']\n    print('...... model loaded')\n \
+      \   time.sleep(10)\n\n    # get full score to cave into bucket\n    y_pred =\
+      \ model_xgb.predict(X_val)\n    y_pred_proba = model_xgb.predict_proba(X_val)[:,\
+      \ 1] \n\n    result = pd.DataFrame(columns=['index', 'y_pred_proba', 'y_pred',\
+      \ 'y_val'])\n    result['index'] = pd.Series(X_val.index.to_list())\n    # result['index']\
+      \ = result['index'].astype('int64')\n    result['y_pred_proba'] = y_pred_proba\n\
+      \    # result['y_pred_proba'] = result['y_pred_proba'].fillna(0.0).astype('float64')\n\
+      \    result['y_pred'] = y_pred\n    result['y_test'] = y_val\n\n    result.to_csv('gs://{}/breast_cancer/model_validation.csv'.format(file_bucket),\
+      \ index=True)\n\n    # Model accuracy \n    accuracy = accuracy_score(y_val,\
+      \ y_pred)\n    print(\"Accuracy:\", accuracy)\n\n    # Precision & Recall \n\
+      \    precision = precision_score(y_val, y_pred)\n    recall = recall_score(y_val,\
+      \ y_pred)\n\n    # F1 Score \n    f1_score = f1_score(y_val, y_pred)\n    print(\"\
+      F1 Score:\", f1_score)\n\n    # ROC AUC Score\n    roc_auc = roc_auc_score(y_val,\
+      \ y_pred_proba)\n    print(\"ROC AUC Score:\", roc_auc)\n\n    # Log eval metrics\n\
+      \    metrics.log_metric(\"Model\", \"XGBClassifier\")\n    metrics.log_metric(\"\
+      Size\", X_val.shape[0])\n    metrics.log_metric(\"Accuracy\", accuracy)\n  \
+      \  metrics.log_metric(\"AUC\", roc_auc)\n    metrics.log_metric(\"Precision\"\
+      , precision) \n    metrics.log_metric(\"Recall\", recall) \n    metrics.log_metric(\"\
+      F1_Score\", f1_score)\n\n    time.sleep(60)\n    print(f\"Batch prediction for\
+      \ {X_val.shape[0]} samples completed\")\n\n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - batch_prediction

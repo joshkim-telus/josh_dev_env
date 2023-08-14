@@ -15,7 +15,141 @@
         },
         "outputDefinitions": {
           "parameters": {
-            "Output": {
+            "col_list": {
+              "type": "STRING"
+            },
+            "save_path": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-load-model": {
+        "executorLabel": "exec-load-model",
+        "inputDefinitions": {
+          "parameters": {
+            "model_name": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "region": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "model": {
+              "artifactType": {
+                "schemaTitle": "system.Artifact",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        }
+      },
+      "comp-model-batch-predict": {
+        "executorLabel": "exec-model-batch-predict",
+        "inputDefinitions": {
+          "artifacts": {
+            "model": {
+              "artifactType": {
+                "schemaTitle": "google.VertexModel",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          },
+          "parameters": {
+            "accelerator_count": {
+              "type": "INT"
+            },
+            "accelerator_type": {
+              "type": "STRING"
+            },
+            "bigquery_destination_output_uri": {
+              "type": "STRING"
+            },
+            "bigquery_source_input_uri": {
+              "type": "STRING"
+            },
+            "encryption_spec_key_name": {
+              "type": "STRING"
+            },
+            "explanation_metadata": {
+              "type": "STRING"
+            },
+            "explanation_parameters": {
+              "type": "STRING"
+            },
+            "gcs_destination_output_uri_prefix": {
+              "type": "STRING"
+            },
+            "gcs_source_uris": {
+              "type": "STRING"
+            },
+            "generate_explanation": {
+              "type": "STRING"
+            },
+            "instances_format": {
+              "type": "STRING"
+            },
+            "job_display_name": {
+              "type": "STRING"
+            },
+            "labels": {
+              "type": "STRING"
+            },
+            "location": {
+              "type": "STRING"
+            },
+            "machine_type": {
+              "type": "STRING"
+            },
+            "manual_batch_tuning_parameters_batch_size": {
+              "type": "INT"
+            },
+            "max_replica_count": {
+              "type": "INT"
+            },
+            "model_parameters": {
+              "type": "STRING"
+            },
+            "predictions_format": {
+              "type": "STRING"
+            },
+            "project": {
+              "type": "STRING"
+            },
+            "starting_replica_count": {
+              "type": "INT"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "batchpredictionjob": {
+              "artifactType": {
+                "schemaTitle": "google.VertexBatchPredictionJob",
+                "schemaVersion": "0.0.1"
+              }
+            },
+            "bigquery_output_table": {
+              "artifactType": {
+                "schemaTitle": "google.BQTable",
+                "schemaVersion": "0.0.1"
+              }
+            },
+            "gcs_output_directory": {
+              "artifactType": {
+                "schemaTitle": "system.Artifact",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          },
+          "parameters": {
+            "gcp_resources": {
               "type": "STRING"
             }
           }
@@ -47,7 +181,7 @@
         },
         "outputDefinitions": {
           "parameters": {
-            "pass_fail": {
+            "result": {
               "type": "STRING"
             }
           }
@@ -57,6 +191,9 @@
         "executorLabel": "exec-model-training",
         "inputDefinitions": {
           "parameters": {
+            "col_list": {
+              "type": "STRING"
+            },
             "dataset_id": {
               "type": "STRING"
             },
@@ -81,6 +218,12 @@
                 "schemaTitle": "system.ClassificationMetrics",
                 "schemaVersion": "0.0.1"
               }
+            },
+            "model": {
+              "artifactType": {
+                "schemaTitle": "system.Model",
+                "schemaVersion": "0.0.1"
+              }
             }
           },
           "parameters": {
@@ -93,8 +236,54 @@
             "f1_score": {
               "type": "DOUBLE"
             },
+            "model_location": {
+              "type": "STRING"
+            },
             "roc_auc": {
               "type": "DOUBLE"
+            }
+          }
+        }
+      },
+      "comp-upload-model-to-mr": {
+        "executorLabel": "exec-upload-model-to-mr",
+        "inputDefinitions": {
+          "artifacts": {
+            "model": {
+              "artifactType": {
+                "schemaTitle": "system.Model",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          },
+          "parameters": {
+            "col_list": {
+              "type": "STRING"
+            },
+            "model_name": {
+              "type": "STRING"
+            },
+            "prediction_image": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "region": {
+              "type": "STRING"
+            },
+            "result": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "vertex_model": {
+              "artifactType": {
+                "schemaTitle": "system.Model",
+                "schemaVersion": "0.0.1"
+              }
             }
           }
         }
@@ -117,9 +306,54 @@
               "sh",
               "-ec",
               "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
-              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef import_data(\n            dataset_id: str,\n            file_bucket: str, \n    ) -> str: \n    # Import Libraries\n    import pandas as pd\n    import numpy as np\n    from sklearn.datasets import load_breast_cancer\n\n    # import the entire dataset into 'data'\n    data = load_breast_cancer() \n\n    # save the data in df, including the targets\n    df = pd.DataFrame(data = data.data, columns = data.feature_names) \n    df['target'] = pd.Series(data.target) \n\n    # save df in cloud storage \n    save_path = f'gs://{file_bucket}/{dataset_id}/{dataset_id}_data.csv'\n    df.to_csv(save_path, index=True) \n\n    print(f'{dataset_id}_data.csv saved in {save_path}')\n\n    return save_path\n\n"
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef import_data(\n            dataset_id: str,\n            file_bucket: str, \n    ) -> NamedTuple(\n        \"Outputs\", \n        [\n         (\"save_path\", str), \n         (\"col_list\", list)\n        ]\n    ):\n    # Import Libraries\n    import pandas as pd\n    import numpy as np\n    from sklearn.datasets import load_breast_cancer\n\n    # import the entire dataset into 'data'\n    data = load_breast_cancer() \n\n    # save the data in df, including the targets\n    df = pd.DataFrame(data = data.data, columns = data.feature_names) \n    df['target'] = pd.Series(data.target) \n\n    # save df in cloud storage \n    save_path = f'gs://{file_bucket}/{dataset_id}/{dataset_id}_data.csv'\n    df.to_csv(save_path, index=True) \n\n    print(f'{dataset_id}_data.csv saved in {save_path}')\n\n    col_list = list([col for col in df.columns if col != \"target\"])\n\n    return (save_path, col_list)\n\n"
             ],
             "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest"
+          }
+        },
+        "exec-load-model": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "load_model"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef load_model(\n                project_id: str, \n                region: str, \n                model_name: str, \n                model: Output[Artifact]):\n\n    from google.cloud import aiplatform\n\n    model_uid = aiplatform.Model.list(\n                                    filter=f'display_name={model_name}', \n                                    order_by=\"update_time\",\n                                    location=region)[-1].resource_name\n    model.uri = model_uid\n    model.metadata['resourceName'] = model_uid\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest"
+          }
+        },
+        "exec-model-batch-predict": {
+          "container": {
+            "args": [
+              "--type",
+              "BatchPredictionJob",
+              "--payload",
+              "{\"display_name\": \"{{$.inputs.parameters['job_display_name']}}\", \"model\": \"{{$.inputs.artifacts['model'].metadata['resourceName']}}\", \"input_config\": {\"instances_format\": \"{{$.inputs.parameters['instances_format']}}\", \"gcs_source\": {\"uris\":{{$.inputs.parameters['gcs_source_uris']}}}, \"bigquery_source\": {\"input_uri\": \"{{$.inputs.parameters['bigquery_source_input_uri']}}\"}}, \"model_parameters\": {{$.inputs.parameters['model_parameters']}}, \"output_config\": {\"predictions_format\": \"{{$.inputs.parameters['predictions_format']}}\", \"gcs_destination\": {\"output_uri_prefix\": \"{{$.inputs.parameters['gcs_destination_output_uri_prefix']}}\"}, \"bigquery_destination\": {\"output_uri\": \"{{$.inputs.parameters['bigquery_destination_output_uri']}}\"}}, \"dedicated_resources\": {\"machine_spec\": {\"machine_type\": \"{{$.inputs.parameters['machine_type']}}\", \"accelerator_type\": \"{{$.inputs.parameters['accelerator_type']}}\", \"accelerator_count\": {{$.inputs.parameters['accelerator_count']}}}, \"starting_replica_count\": {{$.inputs.parameters['starting_replica_count']}}, \"max_replica_count\": {{$.inputs.parameters['max_replica_count']}}}, \"manual_batch_tuning_parameters\": {\"batch_size\": {{$.inputs.parameters['manual_batch_tuning_parameters_batch_size']}}}, \"generate_explanation\": {{$.inputs.parameters['generate_explanation']}}, \"explanation_spec\": {\"parameters\": {{$.inputs.parameters['explanation_parameters']}}, \"metadata\": {{$.inputs.parameters['explanation_metadata']}}}, \"labels\": {{$.inputs.parameters['labels']}}, \"encryption_spec\": {\"kms_key_name\":\"{{$.inputs.parameters['encryption_spec_key_name']}}\"}}",
+              "--project",
+              "{{$.inputs.parameters['project']}}",
+              "--location",
+              "{{$.inputs.parameters['location']}}",
+              "--gcp_resources",
+              "{{$.outputs.parameters['gcp_resources'].output_file}}",
+              "--executor_input",
+              "{{$}}"
+            ],
+            "command": [
+              "python3",
+              "-u",
+              "-m",
+              "google_cloud_pipeline_components.container.v1.batch_prediction_job.launcher"
+            ],
+            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.26"
           }
         },
         "exec-model-evaluation": {
@@ -137,7 +371,7 @@
               "sh",
               "-ec",
               "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
-              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef model_evaluation(\n            accuracy: float, \n            f1_score: float, \n            roc_auc: float, \n            accuracy_threshold: float, \n            f1_score_threshold: float, \n            roc_auc_threshold: float\n            ) -> NamedTuple(\n                \"Output\", [(\"pass_fail\", str)]\n            ):\n\n    # Set checker to True\n    checker = True\n\n    # Set checker to False if any of the eval metrics is below threshold\n    if accuracy < accuracy_threshold: \n        checker = False \n    if f1_score < f1_score_threshold: \n        checker = False \n    if roc_auc < roc_auc_threshold: \n        checker = False \n\n    # if checker == True, return \"Pass\", otherwise return \"Fail\"\n    if checker == True: \n        return (\"Pass\",) \n    else: \n        return (\"Fail\",)\n\n"
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef model_evaluation(\n            accuracy: float, \n            f1_score: float, \n            roc_auc: float, \n            accuracy_threshold: float, \n            f1_score_threshold: float, \n            roc_auc_threshold: float\n            ) -> NamedTuple(\n                \"Output\", [(\"result\", str)]\n            ):\n\n    # Set checker to True\n    checker = True\n\n    # Set checker to False if any of the eval metrics is below threshold\n    if accuracy < accuracy_threshold: \n        checker = False \n    if f1_score < f1_score_threshold: \n        checker = False \n    if roc_auc < roc_auc_threshold: \n        checker = False \n\n    # if checker == True, return \"Pass\", otherwise return \"Fail\"\n    if checker == True: \n        return (\"Pass\",) \n    else: \n        return (\"Fail\",)\n\n"
             ],
             "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest"
           }
@@ -157,7 +391,27 @@
               "sh",
               "-ec",
               "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
-              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef model_training(\n            dataset_id: str,\n            file_bucket: str, \n            save_path: str,\n            metrics: Output[Metrics],\n            metricsc: Output[ClassificationMetrics]\n    ) -> NamedTuple(\n        \"Outputs\",\n        [\n            (\"accuracy\", float),  # Return parameters\n            (\"f1_score\", float),\n            (\"roc_auc\", float), \n            (\"X_y_val_index\", list), \n        ],\n    ):\n    # Import Libraries\n    import pandas as pd\n    import numpy as np\n    import matplotlib.pyplot as plt\n    import seaborn as sns\n    from sklearn.datasets import load_breast_cancer\n    from sklearn.model_selection import train_test_split\n    import xgboost as xgb\n    from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score, f1_score, roc_curve, confusion_matrix\n\n    # Read csv that was saved in 'import_data' component\n    df = pd.read_csv(save_path)  \n\n    # X and y\n    y = np.squeeze(df['target'].values)\n    X = df.drop(columns='target')\n\n    # Create the training and test sets\n    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=123)\n\n    # Reserve some samples for final validation\n    X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.2, random_state=123)\n\n    # Instantiate the XGB Classifier: xgb_model\n    xgb_model = xgb.XGBClassifier(\n        learning_rate=0.01,\n        n_estimators=100,\n        max_depth=8,\n        min_child_weight=1,\n        max_delta_step=1, \n        colsample_bytree=0.9,\n        subsample=0.9,\n        objective='binary:logistic',\n        nthread=4,\n        scale_pos_weight=1, \n        eval_metric='auc', \n        base_score=0.5\n    )\n\n    # Fit the classifier to the training set\n    xgb_model.fit(X_train, y_train)\n\n    # Predict based on X_test\n    y_pred = xgb_model.predict(X_test)\n    y_pred_proba = xgb_model.predict_proba(X_test)[:, 1]\n\n    # Model accuracy \n    accuracy = accuracy_score(y_test, y_pred)\n    print(\"Accuracy:\", accuracy)\n\n    # Precision & Recall \n    precision = precision_score(y_test, y_pred)\n    recall = recall_score(y_test, y_pred)\n\n    # F1 Score \n    f1_score = f1_score(y_test, y_pred)\n    print(\"F1 Score:\", f1_score)\n\n    # ROC AUC Score\n    roc_auc = roc_auc_score(y_test, y_pred_proba)\n    print(\"ROC AUC Score:\", roc_auc)\n\n    # Log eval metrics\n    metrics.log_metric(\"Model\", \"XGBClassifier\")\n    metrics.log_metric(\"Size\", df.shape[0])\n    metrics.log_metric(\"Accuracy\",(accuracy * 100.0))\n    metrics.log_metric(\"AUC\", roc_auc)\n    metrics.log_metric(\"F1_Score\", f1_score)\n\n    # Compute fpr, tpr, thresholds for the ROC Curve\n    fpr, tpr, thresholds = roc_curve(\n        y_true=y_test, y_score=y_pred_proba, pos_label=True\n    )\n\n    # Log classification metrics\n    metricsc.log_roc_curve(fpr.tolist(), tpr.tolist(), thresholds.tolist())\n    metricsc.log_confusion_matrix(['Malignant', 'Benign'], confusion_matrix(y_test, y_pred).tolist())\n\n    return (accuracy, f1_score, roc_auc, list(X_val.index))\n\n"
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef model_training(\n            dataset_id: str,\n            file_bucket: str, \n            save_path: str,\n            model: Output[Model],\n            metrics: Output[Metrics],\n            metricsc: Output[ClassificationMetrics], \n            col_list: list \n    ) -> NamedTuple(\n        \"Outputs\",\n        [\n            (\"accuracy\", float),  # Return parameters\n            (\"f1_score\", float),\n            (\"roc_auc\", float), \n            (\"X_y_val_index\", list), \n            (\"model_location\", str)\n        ],\n    ):\n    # Import Libraries\n    import gc\n    import time\n    from datetime import datetime\n    import pandas as pd\n    import numpy as np\n    import matplotlib.pyplot as plt\n    import seaborn as sns\n    import xgboost as xgb\n    import pickle\n    import logging\n    from google.cloud import storage\n    from google.cloud import bigquery\n    from sklearn.datasets import load_breast_cancer\n    from sklearn.model_selection import train_test_split\n    from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score, f1_score, roc_curve, confusion_matrix\n\n    # Read csv that was saved in 'import_data' component\n    df = pd.read_csv(save_path)  \n\n    # X and y\n    y = np.squeeze(df['target'].values)\n    X = df.drop(columns='target')\n\n    # Create the training and test sets\n    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=123)\n\n    # Reserve some samples for final validation\n    X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.2, random_state=123)\n\n    X_val = X_val.loc[:, col_list]\n\n    # export X_val and y_val to GCS for scoring\n    X_val.to_csv(f'gs://{file_bucket}/{dataset_id}/{dataset_id}_X_val.csv', index=False)\n\n    y_val_df = pd.DataFrame(y_val, columns = ['target']) \n    y_val_df.to_csv(f'gs://{file_bucket}/{dataset_id}/{dataset_id}_y_val.csv', index=False)\n\n    # Instantiate the XGB Classifier: xgb_model\n    xgb_model = xgb.XGBClassifier(\n        learning_rate=0.01,\n        n_estimators=100,\n        max_depth=8,\n        min_child_weight=1,\n        max_delta_step=1, \n        colsample_bytree=0.9,\n        subsample=0.9,\n        objective='binary:logistic',\n        nthread=4,\n        scale_pos_weight=1, \n        eval_metric='auc', \n        base_score=0.5\n    )\n\n    # Fit the classifier to the training set\n    xgb_model.fit(X_train, y_train)\n\n    # Predict based on X_test\n    y_pred = xgb_model.predict(X_test)\n    y_pred_proba = xgb_model.predict_proba(X_test)[:, 1]\n\n    # Model accuracy \n    accuracy = accuracy_score(y_test, y_pred)\n    print(\"Accuracy:\", accuracy)\n\n    # Precision & Recall \n    precision = precision_score(y_test, y_pred)\n    recall = recall_score(y_test, y_pred)\n\n    # F1 Score \n    f1_score = f1_score(y_test, y_pred)\n    print(\"F1 Score:\", f1_score)\n\n    # ROC AUC Score\n    roc_auc = roc_auc_score(y_test, y_pred_proba)\n    print(\"ROC AUC Score:\", roc_auc)\n\n    # Log eval metrics\n    metrics.log_metric(\"Model\", \"XGBClassifier\")\n    metrics.log_metric(\"Size\", df.shape[0])\n    metrics.log_metric(\"Accuracy\",accuracy)\n    metrics.log_metric(\"AUC\", roc_auc)\n    metrics.log_metric(\"Precision\", precision) \n    metrics.log_metric(\"Recall\", recall) \n    metrics.log_metric(\"F1_Score\", f1_score)\n\n    # Compute fpr, tpr, thresholds for the ROC Curve\n    fpr, tpr, thresholds = roc_curve(\n        y_true=y_test, y_score=y_pred_proba, pos_label=True\n    )\n\n    # Log classification metrics\n    metricsc.log_roc_curve(fpr.tolist(), tpr.tolist(), thresholds.tolist())\n    metricsc.log_confusion_matrix(['Malignant', 'Benign'], confusion_matrix(y_test, y_pred).tolist())\n\n    # added to model_training component: save model artifacts in GCS bucket\n    model_artifacts = {}\n    create_time = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\n    # model_artifacts['create_time'] = create_time\n    model_artifacts['model'] = xgb_model\n    # model_artifacts['col_list'] = col_list\n\n    # create and write model_artifacts.pkl\n    with open('model_artifacts.pkl', 'wb') as pkl_file:\n        pickle.dump(model_artifacts, pkl_file)\n\n        # Use the 'pickle.dump()' method to serialize and store the 'model_artifacts' data\n        pickle.dump(model_artifacts, pkl_file)\n\n    # create a gcs bucket instance\n    storage_client = storage.Client()\n    bucket = storage_client.get_bucket(file_bucket)\n\n    # define the folder path where the models will be saved. create one if not found. \n    model_path = 'breast_cancer_models/'\n    blob = bucket.blob(model_path)\n    if not blob.exists(storage_client):\n        blob.upload_from_string('')\n\n    # set model name and upload 'model_artifacts.pkl' to the folder in gcs bucket \n    model_name = 'breast_cancer_models_{}'.format(create_time)\n    model_location = f'{model_path}{model_name}'\n    blob = bucket.blob(model_location)\n    blob.upload_from_filename('model_artifacts.pkl')\n\n    print(f\"Model artifacts loaded to GCS Bucket: {model_location}\")\n\n#     model.metadata['accuracy'] = accuracy\n#     model.metadata['precision'] = precision\n#     model.metadata['recall'] = recall\n#     model.metadata['f1_score'] = f1_score\n#     model.metadata['auc'] = roc_auc\n\n    model.uri = f'gs://{file_bucket}/{model_location}'\n\n#     # Log additional model details \n#     with open(model.path, 'w') as output_file:\n#         output_file.write(f'You can enter additional model details here')\n#     output_file.close()\n\n    time.sleep(120)\n\n    return (accuracy, f1_score, roc_auc, list(X_val.index), model_location)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest"
+          }
+        },
+        "exec-upload-model-to-mr": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "upload_model_to_mr"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef upload_model_to_mr(\n    project_id: str,\n    model: Input[Model],\n    vertex_model: Output[Model],\n    region: str,\n    model_name: str,\n    prediction_image: str,\n    col_list: list, \n    result: str\n):\n    \"\"\"\n    Upload model to Vertex Model Registry.\n    Args:\n        project_id (str): project id for where this pipeline is being run\n        model (Input[Model]): model passed in from training component. Must have path specified in model.uri\n        region (str): region for where the query will be run\n        model_name (str): name of model to be stored\n        prediction_image (str): prediction image uri\n        col_list (str): string of list of columns in serving data\n    Returns:\n        vertex_model (Output[Model]): Model saved in Vertex AI\n    \"\"\"\n\n    from google.cloud import aiplatform\n    import os\n    from datetime import datetime\n\n    aiplatform.init(project=project_id, location=region)\n\n    ## check if prediction image is custom or not\n    if prediction_image.startswith('northamerica-northeast1-docker'):\n        # custom: must set ports\n        health_route = \"/ping\"\n        predict_route = \"/predict\"\n        serving_container_ports = [7080]\n    else:\n        # Google pre-built\n        health_route = None\n        predict_route = None\n        serving_container_ports = None\n\n    if result == \"Pass\": \n\n        ## check for existing models\n        # if model exists, update the version\n        try:\n            model_uid = aiplatform.Model.list(\n                filter=f'display_name={model_name}', \n                order_by=\"update_time\",\n                location=region)[-1].resource_name\n\n            uploaded_model = aiplatform.Model.upload(\n                display_name = model_name, \n                artifact_uri = os.path.dirname(model.uri),\n                serving_container_image_uri = prediction_image,\n                serving_container_predict_route=predict_route,\n                serving_container_health_route=health_route,\n                serving_container_ports=serving_container_ports,\n                serving_container_environment_variables =  {\"COL_LIST\":str(col_list)}, # remove for posting\n                parent_model = model_uid,\n                is_default_version = True\n            )\n\n        # if model does not already exist, upload a new model\n        except:\n            uploaded_model = aiplatform.Model.upload(\n                display_name = model_name,\n                artifact_uri = os.path.dirname(model.uri),\n                serving_container_image_uri=prediction_image,\n                serving_container_predict_route=predict_route,\n                serving_container_health_route=health_route,\n                serving_container_ports=serving_container_ports,\n                serving_container_environment_variables =  {\"COL_LIST\":str(col_list)}, # remove for posting\n            )\n\n        vertex_model.uri = uploaded_model.resource_name\n        # vertex_model.version_create_time = datetime.now()\n        # vertex_model.version_description = \"breast cancer model\" \n\n    else: \n\n        print(\"Training performance is not satisfactory. Upload to the Model Registry revoked.\")\n\n"
             ],
             "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest"
           }
@@ -209,6 +463,218 @@
             },
             "taskInfo": {
               "name": "import-data"
+            }
+          },
+          "load-model": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-load-model"
+            },
+            "dependentTasks": [
+              "upload-model-to-mr"
+            ],
+            "inputs": {
+              "parameters": {
+                "model_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "breast_cancer"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-josh-pr-d1cc3a"
+                    }
+                  }
+                },
+                "region": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "northamerica-northeast1"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "load-model"
+            }
+          },
+          "model-batch-predict": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-model-batch-predict"
+            },
+            "dependentTasks": [
+              "load-model"
+            ],
+            "inputs": {
+              "artifacts": {
+                "model": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "model",
+                    "producerTask": "load-model"
+                  }
+                }
+              },
+              "parameters": {
+                "accelerator_count": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "0"
+                    }
+                  }
+                },
+                "accelerator_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": ""
+                    }
+                  }
+                },
+                "bigquery_destination_output_uri": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bq://divg-josh-pr-d1cc3a.breast_cancer"
+                    }
+                  }
+                },
+                "bigquery_source_input_uri": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bq://divg-josh-pr-d1cc3a.breast_cancer.breast_cancer_X_val"
+                    }
+                  }
+                },
+                "encryption_spec_key_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": ""
+                    }
+                  }
+                },
+                "explanation_metadata": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "{}"
+                    }
+                  }
+                },
+                "explanation_parameters": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "{}"
+                    }
+                  }
+                },
+                "gcs_destination_output_uri_prefix": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": ""
+                    }
+                  }
+                },
+                "gcs_source_uris": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "[]"
+                    }
+                  }
+                },
+                "generate_explanation": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "0"
+                    }
+                  }
+                },
+                "instances_format": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bigquery"
+                    }
+                  }
+                },
+                "job_display_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "breast_cancer_batch_predictions"
+                    }
+                  }
+                },
+                "labels": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "{}"
+                    }
+                  }
+                },
+                "location": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "northamerica-northeast1"
+                    }
+                  }
+                },
+                "machine_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "n1-standard-2"
+                    }
+                  }
+                },
+                "manual_batch_tuning_parameters_batch_size": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "0"
+                    }
+                  }
+                },
+                "max_replica_count": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "30"
+                    }
+                  }
+                },
+                "model_parameters": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "{}"
+                    }
+                  }
+                },
+                "predictions_format": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bigquery"
+                    }
+                  }
+                },
+                "project": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-josh-pr-d1cc3a"
+                    }
+                  }
+                },
+                "starting_replica_count": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "20"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "model-batch-predict"
             }
           },
           "model-evaluation": {
@@ -280,6 +746,12 @@
             ],
             "inputs": {
               "parameters": {
+                "col_list": {
+                  "taskOutputParameter": {
+                    "outputParameterKey": "col_list",
+                    "producerTask": "import-data"
+                  }
+                },
                 "dataset_id": {
                   "componentInputParameter": "dataset_id"
                 },
@@ -288,7 +760,7 @@
                 },
                 "save_path": {
                   "taskOutputParameter": {
-                    "outputParameterKey": "Output",
+                    "outputParameterKey": "save_path",
                     "producerTask": "import-data"
                   }
                 }
@@ -296,6 +768,74 @@
             },
             "taskInfo": {
               "name": "model-training"
+            }
+          },
+          "upload-model-to-mr": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-upload-model-to-mr"
+            },
+            "dependentTasks": [
+              "import-data",
+              "model-evaluation",
+              "model-training"
+            ],
+            "inputs": {
+              "artifacts": {
+                "model": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "model",
+                    "producerTask": "model-training"
+                  }
+                }
+              },
+              "parameters": {
+                "col_list": {
+                  "taskOutputParameter": {
+                    "outputParameterKey": "col_list",
+                    "producerTask": "import-data"
+                  }
+                },
+                "model_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "breast_cancer"
+                    }
+                  }
+                },
+                "prediction_image": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-josh-pr-d1cc3a"
+                    }
+                  }
+                },
+                "region": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "northamerica-northeast1"
+                    }
+                  }
+                },
+                "result": {
+                  "taskOutputParameter": {
+                    "outputParameterKey": "result",
+                    "producerTask": "model-evaluation"
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "upload-model-to-mr"
             }
           }
         }
