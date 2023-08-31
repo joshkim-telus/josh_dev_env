@@ -1,8 +1,8 @@
 from kfp.v2.dsl import (Artifact, Output, Input, HTML, component)
 
 @component(
-    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
-    output_component_file="call_to_retention_model_preprocess.yaml".format(SERVICE_TYPE),
+    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/jupyter-kfp-base:1.0.0",
+    output_component_file="call_to_retention_model_preprocess.yaml"
 )
 def preprocess(
         pipeline_dataset: str, 

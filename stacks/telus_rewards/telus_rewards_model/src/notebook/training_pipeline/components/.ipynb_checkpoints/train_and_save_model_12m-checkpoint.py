@@ -55,28 +55,32 @@ def train_and_save_model(
 
     #set up df_train
     client = bigquery.Client(project=project_id)
-    sql_train = ''' SELECT * FROM `{}.{}.bq_call_to_retention_targets` '''.format(project_id, dataset_id) 
+    sql_train = ''' SELECT * FROM `{}.{}.bq_telus_rwrd_redemption_targets` '''.format(project_id, dataset_id) 
     df_target_train = client.query(sql_train).to_dataframe()
-    df_target_train = df_target_train.loc[
-        df_target_train['YEAR_MONTH'] == '-'.join(score_date_dash.split('-')[:2])]  # score_date_dash = '2022-08-31'
+    # df_target_train = df_target_train.loc[
+    # df_target_train['YEAR_MONTH'] == '-'.join(score_date_dash.split('-')[:2])]  # score_date_dash = '2022-08-31'
+    df_target_train = df_target_train.loc[df_target_train['YEAR_MONTH'] == '2023']  # score_date_dash = '2022-08-31'
     df_target_train['ban'] = df_target_train['ban'].astype('int64')
     df_target_train = df_target_train.groupby('ban').tail(1)
     df_train = df_train.merge(df_target_train[['ban', 'target_ind']], on='ban', how='left')
     df_train.rename(columns={'target_ind': 'target'}, inplace=True)
-    df_train.dropna(subset=['target'], inplace=True)
+    # df_train.dropna(subset=['target'], inplace=True)
+    df_train['target'].fillna(0, inplace=True)
     df_train['target'] = df_train['target'].astype(int)
     print(df_train.shape)
     
     #set up df_test
-    sql_test = ''' SELECT * FROM `{}.{}.bq_call_to_retention_targets` '''.format(project_id, dataset_id) 
+    sql_test = ''' SELECT * FROM `{}.{}.bq_telus_rwrd_redemption_targets` '''.format(project_id, dataset_id) 
     df_target_test = client.query(sql_test).to_dataframe()
-    df_target_test = df_target_test.loc[
-        df_target_test['YEAR_MONTH'] == '-'.join(score_date_val_dash.split('-')[:2])]  # score_date_dash = '2022-09-30'
+    # df_target_test = df_target_test.loc[
+    # df_target_test['YEAR_MONTH'] == '-'.join(score_date_val_dash.split('-')[:2])]  # score_date_dash = '2022-09-30'
+    df_target_test = df_target_test.loc[df_target_test['YEAR_MONTH'] == '2023-H1']  # score_date_dash = '2022-08-31'
     df_target_test['ban'] = df_target_test['ban'].astype('int64')
     df_target_test = df_target_test.groupby('ban').tail(1)
     df_test = df_test.merge(df_target_test[['ban', 'target_ind']], on='ban', how='left')
     df_test.rename(columns={'target_ind': 'target'}, inplace=True)
-    df_test.dropna(subset=['target'], inplace=True)
+    # df_test.dropna(subset=['target'], inplace=True)
+    df_test['target'].fillna(0, inplace=True)
     df_test['target'] = df_test['target'].astype(int)
     print(df_test.shape)
 
@@ -90,7 +94,7 @@ def train_and_save_model(
     features = [f for f in cols if f not in ['ban', 'target']]
 
     #train test split
-    df_train, df_val = train_test_split(df_train, shuffle=True, test_size=0.2, random_state=42,
+    df_train, df_val = train_test_split(df_train, shuffle=True, test_size=0.3, random_state=42,
                                         stratify=df_train['target']
                                         )
 
@@ -137,8 +141,35 @@ def train_and_save_model(
     y_pred_label = (y_pred > 0.5).astype(int)
     auc = roc_auc_score(y_val, y_pred_label)
     metrics.log_metric("AUC", auc)
+    
+    q=10
+    df_ban_val = ban_val.to_frame()
+    df_val_exp = df_ban_val.join(X_val) 
+    df_val_exp['y_val'] = y_val
+    df_val_exp['y_pred_proba'] = y_pred
+    df_val_exp['y_pred'] = (df_val_exp['y_pred'] > 0.5).astype(int)
+    df_val_exp['decile'] = pd.qcut(df_val_exp['y_pred_proba'], q, labels=[i for i in range(q, 0, -1)])
 
+    df_val_exp.to_csv('gs://{}/df_val_exp.csv'.format(file_bucket, index=True))
+    print("....df_val_exp done")
+    
+    lg = get_lift(y_pred, y_test, 10)
+    
+    lg.to_csv('gs://{}/lift_on_validation_data_{}.csv'.format(file_bucket, create_time, index=False))
+    
     pred_prb = xgb_model.predict_proba(X_test, ntree_limit=xgb_model.best_iteration)[:, 1]
+    
+    q=10
+    df_ban_test = ban_test.to_frame()
+    df_test_exp = df_ban_test.join(X_test) 
+    df_test_exp['y_test'] = y_test
+    df_test_exp['y_pred_proba'] = pred_prb
+    df_test_exp['y_pred'] = (df_test_exp['y_pred_proba'] > 0.5).astype(int)
+    df_test_exp['decile'] = pd.qcut(df_test_exp['y_pred_proba'], q, labels=[i for i in range(q, 0, -1)])
+
+    df_test_exp.to_csv('gs://{}/df_test_exp.csv'.format(file_bucket, index=True))
+    print("....df_test_exp done")
+
     lg = get_lift(pred_prb, y_test, 10)
 
     # save the model in GCS

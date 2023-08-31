@@ -1,7 +1,7 @@
 from kfp.v2.dsl import (Artifact, Output, Input, HTML, component)
 
 @component(
-    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
+    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/jupyter-kfp-base:1.0.0",
     output_component_file="telus_rewards_model_preprocess.yaml"
 )
 def preprocess(
