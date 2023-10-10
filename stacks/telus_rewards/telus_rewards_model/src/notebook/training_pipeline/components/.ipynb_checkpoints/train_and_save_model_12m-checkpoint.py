@@ -29,6 +29,7 @@ def train_and_save_model(
     from google.cloud import storage
     from google.cloud import bigquery
     from sklearn.model_selection import train_test_split
+    from datetime import datetime
 
     def get_lift(prob, y_test, q):
         result = pd.DataFrame(columns=['Prob', 'Call_To_Retention'])
@@ -136,7 +137,7 @@ def train_and_save_model(
 
     from sklearn.preprocessing import normalize
 
-    #predictions on X_val
+    # predictions on X_val
     y_pred = xgb_model.predict_proba(X_val, ntree_limit=xgb_model.best_iteration)[:, 1]
     y_pred_label = (y_pred > 0.5).astype(int)
     auc = roc_auc_score(y_val, y_pred_label)
@@ -147,16 +148,18 @@ def train_and_save_model(
     df_val_exp = df_ban_val.join(X_val) 
     df_val_exp['y_val'] = y_val
     df_val_exp['y_pred_proba'] = y_pred
-    df_val_exp['y_pred'] = (df_val_exp['y_pred'] > 0.5).astype(int)
+    df_val_exp['y_pred'] = (df_val_exp['y_pred_proba'] > 0.5).astype(int)
     df_val_exp['decile'] = pd.qcut(df_val_exp['y_pred_proba'], q, labels=[i for i in range(q, 0, -1)])
 
     df_val_exp.to_csv('gs://{}/df_val_exp.csv'.format(file_bucket, index=True))
     print("....df_val_exp done")
     
-    lg = get_lift(y_pred, y_test, 10)
+    lg = get_lift(y_pred, y_val, 10)
     
+    create_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     lg.to_csv('gs://{}/lift_on_validation_data_{}.csv'.format(file_bucket, create_time, index=False))
     
+    # predictions on X_test
     pred_prb = xgb_model.predict_proba(X_test, ntree_limit=xgb_model.best_iteration)[:, 1]
     
     q=10
@@ -173,7 +176,6 @@ def train_and_save_model(
     lg = get_lift(pred_prb, y_test, 10)
 
     # save the model in GCS
-    from datetime import datetime
     models_dict = {}
     create_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     models_dict['create_time'] = create_time

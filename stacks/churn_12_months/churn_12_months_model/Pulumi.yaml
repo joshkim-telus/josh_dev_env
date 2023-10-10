@@ -1,0 +1,145 @@
+
+
+name: call_to_retention_pipeline
+runtime: yaml
+description: Call To Retention Model Google Cloud Pulumi YAML program
+
+config:
+  builder:
+    type: string
+  project:
+    type: string
+  staging_expiry:
+    value: 2025-12-31
+    type: string
+
+# Section for user defined input
+variables:
+  worker_custom_image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/jupyter-kfp-base:1.0.0
+  notebook_scripts_bucket: notebook-scripts-${project_sha}
+  stack_name: call_to_retention 
+  timeZone: EST # timezone of the schedule
+
+  # training pipeline variables
+  training_name: call-to-retention-training-pipeline # Name of the job
+  training_pipe_name: "call-to-retention-training-pipeline"  # Name for the pipeline
+  training_pipe_description: "call-to-retention-training-pipeline" # Description for the pipeline
+  training_pipeline_path: call_to_retention_model/training_pipeline # For path
+  training_pipeline_params_path: parameters
+  training_pipeline_ipynb: call_to_retention_training_pipeline.ipynb
+  training_pipeline_params_file: {% if PROJECT_TYPE == "bi-stg" -%} "parameters/nb-params-stg.yaml" {%- elif PROJECT_TYPE == "bi-srv" -%} "parameters/nb-params-srv.yaml" {%- endif %}
+  training_schedule: "0 6 9 3,9 *" # Schedule of the job -> 1st and 15th of month
+  
+  # predicting pipeline variables
+  predicting_name: call-to-retention-predicting-pipeline # Name of the job
+  predicting_pipe_description: "call-to-retention-predicting-pipeline" # Description for the pipeline
+  predicting_pipe_name: "call-to-retention-predicting-pipeline"  # Name for the pipeline
+  predicting_pipeline_params_path: parameters
+  predicting_pipeline_path: call_to_retention_model/predicting_pipeline # For path
+  predicting_pipeline_ipynb: call_to_retention_predicting_pipeline.ipynb
+  predicting_pipeline_params_file: {% if PROJECT_TYPE == "bi-stg" -%} "parameters/nb-params-stg.yaml" {%- elif PROJECT_TYPE == "bi-srv" -%} "parameters/nb-params-srv.yaml" {%- endif %}
+  predicting_schedule: "0 6 4 * *" # Schedule of the job -> 1st and 15th of month
+  
+resources:
+  call-to-retention-training-exec:
+    type: gcp:workflows:Workflow
+    properties:
+      region: northamerica-northeast1
+      name: ${training_name}
+      description: Test Workflow For Notebook - training
+      serviceAccount: ${builder}
+      sourceContents: |
+        - init:
+            assign:
+              - project: $${sys.get_env("GOOGLE_CLOUD_PROJECT_NUMBER")}
+              - location: "northamerica-northeast1"
+              - uuid: $${sys.get_env("GOOGLE_CLOUD_WORKFLOW_EXECUTION_ID")}
+        - notebook_execution:
+            call: http.post
+            args:
+              url: $${"https://notebooks.googleapis.com/v1/projects/${project}/locations/northamerica-northeast1/executions?executionId=${training_name}-"+uuid}
+              body:
+                description: ${training_pipe_description}
+                displayName: ${training_pipe_name}
+                executionTemplate:
+                  scaleTier: "CUSTOM"
+                  masterType: "n1-standard-4"
+                  serviceAccount: ${builder}
+                  inputNotebookFile: "gs://${notebook_scripts_bucket}/${stack_name}/${training_pipeline_path}/${training_pipeline_ipynb}"
+                  containerImageUri: ${worker_custom_image}
+                  outputNotebookFolder: "gs://${notebook_scripts_bucket}/${stack_name}/${training_pipeline_path}/out"
+                  jobType: "VERTEX_AI"
+                  paramsYamlFile: "gs://${notebook_scripts_bucket}/${stack_name}/${training_pipeline_path}/${training_pipeline_params_file}"
+              auth:
+                type: OAuth2
+            result: notebook_result
+        - return_output:
+            return: $${notebook_result}
+
+  call-to-retention-training-sched:
+    type: gcp:cloudscheduler:Job
+    properties:
+      description: nb-scheduled-exec-training
+      schedule: ${training_schedule}
+      region: northamerica-northeast1
+      timeZone: ${timeZone}
+      httpTarget:
+        uri: https://workflowexecutions.googleapis.com/v1/${call-to-retention-training-exec.id}/executions
+        oauthToken:
+          serviceAccountEmail: ${builder}
+          scope: https://www.googleapis.com/auth/cloud-platform
+
+  call-to-retention-predicting-exec:
+    type: gcp:workflows:Workflow
+    properties:
+      region: northamerica-northeast1
+      name: ${predicting_name}
+      description: Test Workflow For Notebook - predicting
+      serviceAccount: ${builder}
+      sourceContents: |
+        - init:
+            assign:
+              - project: $${sys.get_env("GOOGLE_CLOUD_PROJECT_NUMBER")}
+              - location: "northamerica-northeast1"
+              - uuid: $${sys.get_env("GOOGLE_CLOUD_WORKFLOW_EXECUTION_ID")}
+        - notebook_execution:
+            call: http.post
+            args:
+              url: $${"https://notebooks.googleapis.com/v1/projects/${project}/locations/northamerica-northeast1/executions?executionId=${predicting_name}-"+uuid}
+              body:
+                description: ${predicting_pipe_description}
+                displayName: ${predicting_pipe_name}
+                executionTemplate:
+                  scaleTier: "CUSTOM"
+                  masterType: "n1-standard-4"
+                  serviceAccount: ${builder}
+                  inputNotebookFile: "gs://${notebook_scripts_bucket}/${stack_name}/${predicting_pipeline_path}/${predicting_pipeline_ipynb}"
+                  containerImageUri: ${worker_custom_image}
+                  outputNotebookFolder: "gs://${notebook_scripts_bucket}/${stack_name}/${predicting_pipeline_path}/out"
+                  jobType: "VERTEX_AI"
+                  paramsYamlFile: "gs://${notebook_scripts_bucket}/${stack_name}/${predicting_pipeline_path}/${predicting_pipeline_params_file}"
+              auth:
+                type: OAuth2
+            result: notebook_result
+        - return_output:
+            return: $${notebook_result}
+
+  call-to-retention-predicting-sched:
+    type: gcp:cloudscheduler:Job
+    properties:
+      description: nb-scheduled-exec-predicting
+      schedule: ${predicting_schedule}
+      region: northamerica-northeast1
+      timeZone: ${timeZone}
+      httpTarget:
+        uri: https://workflowexecutions.googleapis.com/v1/${call-to-retention-predicting-exec.id}/executions
+        oauthToken:
+          serviceAccountEmail: ${builder}
+          scope: https://www.googleapis.com/auth/cloud-platform
+
+outputs:
+  call-to-retention-training-workflow-id: ${call-to-retention-training-exec.id}
+  call-to-retention-predicting-workflow-id: ${call-to-retention-predicting-exec.id}
+  
+  
+  
