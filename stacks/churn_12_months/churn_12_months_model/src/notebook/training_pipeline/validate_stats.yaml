@@ -127,8 +127,8 @@ implementation:
       \               'feature_nm': feature, \n                'skew_drift': {'type':\
       \ skew_drift_type, 'validation_type': val_type, 'value': value, 'threshold':\
       \ threshold}\n                }) \n\n            print(feature) \n\n    df_anomalies\
-      \ = pd.merge(df_anomalies, df_sd, on='feature_nm', how='left') \n\n    # load\
-      \ data stats into BQ table \n    client = bigquery.Client(project=project_id)\
+      \ = pd.merge(df_anomalies, df_sd, on='feature_nm', how='left') \n\n#     # load\
+      \ data stats into BQ table \n#     client = bigquery.Client(project=project_id)\
       \ \n\n    job_config = bigquery.LoadJobConfig(write_disposition='WRITE_APPEND',\
       \ \n                                        schema=[bigquery.SchemaField(\n\
       \                                                    'model_nm', 'STRING'),\

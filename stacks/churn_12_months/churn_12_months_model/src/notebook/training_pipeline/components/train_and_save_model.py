@@ -79,7 +79,7 @@ def train_and_save_model(file_bucket: str
     df_target_train = df_target_train.groupby('ban').tail(1)
     df_train = df_train.merge(df_target_train[['ban', 'target_ind']], on='ban', how='left')
     df_train.rename(columns={'target_ind': 'target'}, inplace=True)
-    df_train.dropna(subset=['target'], inplace=True)
+    df_train['target'].fillna(0, inplace=True)
     df_train['target'] = df_train['target'].astype(int)
     print(df_train.shape)
     
@@ -92,7 +92,7 @@ def train_and_save_model(file_bucket: str
     df_target_test = df_target_test.groupby('ban').tail(1)
     df_test = df_test.merge(df_target_test[['ban', 'target_ind']], on='ban', how='left')
     df_test.rename(columns={'target_ind': 'target'}, inplace=True)
-    df_test.dropna(subset=['target'], inplace=True)
+    df_test['target'].fillna(0, inplace=True)
     df_test['target'] = df_test['target'].astype(int)
     print(df_test.shape)
     
@@ -132,7 +132,7 @@ def train_and_save_model(file_bucket: str
 
     # build model and fit in training data
     xgb_model = xgb.XGBClassifier(
-        learning_rate=0.01,
+        learning_rate=0.1,
         n_estimators=100,
         max_depth=8,
         min_child_weight=1,

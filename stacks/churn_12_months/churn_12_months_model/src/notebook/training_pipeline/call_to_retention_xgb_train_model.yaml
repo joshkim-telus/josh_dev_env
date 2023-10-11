@@ -73,7 +73,7 @@ implementation:
       \    df_target_train['ban'] = df_target_train['ban'].astype('int64')\n    df_target_train\
       \ = df_target_train.groupby('ban').tail(1)\n    df_train = df_train.merge(df_target_train[['ban',\
       \ 'target_ind']], on='ban', how='left')\n    df_train.rename(columns={'target_ind':\
-      \ 'target'}, inplace=True)\n    df_train.dropna(subset=['target'], inplace=True)\n\
+      \ 'target'}, inplace=True)\n    df_train['target'].fillna(0, inplace=True)\n\
       \    df_train['target'] = df_train['target'].astype(int)\n    print(df_train.shape)\n\
       \n    #set up df_test\n    sql_test = ''' SELECT * FROM `{}.{}.bq_churn_12_months_targets`\
       \ '''.format(project_id, dataset_id) \n    df_target_test = client.query(sql_test).to_dataframe()\n\
@@ -82,7 +82,7 @@ implementation:
       \    df_target_test['ban'] = df_target_test['ban'].astype('int64')\n    df_target_test\
       \ = df_target_test.groupby('ban').tail(1)\n    df_test = df_test.merge(df_target_test[['ban',\
       \ 'target_ind']], on='ban', how='left')\n    df_test.rename(columns={'target_ind':\
-      \ 'target'}, inplace=True)\n    df_test.dropna(subset=['target'], inplace=True)\n\
+      \ 'target'}, inplace=True)\n    df_test['target'].fillna(0, inplace=True)\n\
       \    df_test['target'] = df_test['target'].astype(int)\n    print(df_test.shape)\n\
       \n    df_train.to_csv('gs://{}/{}/{}_train_monitoring.csv'.format(file_bucket,\
       \ service_type, service_type))\n    df_test.to_csv('gs://{}/{}/{}_validation_monitoring.csv'.format(file_bucket,\
@@ -101,7 +101,7 @@ implementation:
       \n    ban_test = df_test['ban']\n    X_test = df_test[features]\n    y_test\
       \ = np.squeeze(df_test['target'].values)\n\n    del df_train, df_val, df_test\n\
       \    gc.collect()\n\n    # build model and fit in training data\n    xgb_model\
-      \ = xgb.XGBClassifier(\n        learning_rate=0.01,\n        n_estimators=100,\n\
+      \ = xgb.XGBClassifier(\n        learning_rate=0.1,\n        n_estimators=100,\n\
       \        max_depth=8,\n        min_child_weight=1,\n        gamma=0,\n     \
       \   subsample=0.8,\n        colsample_bytree=0.8,\n        objective='binary:logistic',\n\
       \        nthread=4,\n        scale_pos_weight=1\n        # seed=27\n    )\n\n\
