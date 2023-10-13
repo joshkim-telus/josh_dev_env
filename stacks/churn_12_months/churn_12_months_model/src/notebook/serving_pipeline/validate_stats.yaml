@@ -1,0 +1,200 @@
+name: Validate stats
+description: 'Inputs:'
+inputs:
+- {name: project_id, type: String}
+- {name: bucket_nm, type: String}
+- {name: model_nm, type: String}
+- {name: validation_type, type: String}
+- {name: op_type, type: String}
+- {name: statistics, type: Artifact}
+- {name: base_stats_path, type: String}
+- {name: update_ts, type: String}
+- {name: src_schema_path, type: String}
+- {name: src_anomaly_thresholds_path, type: String}
+- {name: dest_anomalies_gcs_path, type: String}
+- {name: dest_anomalies_bq_dataset, type: String, default: '', optional: true}
+- name: in_bq_ind
+  type: Boolean
+  default: "True"
+  optional: true
+outputs:
+- {name: anomalies, type: Artifact}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-tfdv-slim:1.0.0
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef validate_stats(\n    project_id: str,\n    bucket_nm: str,\n\
+      \    model_nm: str,\n    validation_type: str,\n    op_type: str,\n    statistics:\
+      \ Input[Artifact],\n    anomalies: Output[Artifact],\n    base_stats_path: str,\n\
+      \    update_ts: str,\n    src_schema_path: str,\n    src_anomaly_thresholds_path:\
+      \ str,\n    dest_anomalies_gcs_path: str,\n    dest_anomalies_bq_dataset: str\
+      \ = \"\",\n    in_bq_ind: bool = True,\n):\n    '''\n    Inputs:\n        -\
+      \ project_id: project id\n        - bucket_nm: name of bucket where anomaly\
+      \ thresholds are stored \n        - model_nm: name of model\n        - validation_type:\
+      \ skew or drift\n        - op_type: serving or predictions\n        - statistics:\
+      \ path to statistics imported from generate stats component\n        - base_stats_path:\
+      \ path to statistics for comparison (training for skew, old serving stats for\
+      \ drift)\n        - update_ts: time pipeline is run. keep consistent across\
+      \ components\n        - src_schema_path: path to where schema is in GCS (for\
+      \ either serving stats or prediction stats)\n        - src_anomaly_thresholds_path:\
+      \ path to json file where skew/drift anomaly thresholds are specified\n    \
+      \    - dest_anomalies_gcs_path: path to where anomalies should be stored in\
+      \ GCS\n        - dest_anomalies_bq_dataset: dataset where anomalies will be\
+      \ stored in BQ\n        - in_bq_ind: indicate whether you want to save anomalies\
+      \ in BQ\n\n    Outputs:\n        - anomalies: path to anomalies file\n    '''\n\
+      \n    import logging\n    import tensorflow_data_validation as tfdv\n    from\
+      \ google.cloud import storage\n    from google.cloud import bigquery\n    import\
+      \ json\n    import pandas as pd\n    from datetime import datetime\n\n    #\
+      \ convert timestamp to datetime\n    update_ts = datetime.strptime(update_ts,\
+      \ '%Y-%m-%d %H:%M:%S')\n\n    # set uri of anomalies output\n    anomalies.uri\
+      \ = dest_anomalies_gcs_path\n\n    def load_stats(path):\n        print(f\"\
+      loading stats from: {path}\")\n        return tfdv.load_statistics(input_path=path)\n\
+      \n    base_stats = load_stats(base_stats_path)\n    stats = load_stats(statistics.uri)\n\
+      \n    # get schema\n    schema = tfdv.load_schema_text(\n        input_path=src_schema_path\n\
+      \    )\n\n    if op_type == 'serving':\n        # set anomaly check to features\n\
+      \        anomaly_check = 'features'\n\n        # ensure that serving set as\
+      \ env\n        if 'SERVING' not in schema.default_environment:\n           \
+      \ schema.default_environment.append('SERVING')\n\n    if op_type == 'predictions':\
+      \    \n        # set anomaly check to predictions\n        anomaly_check = 'predictions'\n\
+      \n        # ensure that predictions set as env\n        if 'PREDICTIONS' not\
+      \ in schema.default_environment:\n            schema.default_environment.append('PREDICTIONS')\n\
+      \n    # get serving anomaly thresholds\n    storage_client = storage.Client()\n\
+      \    bucket = storage_client.bucket(bucket_nm)\n    blob = bucket.blob(src_anomaly_thresholds_path)\n\
+      \    blob.download_to_filename('anomaly_thresholds.json')\n\n    f = open('anomaly_thresholds.json')\n\
+      \    anomaly_thresholds = json.load(f)\n\n    if validation_type == 'skew':\n\
+      \        # set serving thresholds\n        for feature, threshold in anomaly_thresholds[anomaly_check][\"\
+      numerical\"].items():\n            tfdv.get_feature(\n                schema,\
+      \ feature).skew_comparator.jensen_shannon_divergence.threshold = threshold\n\
+      \n        for feature, threshold in anomaly_thresholds[anomaly_check][\"categorical\"\
+      ].items():\n            tfdv.get_feature(\n                schema, feature).skew_comparator.infinity_norm.threshold\
+      \ = threshold\n\n        # validating stats\n        detected_anomalies = tfdv.validate_statistics(\n\
+      \            statistics=stats,\n            schema=schema,\n            environment=op_type.upper(),\n\
+      \            serving_statistics=base_stats,\n        )\n\n    elif validation_type\
+      \ == 'drift':\n        # set serving thresholds\n        for feature, threshold\
+      \ in anomaly_thresholds[anomaly_check][\"numerical\"].items():\n           \
+      \ tfdv.get_feature(\n                schema, feature).drift_comparator.jensen_shannon_divergence.threshold\
+      \ = threshold\n\n        for feature, threshold in anomaly_thresholds[anomaly_check][\"\
+      categorical\"].items():\n            tfdv.get_feature(\n                schema,\
+      \ feature).drift_comparator.infinity_norm.threshold = threshold\n\n        #\
+      \ validating stats\n        detected_anomalies = tfdv.validate_statistics(\n\
+      \            statistics=stats,\n            schema=schema,\n            environment=op_type.upper(),\n\
+      \            previous_statistics=base_stats,\n        )\n\n    else:\n     \
+      \   print(\"Please specify skew or drift\")\n\n    # store updated schema in\
+      \ gcs\n    tfdv.write_schema_text(\n        schema=schema, output_path=src_schema_path\n\
+      \    )\n\n    logging.info(f\"writing anomalies to: {dest_anomalies_gcs_path}\"\
+      )\n    tfdv.write_anomalies_text(detected_anomalies, dest_anomalies_gcs_path)\n\
+      \n    # OPTIONAL: save anomalies to BQ\n    if in_bq_ind == True:\n        print(\"\
+      yes there are anomalies\")\n        anomalies_dict = detected_anomalies.anomaly_info\n\
+      \        skew_drift_dict = detected_anomalies.drift_skew_info\n\n        df_anomalies\
+      \ = pd.DataFrame(columns=[\n                                    'model_nm',\
+      \ 'update_ts', 'feature_nm', 'short_description', 'long_description'])\n\n \
+      \       # check if there are anomalies (dict is not empty)\n        if bool(anomalies_dict):\n\
+      \            for key in anomalies_dict:\n                feature = key\n   \
+      \             short_description = anomalies_dict[key].short_description\n  \
+      \              long_description = anomalies_dict[key].description\n\n      \
+      \          df_anomalies.loc[len(df_anomalies.index)] = pd.Series({\n       \
+      \             'model_nm': model_nm,\n                    'update_ts': update_ts,\n\
+      \                    'feature_nm': feature,\n                    'short_description':\
+      \ short_description,\n                    'long_description': long_description\n\
+      \                })\n        # check for skew-drift\n        df_sd = pd.DataFrame(columns=['feature_nm',\
+      \ 'skew_drift'])\n\n        # check for skew-drift\n        if bool(skew_drift_dict):\n\
+      \            for sd in skew_drift_dict:\n\n                feature = sd.path.step[0]\n\
+      \n                if validation_type == 'skew':\n                    value =\
+      \ sd.skew_measurements[0].value\n                    threshold = sd.skew_measurements[0].threshold\n\
+      \                    val_type = 'skew'\n                    skew_drift_type_num\
+      \ = sd.skew_measurements[0].type\n                elif validation_type == 'drift':\n\
+      \                    value = sd.drift_measurements[0].value\n              \
+      \      threshold = sd.drift_measurements[0].threshold\n                    val_type\
+      \ = 'drift'\n                    skew_drift_type_num = sd.drift_measurements[0].type\n\
+      \                else:\n                    print(\"Please specify skew or drift\"\
+      )\n\n                if skew_drift_type_num == 1:\n                    skew_drift_type\
+      \ = 'L_INFTY'\n                elif skew_drift_type_num == 2:\n            \
+      \        skew_drift_type = 'JENSEN_SHANNON_DIVERGENCE'\n                elif\
+      \ skew_drift_type_num == 3:\n                    skew_drift_type = 'NORMALIZED_ABSOLUTE_DIFFERENCE'\n\
+      \                else:\n                    skew_drift_type = 'UNKNOWN'\n\n\
+      \                df_sd.loc[len(df_sd.index)] = pd.Series({\n               \
+      \     'feature_nm': feature,\n                    'skew_drift': {\"type\": skew_drift_type,\
+      \ \"validation_type\": val_type, \"value\": value, \"threshold\": threshold}\n\
+      \                })\n\n                print(feature)\n\n        df_anomalies\
+      \ = pd.merge(df_anomalies, df_sd,\n                                on='feature_nm',\
+      \ how=\"left\")\n\n        # load data stats into BQ table\n        client =\
+      \ bigquery.Client(project=project_id)\n\n        job_config = bigquery.LoadJobConfig(write_disposition=\"\
+      WRITE_APPEND\",\n                                            schema=[\n    \
+      \                                            bigquery.SchemaField(\n       \
+      \                                             \"model_nm\", \"STRING\"),\n \
+      \                                               bigquery.SchemaField(\n    \
+      \                                                \"update_ts\", \"TIMESTAMP\"\
+      ),\n                                                bigquery.SchemaField(\n\
+      \                                                    \"feature_nm\", \"STRING\"\
+      ),\n                                                bigquery.SchemaField(\n\
+      \                                                    \"short_description\",\
+      \ \"STRING\"),\n                                                bigquery.SchemaField(\n\
+      \                                                    \"long_description\", \"\
+      STRING\"),\n                                                bigquery.SchemaField(\"\
+      skew_drift\", \"RECORD\", fields=[bigquery.SchemaField(\"type\", \"STRING\"\
+      ), bigquery.SchemaField(\n                                                 \
+      \   \"validation_type\", \"STRING\"), bigquery.SchemaField(\"value\", \"FLOAT\"\
+      ), bigquery.SchemaField(\"threshold\", \"FLOAT\")]),\n                     \
+      \                       ],)  # create new table or append if already exists\n\
+      \        anomalies_table = f\"{project_id}.{dest_anomalies_bq_dataset}.bq_data_anomalies\"\
+      \n\n        job = client.load_table_from_dataframe(  # Make an API request.\n\
+      \            df_anomalies, anomalies_table, job_config=job_config\n        )\n\
+      \        job.result()\n        table = client.get_table(anomalies_table)  #\
+      \ Make an API request.\n        print(\n            \"Loaded {} rows and {}\
+      \ columns to {}\".format(\n                table.num_rows, len(table.schema),\
+      \ anomalies_table\n            )\n        )\n\n        # send anomaly via gchat\
+      \ webhook\n        if bool(anomalies_dict):\n            # gchat notify\n  \
+      \          print('there are anomalies')\n#             import requests\n#  \
+      \           import time\n#             import json\n\n#             gchat_webhook_list=[]\n\
+      \n#             widgets = []\n\n#             widgets.append({\n#          \
+      \                           \"keyValue\": {\n#                             \
+      \        \"topLabel\": \"Project id\",\n#                                  \
+      \   \"content\": \"{}\".format(project_id)\n#                              \
+      \       }\n#                                     })\n#             widgets.append({\n\
+      #                                     \"keyValue\": {\n#                   \
+      \                  \"topLabel\": \"Model Name\",\n#                        \
+      \             \"content\": \"{}\".format(model_nm)\n#                      \
+      \               }\n#                                     })\n\n\n#         \
+      \    for key in anomalies_dict:\n#                 widget = {\n#           \
+      \              \"keyValue\": {\n#                         \"topLabel\": key,\n\
+      #                         \"content\": \"{}\".format(anomalies_dict[key].description)\n\
+      #                                     }\n#                         }\n#    \
+      \             widgets.append(widget)\n\n#             message = {\n#       \
+      \                  \"cards\": [\n#                             {\n\n#      \
+      \                           \"header\": {\n\n#                             \
+      \    \"title\": \"<b>Vertex Pipelines Alert</b>\",\n#                      \
+      \           \"imageUrl\": \"https://greatexpectations.io/static/protag-f9bde762a58323b62e2c19c514c74ba8.png\"\
+      \n#                                 },\n\n#                                \
+      \ \"sections\": [\n\n#                                 {\n\n#              \
+      \                       \"widgets\": widgets,\n\n#                         \
+      \        },\n\n#                                 ],\n\n#                   \
+      \          },\n#                             ]\n#                     }\n\n\
+      #             time.sleep(10)\n#             for hook in gchat_webhook_list:\n\
+      #                 response = requests.post(\n#                     hook,\n#\
+      \                     data=json.dumps(message),\n#                     headers={'Content-Type':\
+      \ 'application/json'})\n#                 print(response.status_code)\n#   \
+      \              if response.status_code != 200:\n#                     raise\
+      \ ValueError('Request to gchat returned an error %s, response: \\n%s '\n#  \
+      \                                       % (response.status_code, response.text))\n\
+      \n    else:\n        print(\"There aren't any anomalies.\")\n\n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - validate_stats

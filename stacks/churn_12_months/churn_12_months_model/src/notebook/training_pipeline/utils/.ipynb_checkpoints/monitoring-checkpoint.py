@@ -290,14 +290,14 @@ def generate_data_stats(
         df_stats['top_value_freq'] = df_stats['top_value_freq'].fillna(np.nan).replace([
             np.nan], [None])
 
-        #### For wb
-        CREDENTIALS = google.oauth2.credentials.Credentials(token)
+#         #### For wb
+#         CREDENTIALS = google.oauth2.credentials.Credentials(token)
 
-        client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
+#         client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
 
-        #     #### For prod 
-        #     client = bigquery.Client(project=project_id)
-
+        #### For prod 
+        client = bigquery.Client(project=project_id)
+        
         job_config = bigquery.LoadJobConfig(write_disposition="WRITE_APPEND",
                                             schema=[
                                                 bigquery.SchemaField(

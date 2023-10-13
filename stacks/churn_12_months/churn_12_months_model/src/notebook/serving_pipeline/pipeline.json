@@ -1,0 +1,1262 @@
+{
+  "pipelineSpec": {
+    "components": {
+      "comp-batch-prediction": {
+        "executorLabel": "exec-batch-prediction",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "file_bucket": {
+              "type": "STRING"
+            },
+            "model_uri": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "save_data_path": {
+              "type": "STRING"
+            },
+            "score_date_dash": {
+              "type": "STRING"
+            },
+            "score_table": {
+              "type": "STRING"
+            },
+            "service_type": {
+              "type": "STRING"
+            },
+            "table_id": {
+              "type": "STRING"
+            },
+            "temp_table": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "metrics": {
+              "artifactType": {
+                "schemaTitle": "system.Metrics",
+                "schemaVersion": "0.0.1"
+              }
+            },
+            "metricsc": {
+              "artifactType": {
+                "schemaTitle": "system.ClassificationMetrics",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        }
+      },
+      "comp-bq-create-dataset": {
+        "executorLabel": "exec-bq-create-dataset",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "environment": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "region": {
+              "type": "STRING"
+            },
+            "score_date": {
+              "type": "STRING"
+            },
+            "score_date_delta": {
+              "type": "INT"
+            },
+            "token": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "parameters": {
+            "col_list": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-generate-data-stats": {
+        "executorLabel": "exec-generate-data-stats",
+        "inputDefinitions": {
+          "parameters": {
+            "bucket_nm": {
+              "type": "STRING"
+            },
+            "data_type": {
+              "type": "STRING"
+            },
+            "date_col": {
+              "type": "STRING"
+            },
+            "date_filter": {
+              "type": "STRING"
+            },
+            "dest_schema_path": {
+              "type": "STRING"
+            },
+            "dest_stats_bq_dataset": {
+              "type": "STRING"
+            },
+            "dest_stats_gcs_path": {
+              "type": "STRING"
+            },
+            "in_bq_ind": {
+              "type": "STRING"
+            },
+            "model_nm": {
+              "type": "STRING"
+            },
+            "model_type": {
+              "type": "STRING"
+            },
+            "op_type": {
+              "type": "STRING"
+            },
+            "pass_through_features": {
+              "type": "STRING"
+            },
+            "pred_cols": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "row_sample": {
+              "type": "DOUBLE"
+            },
+            "src_bq_path": {
+              "type": "STRING"
+            },
+            "src_csv_path": {
+              "type": "STRING"
+            },
+            "table_block_sample": {
+              "type": "DOUBLE"
+            },
+            "training_target_col": {
+              "type": "STRING"
+            },
+            "update_ts": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "statistics": {
+              "artifactType": {
+                "schemaTitle": "system.Artifact",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        }
+      },
+      "comp-load-ml-model": {
+        "executorLabel": "exec-load-ml-model",
+        "inputDefinitions": {
+          "parameters": {
+            "model_name": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "region": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "model": {
+              "artifactType": {
+                "schemaTitle": "system.Artifact",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          },
+          "parameters": {
+            "model_uri": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-postprocess": {
+        "executorLabel": "exec-postprocess",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "file_bucket": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "score_date_dash": {
+              "type": "STRING"
+            },
+            "service_type": {
+              "type": "STRING"
+            },
+            "temp_table": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            },
+            "ucar_score_table": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-preprocess": {
+        "executorLabel": "exec-preprocess",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "file_bucket": {
+              "type": "STRING"
+            },
+            "pipeline_dataset": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "save_data_path": {
+              "type": "STRING"
+            },
+            "service_type": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-validate-stats": {
+        "executorLabel": "exec-validate-stats",
+        "inputDefinitions": {
+          "artifacts": {
+            "statistics": {
+              "artifactType": {
+                "schemaTitle": "system.Artifact",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          },
+          "parameters": {
+            "base_stats_path": {
+              "type": "STRING"
+            },
+            "bucket_nm": {
+              "type": "STRING"
+            },
+            "dest_anomalies_bq_dataset": {
+              "type": "STRING"
+            },
+            "dest_anomalies_gcs_path": {
+              "type": "STRING"
+            },
+            "in_bq_ind": {
+              "type": "STRING"
+            },
+            "model_nm": {
+              "type": "STRING"
+            },
+            "op_type": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "src_anomaly_thresholds_path": {
+              "type": "STRING"
+            },
+            "src_schema_path": {
+              "type": "STRING"
+            },
+            "update_ts": {
+              "type": "STRING"
+            },
+            "validation_type": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "anomalies": {
+              "artifactType": {
+                "schemaTitle": "system.Artifact",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        }
+      },
+      "comp-visualize-stats": {
+        "executorLabel": "exec-visualize-stats",
+        "inputDefinitions": {
+          "artifacts": {
+            "statistics": {
+              "artifactType": {
+                "schemaTitle": "system.Artifact",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          },
+          "parameters": {
+            "base_stats_nm": {
+              "type": "STRING"
+            },
+            "base_stats_path": {
+              "type": "STRING"
+            },
+            "op_type": {
+              "type": "STRING"
+            },
+            "stats_nm": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "view": {
+              "artifactType": {
+                "schemaTitle": "system.HTML",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        }
+      }
+    },
+    "deploymentSpec": {
+      "executors": {
+        "exec-batch-prediction": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "batch_prediction"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef batch_prediction(\n        project_id: str,\n        dataset_id: str,\n        table_id: str, \n        file_bucket: str,\n        save_data_path: str, \n        service_type: str,\n        score_table: str,\n        score_date_dash: str,\n        temp_table: str,\n        metrics: Output[Metrics],\n        metricsc: Output[ClassificationMetrics],\n        model_uri: str, \n):\n    import time\n    import pandas as pd\n    import numpy as np\n    import pickle\n    from datetime import date\n    from dateutil.relativedelta import relativedelta\n    from google.cloud import bigquery\n    from google.cloud import storage\n\n    MODEL_ID = '5090'\n\n    def if_tbl_exists(bq_client, table_ref):\n        from google.cloud.exceptions import NotFound\n        try:\n            bq_client.get_table(table_ref)\n            return True\n        except NotFound:\n            return False\n\n    def upsert_table(project_id, dataset_id, table_id, sql, result):\n        new_values = ',\\n'.join(result.apply(lambda row: row_format(row), axis=1))\n        new_sql = sql.format(proj_id=project_id, dataset_id=dataset_id, table_id=table_id,\n                             new_values=new_values)\n        bq_client = bigquery.Client(project=project_id)\n        code = bq_client.query(new_sql)\n        time.sleep(5)\n\n    def row_format(row):\n        values = row.values\n        new_values = \"\"\n        v = str(values[0]) if not pd.isnull(values[0]) else 'NULL'\n        if 'str' in str(type(values[0])):\n            new_values += f\"'{v}'\"\n        else:\n            new_values += f\"{v}\"\n\n        for i in range(1, len(values)):\n            v = str(values[i]) if not pd.isnull(values[i]) else 'NULL'\n            if 'str' in str(type(values[i])):\n                new_values += f\",'{v}'\"\n            else:\n                new_values += f\",{v}\"\n        return '(' + new_values + ')'\n\n    def generate_sql_file(ll):\n        s = 'MERGE INTO `{proj_id}.{dataset_id}.{table_id}` a'\n        s += \" USING UNNEST(\"\n        s += \"[struct<\"\n        for i in range(len(ll) - 1):\n            v = ll[i]\n            s += \"{} {},\".format(v[0], v[1])\n        s += \"{} {}\".format(ll[-1][0], ll[-1][1])\n        s += \">{new_values}]\"\n        s += \") b\"\n        s += \" ON a.ban = b.ban and a.score_date = b.score_date\"\n        s += \" WHEN MATCHED THEN\"\n        s += \" UPDATE SET \"\n        s += \"a.{}=b.{},\".format(ll[0][0], ll[0][0])\n        for i in range(1, len(ll) - 1):\n            v = ll[i]\n            s += \"a.{}=b.{},\".format(v[0], v[0])\n        s += \"a.{}=b.{}\".format(ll[-1][0], ll[-1][0])\n        s += \" WHEN NOT MATCHED THEN\"\n        s += \" INSERT(\"\n        for i in range(len(ll) - 1):\n            v = ll[i]\n            s += \"{},\".format(v[0])\n        s += \"{})\".format(ll[-1][0])\n        s += \" VALUES(\"\n        for i in range(len(ll) - 1):\n            s += \"b.{},\".format(ll[i][0])\n        s += \"b.{}\".format(ll[-1][0])\n        s += \")\"\n\n        return s\n\n    def right(s, amount):\n        return s[-amount:]\n\n    # MODEL_PATH = '{}_xgb_models/'.format(service_type)\n    MODEL_PATH = right(model_uri, (len(model_uri) - 6 - len(file_bucket)))\n    df_score = pd.read_csv(save_data_path, compression='gzip')\n    print(f'save_data_path: {save_data_path}')\n    df_score.dropna(subset=['ban'], inplace=True)\n    df_score.reset_index(drop=True, inplace=True)\n    print('......scoring data loaded:{}'.format(df_score.shape))\n    time.sleep(10)\n\n    storage_client = storage.Client()\n    bucket = storage_client.get_bucket(file_bucket)\n    # blobs = storage_client.list_blobs(file_bucket, prefix='{}{}_models_xgb_'.format(MODEL_PATH, service_type))\n    blobs = storage_client.list_blobs(file_bucket, prefix=MODEL_PATH)\n\n    model_lists = []\n    for blob in blobs:\n        model_lists.append(blob.name)\n\n    blob = bucket.blob(model_lists[-1])\n    blob_in = blob.download_as_string()\n    model_dict = pickle.loads(blob_in)\n    model_xgb = model_dict['model']\n    features = model_dict['features']\n    print('...... model loaded')\n    time.sleep(10)\n\n    ll = [('ban', 'string'), ('score_date', 'string'), ('model_id', 'string'), ('score', 'float64')]\n    sql = generate_sql_file(ll)\n\n    df_score['ban'] = df_score['ban'].astype(int)\n    print('.... scoring for {} FFH bans base'.format(len(df_score)))\n\n    # get full score to cave into bucket\n    pred_prob = model_xgb.predict_proba(df_score[features], ntree_limit=model_xgb.best_iteration)[:, 1]\n    result = pd.DataFrame(columns=['ban', 'score_date', 'model_id', 'score'])\n    result['score'] = list(pred_prob)\n    result['score'] = result['score'].fillna(0.0).astype('float64')\n    result['ban'] = list(df_score['ban'])\n    result['ban'] = result['ban'].astype('str')\n    result['score_date'] = score_date_dash\n    result['model_id'] = MODEL_ID\n\n    result.to_csv('gs://{}/ucar/{}_prediction.csv.gz'.format(file_bucket, service_type), compression='gzip',\n                  index=False)\n\n    # define df_final\n    df_final = df_score[features]\n\n    # define dtype_bq_mapping\n    dtype_bq_mapping = {np.dtype('int64'): 'INTEGER', \n    np.dtype('float64'):  'FLOAT', \n    np.dtype('float32'):  'FLOAT', \n    np.dtype('object'):  'STRING', \n    np.dtype('bool'):  'BOOLEAN', \n    np.dtype('datetime64[ns]'):  'DATE', \n    pd.Int64Dtype(): 'INTEGER'} \n\n    # export df_final to bigquery \n    schema_list = [] \n    for column in df_final.columns: \n        schema_list.append(bigquery.SchemaField(column, dtype_bq_mapping[df_final.dtypes[column]], mode='NULLABLE')) \n    print(schema_list) \n\n    dest_table = f'{dataset_id}.{table_id}'\n\n    # Sending to bigquery \n    client = bigquery.Client(project=project_id)\n    job_config = bigquery.LoadJobConfig(schema=schema_list, write_disposition='WRITE_TRUNCATE') \n    job = client.load_table_from_dataframe(df_final, dest_table, job_config=job_config) \n    job.result() \n    table = client.get_table(dest_table) # Make an API request \n    print(\"Loaded {} rows and {} columns to {}\".format(table.num_rows, len(table.schema), table_id)) \n\n    time.sleep(60)\n\n    table_ref = f'{project_id}.{dataset_id}.{score_table}'\n    client = bigquery.Client(project=project_id)\n    table = client.get_table(table_ref)\n    schema = table.schema\n\n    ll = []\n    for item in schema:\n        col = item.name\n        d_type = item.field_type\n        if 'float' in str(d_type).lower():\n            d_type = 'FLOAT64'\n        ll.append((col, d_type))\n\n        if 'integer' in str(d_type).lower():\n            result[col] = result[col].fillna(0).astype(int)\n        if 'float' in str(d_type).lower():\n            result[col] = result[col].fillna(0.0).astype(float)\n        if 'string' in str(d_type).lower():\n            result[col] = result[col].fillna('').astype(str)\n\n    table_ref = '{}.{}.{}'.format(project_id, dataset_id, temp_table)\n    client = bigquery.Client(project=project_id)\n    if if_tbl_exists(client, table_ref):\n        client.delete_table(table_ref)\n\n    client.create_table(table_ref)\n    config = bigquery.LoadJobConfig(schema=schema)\n    config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE\n    bq_table_instance = client.load_table_from_dataframe(result, table_ref, job_config=config)\n    time.sleep(5)\n\n    drop_sql = f\"\"\"delete from `{project_id}.{dataset_id}.{score_table}` where score_date = '{score_date_dash}'\"\"\"  # .format(project_id, dataset_id, score_date_dash)\n    client.query(drop_sql)\n    #\n    load_sql = f\"\"\"insert into `{project_id}.{dataset_id}.{score_table}`\n                  select * from `{project_id}.{dataset_id}.{temp_table}`\"\"\"\n    client.query(load_sql)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 4.0,
+              "memoryLimit": 32.0
+            }
+          }
+        },
+        "exec-bq-create-dataset": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "bq_create_dataset"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef bq_create_dataset(score_date: str\n                      , score_date_delta: int\n                      , project_id: str\n                      , dataset_id: str\n                      , region: str\n                      , environment: str\n                      , token: str\n                      ) -> NamedTuple(\"output\", [(\"col_list\", list)]):\n\n    from google.cloud import bigquery\n    import logging \n    from datetime import datetime\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    # Change dataset / table + sp table name to version in bi-layer\n    query =\\\n        f'''\n            DECLARE score_date DATE DEFAULT \"{score_date}\";\n\n            -- Change dataset / sp name to the version in the bi_layer\n            CALL {dataset_id}.bq_sp_c12m_{environment}_dataset(score_date);\n\n            SELECT\n                *\n            FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS\n            WHERE table_name='bq_c12m_{environment}_dataset'\n\n        '''\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n    logging.info(df.to_string())\n\n    logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n             {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \\\n             {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S') } !\")\n\n    ######################################## Save column list_##########################\n    query =\\\n        f'''\n           SELECT\n                *\n            FROM {dataset_id}.bq_c12m_{environment}_dataset\n\n        '''\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n\n    col_list = list([col for col in df.columns])\n    return (col_list,)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest"
+          }
+        },
+        "exec-generate-data-stats": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "generate_data_stats"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef generate_data_stats(\n    project_id: str,\n    data_type: str,\n    op_type: str,\n    model_nm: str,\n    update_ts: str,\n    statistics: Output[Artifact],\n    bucket_nm: str = '',\n    model_type: str = 'supervised',\n    date_col: str = '',\n    date_filter: str = '',\n    table_block_sample: float = 1,\n    row_sample: float = 1,\n    in_bq_ind: bool = True,\n    src_bq_path: str = '',\n    src_csv_path: str = '',\n    dest_stats_bq_dataset: str = '',\n    dest_schema_path: str = '',\n    dest_stats_gcs_path: str = '',\n    pass_through_features: list = [],\n    training_target_col: str = \"\",\n    pred_cols: list = []\n):\n    '''\n    Inputs:\n        - project_id: project id\n        - data_type: bigquery or csv\n        - op_type: training or serving or predictions\n        - model_nm: name of model\n        - update_ts: time when pipeline was run\n        - bucket_nm: name of bucket where pred schema is or will be stored (Optional: for predictions)\n        - model_type: supervised or unsupervised. unsupervised models will create new schema as required.\n        - date_col: (Optional: name of column for filtering data by date)\n        - date_filter: YYYY-MM-DD (Optional: query only specific date for stats)\n        - table_block_sample: sample of data blocks to be loaded (only if bq). Reduces query size for large datasets. 0.1 for 10% (default is 1)\n        - row_sample: sample of rows to be loaded (only if bq). If using table_block_sample as well, this will be the % of rows from the selected blocks.\n          0.1 for 10% (default is 1)\n        - in_bq_ind: True or False (Optional: store stats in bigquery)\n        - src_bq_path: bigquery path to data that will be used to generate stats (if data_type is bigquery)\n        - src_csv_path: path to csv file that will be used to generate stats (if data_type is csv)\n        - dest_stats_bq_dataset: bq dataset where monitoring stats will be stored (only if in_bq_path set to True)\n        - dest_schema_path: gcs path to where schema will be stored (optional: only for training stats)\n        - dest_stats_gcs_path: gcs path to where stats should be stored\n        - pass_through_features: list of feature columns not used for training e.g. keys and ids \n        - training_target_col: target column name from training data (Optional: set to be excluded from serving data)\n        - pred_cols: column names where predictions are stored\n\n    Outputs:\n        - statistics\n    '''\n\n    import tensorflow_data_validation as tfdv\n    from apache_beam.options.pipeline_options import (\n        PipelineOptions\n    )\n    from google.cloud import storage\n    from google.cloud import bigquery\n    from datetime import datetime\n    import json\n    import pandas as pd\n    import numpy as np\n\n    # convert timestamp to datetime\n    update_ts = datetime.strptime(update_ts, '%Y-%m-%d %H:%M:%S')\n\n    statistics.uri = dest_stats_gcs_path\n\n    pipeline_options = PipelineOptions()\n    stats_options = tfdv.StatsOptions()\n\n    # import from csv in GCS\n    if data_type == 'csv':\n        df = pd.read_csv(src_csv_path)\n\n        if op_type == 'predictions':\n            df = df[pred_cols]\n\n    # import from Big Query\n    elif data_type == 'bigquery':\n        client = bigquery.Client(project=project_id)\n\n        percent_table_sample = table_block_sample * 100\n\n        if op_type == 'predictions':\n            # query data stored in BQ and load into pandas dataframe\n            build_df = '''SELECT '''\n            for pred_col in pred_cols:\n                build_df = build_df + f\"{pred_col}, \"\n            build_df = build_df + '''FROM `{bq_table}` TABLESAMPLE SYSTEM ({percent_table_sample} PERCENT)\n                        WHERE rand() < {row_sample} \n                    '''.format(bq_table = src_bq_path,\n                               percent_table_sample = percent_table_sample, \n                               row_sample = row_sample)\n        else:\n            # query data stored in BQ and load into pandas dataframe\n            build_df = '''\n            SELECT * FROM `{bq_table}` TABLESAMPLE SYSTEM ({percent_table_sample} PERCENT)\n                        WHERE rand() < {row_sample} \n                    '''.format(bq_table = src_bq_path,\n                               percent_table_sample = percent_table_sample, \n                               row_sample = row_sample)\n\n        if len(date_filter) > 0:\n            build_df = build_df + ''' AND {date_col}=\"{date_filter}\"\n            '''.format(date_col=date_col, date_filter=date_filter)\n\n        job_config = bigquery.QueryJobConfig()\n        df = client.query(build_df, job_config=job_config).to_dataframe()\n\n        # check this: if dataframe is empty, return error\n        if (df.size == 0):\n            raise TypeError(\"Dataframe is empty, cannot generate statistics.\")\n\n    else:\n        print(\"This data type is not supported. Please use a csv or Big Query table, otherwise create your own custom component\")\n\n    # drop pass-through features\n    if len(pass_through_features) > 0:\n        df = df.drop(columns=pass_through_features)\n\n    stats = tfdv.generate_statistics_from_dataframe(\n        dataframe=df,\n        stats_options=stats_options,\n        n_jobs=1\n    )\n    tfdv.write_stats_text(\n        stats=stats, output_path=dest_stats_gcs_path\n    )\n\n    # generate schema for training data\n    if op_type == 'training':\n        schema = tfdv.infer_schema(stats)\n\n        if 'TRAINING' not in schema.default_environment:\n                schema.default_environment.append('TRAINING')\n\n        # set training target column for supervised learning models (will not be in serving data)\n        if model_type == 'supervised':\n            if 'SERVING' not in schema.default_environment:\n                schema.default_environment.append('SERVING')\n\n            # check if training_target_col specified\n            if len(training_target_col) > 0:\n                # specify that target/label is not in SERVING environment\n                if 'SERVING' not in tfdv.get_feature(schema, training_target_col).not_in_environment:\n                    tfdv.get_feature(\n                        schema, training_target_col).not_in_environment.append('SERVING') \n            else:\n                print(\"No training target column specified\")\n\n        tfdv.write_schema_text(\n            schema=schema, output_path=dest_schema_path\n        )\n    if (op_type == 'predictions') | (model_type == 'unsupervised'):\n        # if schema does not exist create new one for predictions or unsupervised model\n        storage_client = storage.Client()\n        bucket = storage_client.bucket(bucket_nm)\n        blob = bucket.blob(dest_schema_path.split(f'gs://{bucket_nm}/')[1])\n\n        if not blob.exists():\n            # generate schema for predictions data or unsupervised learning model\n            schema = tfdv.infer_schema(stats)\n            tfdv.write_schema_text(\n                schema=schema, output_path=dest_schema_path\n            )\n\n    df_stats = pd.DataFrame(columns=['model_nm',\n                                     'update_ts',\n                                     'op_type',\n                                     'feature_nm',\n                                     'feature_type',\n                                     'num_non_missing',\n                                     'min_num_values',\n                                     'max_num_values',\n                                     'avg_num_values',\n                                     'tot_num_values',\n                                     'mean',\n                                     'std_dev',\n                                     'num_zeros',\n                                     'min_val',\n                                     'median',\n                                     'max_val',\n                                     'unique_values',\n                                     'top_value_freq',\n                                     'avg_length'])\n\n    # OPTIONAL: save stats in data monitoring table\n    if in_bq_ind == True:\n\n        for feature in stats.datasets[0].features:\n            feature_nm = feature.path.step[0]\n            if (feature.type == 0):\n                feature_type = 'INT'\n            elif (feature.type == 1):\n                feature_type = 'FLOAT'\n            elif (feature.type == 2):\n                feature_type = 'STRING'\n            else:\n                featue_type = 'UNKNOWN'\n\n            if (feature_type == 'INT') | (feature_type == 'FLOAT'):\n                num_non_missing = feature.num_stats.common_stats.num_non_missing\n                min_num_values = feature.num_stats.common_stats.min_num_values\n                max_num_values = feature.num_stats.common_stats.max_num_values\n                avg_num_values = feature.num_stats.common_stats.avg_num_values\n                tot_num_values = feature.num_stats.common_stats.tot_num_values\n\n                mean = feature.num_stats.mean\n                std_dev = feature.num_stats.std_dev\n                num_zeros = feature.num_stats.num_zeros\n                min_val = feature.num_stats.min\n                median = feature.num_stats.median\n                max_val = feature.num_stats.max\n\n                df_stats.loc[len(df_stats.index)] = pd.Series({\n                    'model_nm': model_nm,\n                    'update_ts': update_ts,\n                    'op_type': op_type,\n                    'feature_nm': feature_nm,\n                    'feature_type': feature_type,\n                    'num_non_missing': num_non_missing,\n                    'min_num_values': min_num_values,\n                    'max_num_values': max_num_values,\n                    'avg_num_values': avg_num_values,\n                    'tot_num_values': tot_num_values,\n                    'mean': mean,\n                    'std_dev': std_dev,\n                    'num_zeros': num_zeros,\n                    'min_val': min_val,\n                    'median': median,\n                    'max_val': max_val\n                })\n            elif feature_type == 'STRING':\n                num_non_missing = feature.string_stats.common_stats.num_non_missing\n                min_num_values = feature.string_stats.common_stats.min_num_values\n                max_num_values = feature.string_stats.common_stats.max_num_values\n                avg_num_values = feature.string_stats.common_stats.avg_num_values\n                tot_num_values = feature.string_stats.common_stats.tot_num_values\n\n                unique_values = feature.string_stats.unique\n\n                # create dict of top values to be stored in BQ as record\n                top_values = feature.string_stats.top_values\n                top_value_freq_arr = []\n                for i in range(len(top_values)):\n                    top_value = top_values[i]\n                    value = top_value.value\n                    freq = top_value.frequency\n                    top_value_dict = {'value': value, 'frequency': freq}\n                    top_value_freq_arr.append(top_value_dict)\n\n                avg_length = feature.string_stats.avg_length\n\n                df_stats.loc[len(df_stats.index)] = pd.Series({\n                    'model_nm': model_nm,\n                    'update_ts': update_ts,\n                    'op_type': op_type,\n                    'feature_nm': feature_nm,\n                    'feature_type': feature_type,\n                    'num_non_missing': num_non_missing,\n                    'min_num_values': min_num_values,\n                    'max_num_values': max_num_values,\n                    'avg_num_values': avg_num_values,\n                    'tot_num_values': tot_num_values,\n                    'unique_values': unique_values,\n                    'top_value_freq': top_value_freq_arr,\n                    'avg_length': avg_length\n                })\n\n\n        # set null records to None value\n        df_stats['top_value_freq'] = df_stats['top_value_freq'].fillna(np.nan).replace([\n            np.nan], [None])\n\n        # load data stats into BQ table\n        client = bigquery.Client(project=project_id)\n\n        job_config = bigquery.LoadJobConfig(write_disposition=\"WRITE_APPEND\",\n                                            schema=[\n                                                bigquery.SchemaField(\n                                                    \"model_nm\", \"STRING\"),\n                                                bigquery.SchemaField(\n                                                    \"update_ts\", \"TIMESTAMP\"),\n                                                bigquery.SchemaField(\n                                                    \"op_type\", \"STRING\"),\n                                                bigquery.SchemaField(\n                                                    \"feature_nm\", \"STRING\"),\n                                                bigquery.SchemaField(\n                                                    \"feature_type\", \"STRING\"),\n                                                bigquery.SchemaField(\n                                                    \"num_non_missing\", \"INTEGER\"),\n                                                bigquery.SchemaField(\n                                                    \"min_num_values\", \"INTEGER\"),\n                                                bigquery.SchemaField(\n                                                    \"max_num_values\", \"INTEGER\"),\n                                                bigquery.SchemaField(\n                                                    \"avg_num_values\", \"FLOAT\"),\n                                                bigquery.SchemaField(\n                                                    \"tot_num_values\", \"INTEGER\"),\n                                                bigquery.SchemaField(\n                                                    \"mean\", \"FLOAT\"),\n                                                bigquery.SchemaField(\n                                                    \"std_dev\", \"FLOAT\"),\n                                                bigquery.SchemaField(\n                                                    \"num_zeros\", \"INTEGER\"),\n                                                bigquery.SchemaField(\n                                                    \"min_val\", \"FLOAT\"),\n                                                bigquery.SchemaField(\n                                                    \"median\", \"FLOAT\"),\n                                                bigquery.SchemaField(\n                                                    \"max_val\", \"FLOAT\"),\n                                                bigquery.SchemaField(\n                                                    \"unique_values\", \"FLOAT\"),\n                                                bigquery.SchemaField(\"top_value_freq\", \"RECORD\", mode=\"REPEATED\", fields=[\n                                                    bigquery.SchemaField(\"frequency\", \"FLOAT\"), bigquery.SchemaField(\"value\", \"STRING\")]),\n                                                bigquery.SchemaField(\n                                                    \"avg_length\", \"FLOAT\")\n                                            ],)  # create new table or append if already exists\n        data_stats_table = f\"{project_id}.{dest_stats_bq_dataset}.bq_data_monitoring\"\n\n        job = client.load_table_from_dataframe(  # Make an API request.\n            df_stats, data_stats_table, job_config=job_config\n        )\n        job.result()\n        table = client.get_table(data_stats_table)  # Make an API request.\n        print(\n            \"Loaded {} rows and {} columns to {}\".format(\n                table.num_rows, len(table.schema), data_stats_table\n            )\n        )\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-tfdv-slim:1.0.0"
+          }
+        },
+        "exec-load-ml-model": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "load_ml_model"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef load_ml_model(\n    project_id: str, \n    region: str, \n    model_name: str, \n    model: Output[Artifact]\n) -> NamedTuple(\"output\", [(\"model_uri\", str)]):\n\n    from google.cloud import aiplatform\n\n    # List models with the given display name, order by update time\n    models = aiplatform.Model.list(\n        filter=f'display_name={model_name}', \n        order_by=\"update_time\",\n        location=region)\n\n    if not models:\n        raise ValueError(f\"No model found with display name: {model_name}\")\n\n    # Get the latest model's resource name\n    latest_model = models[-1]\n    model_uri = latest_model.resource_name\n\n    # Update the model URI and metadata\n    model.uri = model_uri\n    model.metadata['resourceName'] = model_uri\n    env_var = latest_model.to_dict()['containerSpec']['env'][1]['value']\n\n    # Return the model URI as part of the output\n    return (env_var,)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-load-model-slim:1.0.0",
+            "resources": {
+              "cpuLimit": 4.0,
+              "memoryLimit": 32.0
+            }
+          }
+        },
+        "exec-postprocess": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "postprocess"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef postprocess(\n        project_id: str,\n        file_bucket: str,\n        dataset_id: str,\n        service_type: str,\n        score_date_dash: str,\n        temp_table: str, \n        ucar_score_table: str,\n        token: str\n):\n    import time\n    from datetime import date\n    from dateutil.relativedelta import relativedelta\n    import pandas as pd\n    from google.cloud import bigquery\n\n    def if_tbl_exists(client, table_ref):\n        from google.cloud.exceptions import NotFound\n        try:\n            client.get_table(table_ref)\n            return True\n        except NotFound:\n            return False\n\n    MODEL_ID = '5900'\n    file_name = 'gs://{}/ucar/{}_prediction.csv.gz'.format(file_bucket, service_type)\n    df_orig = pd.read_csv(file_name, compression='gzip')\n    df_orig.dropna(subset=['ban'], inplace=True)\n    df_orig.reset_index(drop=True, inplace=True)\n    df_orig['scoring_date'] = score_date_dash\n    df_orig.ban = df_orig.ban.astype(int)\n    df_orig = df_orig.rename(columns={'ban': 'bus_bacct_num', 'score': 'score_num'})\n    df_orig.score_num = df_orig.score_num.astype(float)\n    df_orig['decile_grp_num'] = pd.qcut(df_orig['score_num'], q=10, labels=[i for i in range(10, 0, -1)])\n    df_orig.decile_grp_num = df_orig.decile_grp_num.astype(int)\n    df_orig['percentile_pct'] = (1 - df_orig.score_num.rank(pct=True))*100\n    df_orig['percentile_pct'] = df_orig['percentile_pct'].apply(round, 0).astype(int)\n    df_orig['predict_model_nm'] = 'FFH CHURN 12 MONTHS Model - DIVG'\n    df_orig['model_type_cd'] = 'FFH'\n    df_orig['subscriber_no'] = \"\"\n    df_orig['prod_instnc_resrc_str'] = \"\"\n    df_orig['service_instnc_id'] = \"\"\n    df_orig['segment_nm'] = \"\"\n    df_orig['segment_id'] = \"\"\n    df_orig['classn_nm'] = \"\"\n    df_orig['predict_model_id'] = MODEL_ID\n    df_orig.drop(columns=['model_id', 'score_date'], axis=1, inplace=True)\n\n    get_cust_id = \"\"\"\n    WITH bq_snpsht_max_date AS(\n    SELECT PARSE_DATE('%Y%m%d', MAX(partition_id)) AS max_date\n        FROM `cio-datahub-enterprise-pr-183a.ent_cust_cust.INFORMATION_SCHEMA.PARTITIONS` \n    WHERE table_name = 'bq_prod_instnc_snpsht' \n        AND partition_id <> '__NULL__'\n    ),\n    -- BANs can have multiple Cust ID. Create rank by product type and status, prioritizing ban/cust id with active FFH products\n    rank_prod_type AS (\n    SELECT DISTINCT\n        bacct_bus_bacct_num,\n        consldt_cust_bus_cust_id AS cust_id,\n        CASE WHEN pi_prod_instnc_resrc_typ_cd IN ('SING', 'HSIC', 'TTV', 'SMHM', 'STV', 'DIIC') AND pi_prod_instnc_stat_cd = 'A' THEN 1\n                WHEN pi_prod_instnc_resrc_typ_cd IN ('SING', 'HSIC', 'TTV', 'SMHM', 'STV', 'DIIC') THEN 2\n                WHEN pi_prod_instnc_stat_cd = 'A' THEN 3\n                ELSE 4\n                END AS prod_rank\n    FROM `cio-datahub-enterprise-pr-183a.ent_cust_cust.bq_prod_instnc_snpsht`\n    CROSS JOIN bq_snpsht_max_date\n    WHERE CAST(prod_instnc_ts AS DATE)=bq_snpsht_max_date.max_date\n    AND bus_prod_instnc_src_id = 1001\n    ),\n    --Rank Cust ID\n    rank_cust_id AS (\n    SELECT DISTINCT\n        bacct_bus_bacct_num,\n        cust_id,\n        RANK() OVER(PARTITION BY bacct_bus_bacct_num\n                        ORDER BY prod_rank,\n                                    cust_id) AS cust_id_rank               \n    FROM rank_prod_type\n    )\n    --Select best cust id\n    SELECT bacct_bus_bacct_num,\n        cust_id\n    FROM rank_cust_id\n    WHERE cust_id_rank = 1\n    \"\"\"\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n\n    #     #### For prod \n    #     client = bigquery.Client(project=project_id)\n\n    df_cust = client.query(get_cust_id).to_dataframe()\n    df_final = df_orig.set_index('bus_bacct_num').join(df_cust.set_index('bacct_bus_bacct_num')).reset_index()\n    df_final = df_final.rename(columns={'index': 'bus_bacct_num', 'cust_bus_cust_id': 'cust_id'})\n    df_final = df_final.sort_values(by=['score_num'], ascending=False)\n    df_final.to_csv(file_name, compression='gzip', index=False)\n    time.sleep(120)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 4.0,
+              "memoryLimit": 32.0
+            }
+          }
+        },
+        "exec-preprocess": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "preprocess"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef preprocess(\n        pipeline_dataset: str, \n        save_data_path: str,\n        project_id: str,\n        dataset_id: str, \n        service_type: str, \n        file_bucket: str \n):\n    from google.cloud import bigquery\n    import pandas as pd\n    import numpy as np\n    import gc\n    import time\n\n    client = bigquery.Client(project=project_id)\n\n    # pipeline_dataset \n    pipeline_dataset_name = f\"{project_id}.{dataset_id}.{pipeline_dataset}\" \n    build_df_pipeline_dataset = f'SELECT * FROM `{pipeline_dataset_name}`'\n    df_pipeline_dataset = client.query(build_df_pipeline_dataset).to_dataframe()\n    df_pipeline_dataset = df_pipeline_dataset.set_index('ban') \n\n    # demo columns\n    df_pipeline_dataset['demo_urban_flag'] = df_pipeline_dataset.demo_sgname.str.lower().str.contains('urban').fillna(0).astype(int)\n    df_pipeline_dataset['demo_rural_flag'] = df_pipeline_dataset.demo_sgname.str.lower().str.contains('rural').fillna(0).astype(int)\n    df_pipeline_dataset['demo_family_flag'] = df_pipeline_dataset.demo_lsname.str.lower().str.contains('families').fillna(0).astype(int)\n\n    df_income_dummies = pd.get_dummies(df_pipeline_dataset[['demo_lsname']]) \n    df_income_dummies.columns = df_income_dummies.columns.str.replace('&', 'and')\n    df_income_dummies.columns = df_income_dummies.columns.str.replace(' ', '_')\n\n    df_pipeline_dataset.drop(columns=['demo_sgname', 'demo_lsname'], axis=1, inplace=True)\n\n    df_pipeline_dataset = df_pipeline_dataset.join(df_income_dummies)\n\n    df_join = df_pipeline_dataset.copy()\n\n    #column name clean-up\n    df_join.columns = df_join.columns.str.replace(' ', '_')\n    df_join.columns = df_join.columns.str.replace('-', '_')\n\n    #df_final\n    df_final = df_join.copy()\n    del df_join\n    gc.collect()\n    print('......df_final done')\n\n    for f in df_final.columns:\n        df_final[f] = list(df_final[f])\n\n    df_final.to_csv(save_data_path, index=True, compression='gzip')\n\n    df_final.to_csv('gs://{}/{}/{}_score_monitoring.csv'.format(file_bucket, service_type, service_type))  \n\n#     # define dtype_bq_mapping\n#     dtype_bq_mapping = {np.dtype('int64'): 'INTEGER', \n#     np.dtype('float64'):  'FLOAT', \n#     np.dtype('float32'):  'FLOAT', \n#     np.dtype('object'):  'STRING', \n#     np.dtype('bool'):  'BOOLEAN', \n#     np.dtype('datetime64[ns]'):  'DATE', \n#     pd.Int64Dtype(): 'INTEGER'} \n\n#     # export df_final to bigquery \n#     schema_list = [] \n#     for column in df_final.columns: \n#         schema_list.append(bigquery.SchemaField(column, dtype_bq_mapping[df_final.dtypes[column]], mode='NULLABLE')) \n#     print(schema_list) \n\n#     dest_table = f'{dataset_id}.{table_id}'\n\n#     # Sending to bigquery \n#     job_config = bigquery.LoadJobConfig(schema=schema_list, write_disposition='WRITE_TRUNCATE') \n#     job = client.load_table_from_dataframe(df_final, dest_table, job_config=job_config) \n#     job.result() \n#     table = client.get_table(dest_table) # Make an API request \n#     print(\"Loaded {} rows and {} columns to {}\".format(table.num_rows, len(table.schema), table_id)) \n\n    del df_final\n    gc.collect()\n    print(f'......csv saved in {save_data_path}')\n    time.sleep(120)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 4.0,
+              "memoryLimit": 32.0
+            }
+          }
+        },
+        "exec-validate-stats": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "validate_stats"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef validate_stats(\n    project_id: str,\n    bucket_nm: str,\n    model_nm: str,\n    validation_type: str,\n    op_type: str,\n    statistics: Input[Artifact],\n    anomalies: Output[Artifact],\n    base_stats_path: str,\n    update_ts: str,\n    src_schema_path: str,\n    src_anomaly_thresholds_path: str,\n    dest_anomalies_gcs_path: str,\n    dest_anomalies_bq_dataset: str = \"\",\n    in_bq_ind: bool = True,\n):\n    '''\n    Inputs:\n        - project_id: project id\n        - bucket_nm: name of bucket where anomaly thresholds are stored \n        - model_nm: name of model\n        - validation_type: skew or drift\n        - op_type: serving or predictions\n        - statistics: path to statistics imported from generate stats component\n        - base_stats_path: path to statistics for comparison (training for skew, old serving stats for drift)\n        - update_ts: time pipeline is run. keep consistent across components\n        - src_schema_path: path to where schema is in GCS (for either serving stats or prediction stats)\n        - src_anomaly_thresholds_path: path to json file where skew/drift anomaly thresholds are specified\n        - dest_anomalies_gcs_path: path to where anomalies should be stored in GCS\n        - dest_anomalies_bq_dataset: dataset where anomalies will be stored in BQ\n        - in_bq_ind: indicate whether you want to save anomalies in BQ\n\n    Outputs:\n        - anomalies: path to anomalies file\n    '''\n\n    import logging\n    import tensorflow_data_validation as tfdv\n    from google.cloud import storage\n    from google.cloud import bigquery\n    import json\n    import pandas as pd\n    from datetime import datetime\n\n    # convert timestamp to datetime\n    update_ts = datetime.strptime(update_ts, '%Y-%m-%d %H:%M:%S')\n\n    # set uri of anomalies output\n    anomalies.uri = dest_anomalies_gcs_path\n\n    def load_stats(path):\n        print(f\"loading stats from: {path}\")\n        return tfdv.load_statistics(input_path=path)\n\n    base_stats = load_stats(base_stats_path)\n    stats = load_stats(statistics.uri)\n\n    # get schema\n    schema = tfdv.load_schema_text(\n        input_path=src_schema_path\n    )\n\n    if op_type == 'serving':\n        # set anomaly check to features\n        anomaly_check = 'features'\n\n        # ensure that serving set as env\n        if 'SERVING' not in schema.default_environment:\n            schema.default_environment.append('SERVING')\n\n    if op_type == 'predictions':    \n        # set anomaly check to predictions\n        anomaly_check = 'predictions'\n\n        # ensure that predictions set as env\n        if 'PREDICTIONS' not in schema.default_environment:\n            schema.default_environment.append('PREDICTIONS')\n\n    # get serving anomaly thresholds\n    storage_client = storage.Client()\n    bucket = storage_client.bucket(bucket_nm)\n    blob = bucket.blob(src_anomaly_thresholds_path)\n    blob.download_to_filename('anomaly_thresholds.json')\n\n    f = open('anomaly_thresholds.json')\n    anomaly_thresholds = json.load(f)\n\n    if validation_type == 'skew':\n        # set serving thresholds\n        for feature, threshold in anomaly_thresholds[anomaly_check][\"numerical\"].items():\n            tfdv.get_feature(\n                schema, feature).skew_comparator.jensen_shannon_divergence.threshold = threshold\n\n        for feature, threshold in anomaly_thresholds[anomaly_check][\"categorical\"].items():\n            tfdv.get_feature(\n                schema, feature).skew_comparator.infinity_norm.threshold = threshold\n\n        # validating stats\n        detected_anomalies = tfdv.validate_statistics(\n            statistics=stats,\n            schema=schema,\n            environment=op_type.upper(),\n            serving_statistics=base_stats,\n        )\n\n    elif validation_type == 'drift':\n        # set serving thresholds\n        for feature, threshold in anomaly_thresholds[anomaly_check][\"numerical\"].items():\n            tfdv.get_feature(\n                schema, feature).drift_comparator.jensen_shannon_divergence.threshold = threshold\n\n        for feature, threshold in anomaly_thresholds[anomaly_check][\"categorical\"].items():\n            tfdv.get_feature(\n                schema, feature).drift_comparator.infinity_norm.threshold = threshold\n\n        # validating stats\n        detected_anomalies = tfdv.validate_statistics(\n            statistics=stats,\n            schema=schema,\n            environment=op_type.upper(),\n            previous_statistics=base_stats,\n        )\n\n    else:\n        print(\"Please specify skew or drift\")\n\n    # store updated schema in gcs\n    tfdv.write_schema_text(\n        schema=schema, output_path=src_schema_path\n    )\n\n    logging.info(f\"writing anomalies to: {dest_anomalies_gcs_path}\")\n    tfdv.write_anomalies_text(detected_anomalies, dest_anomalies_gcs_path)\n\n    # OPTIONAL: save anomalies to BQ\n    if in_bq_ind == True:\n        print(\"yes there are anomalies\")\n        anomalies_dict = detected_anomalies.anomaly_info\n        skew_drift_dict = detected_anomalies.drift_skew_info\n\n        df_anomalies = pd.DataFrame(columns=[\n                                    'model_nm', 'update_ts', 'feature_nm', 'short_description', 'long_description'])\n\n        # check if there are anomalies (dict is not empty)\n        if bool(anomalies_dict):\n            for key in anomalies_dict:\n                feature = key\n                short_description = anomalies_dict[key].short_description\n                long_description = anomalies_dict[key].description\n\n                df_anomalies.loc[len(df_anomalies.index)] = pd.Series({\n                    'model_nm': model_nm,\n                    'update_ts': update_ts,\n                    'feature_nm': feature,\n                    'short_description': short_description,\n                    'long_description': long_description\n                })\n        # check for skew-drift\n        df_sd = pd.DataFrame(columns=['feature_nm', 'skew_drift'])\n\n        # check for skew-drift\n        if bool(skew_drift_dict):\n            for sd in skew_drift_dict:\n\n                feature = sd.path.step[0]\n\n                if validation_type == 'skew':\n                    value = sd.skew_measurements[0].value\n                    threshold = sd.skew_measurements[0].threshold\n                    val_type = 'skew'\n                    skew_drift_type_num = sd.skew_measurements[0].type\n                elif validation_type == 'drift':\n                    value = sd.drift_measurements[0].value\n                    threshold = sd.drift_measurements[0].threshold\n                    val_type = 'drift'\n                    skew_drift_type_num = sd.drift_measurements[0].type\n                else:\n                    print(\"Please specify skew or drift\")\n\n                if skew_drift_type_num == 1:\n                    skew_drift_type = 'L_INFTY'\n                elif skew_drift_type_num == 2:\n                    skew_drift_type = 'JENSEN_SHANNON_DIVERGENCE'\n                elif skew_drift_type_num == 3:\n                    skew_drift_type = 'NORMALIZED_ABSOLUTE_DIFFERENCE'\n                else:\n                    skew_drift_type = 'UNKNOWN'\n\n                df_sd.loc[len(df_sd.index)] = pd.Series({\n                    'feature_nm': feature,\n                    'skew_drift': {\"type\": skew_drift_type, \"validation_type\": val_type, \"value\": value, \"threshold\": threshold}\n                })\n\n                print(feature)\n\n        df_anomalies = pd.merge(df_anomalies, df_sd,\n                                on='feature_nm', how=\"left\")\n\n        # load data stats into BQ table\n        client = bigquery.Client(project=project_id)\n\n        job_config = bigquery.LoadJobConfig(write_disposition=\"WRITE_APPEND\",\n                                            schema=[\n                                                bigquery.SchemaField(\n                                                    \"model_nm\", \"STRING\"),\n                                                bigquery.SchemaField(\n                                                    \"update_ts\", \"TIMESTAMP\"),\n                                                bigquery.SchemaField(\n                                                    \"feature_nm\", \"STRING\"),\n                                                bigquery.SchemaField(\n                                                    \"short_description\", \"STRING\"),\n                                                bigquery.SchemaField(\n                                                    \"long_description\", \"STRING\"),\n                                                bigquery.SchemaField(\"skew_drift\", \"RECORD\", fields=[bigquery.SchemaField(\"type\", \"STRING\"), bigquery.SchemaField(\n                                                    \"validation_type\", \"STRING\"), bigquery.SchemaField(\"value\", \"FLOAT\"), bigquery.SchemaField(\"threshold\", \"FLOAT\")]),\n                                            ],)  # create new table or append if already exists\n        anomalies_table = f\"{project_id}.{dest_anomalies_bq_dataset}.bq_data_anomalies\"\n\n        job = client.load_table_from_dataframe(  # Make an API request.\n            df_anomalies, anomalies_table, job_config=job_config\n        )\n        job.result()\n        table = client.get_table(anomalies_table)  # Make an API request.\n        print(\n            \"Loaded {} rows and {} columns to {}\".format(\n                table.num_rows, len(table.schema), anomalies_table\n            )\n        )\n\n        # send anomaly via gchat webhook\n        if bool(anomalies_dict):\n            # gchat notify\n            print('there are anomalies')\n#             import requests\n#             import time\n#             import json\n\n#             gchat_webhook_list=[]\n\n#             widgets = []\n\n#             widgets.append({\n#                                     \"keyValue\": {\n#                                     \"topLabel\": \"Project id\",\n#                                     \"content\": \"{}\".format(project_id)\n#                                     }\n#                                     })\n#             widgets.append({\n#                                     \"keyValue\": {\n#                                     \"topLabel\": \"Model Name\",\n#                                     \"content\": \"{}\".format(model_nm)\n#                                     }\n#                                     })\n\n\n#             for key in anomalies_dict:\n#                 widget = {\n#                         \"keyValue\": {\n#                         \"topLabel\": key,\n#                         \"content\": \"{}\".format(anomalies_dict[key].description)\n#                                     }\n#                         }\n#                 widgets.append(widget)\n\n#             message = {\n#                         \"cards\": [\n#                             {\n\n#                                 \"header\": {\n\n#                                 \"title\": \"<b>Vertex Pipelines Alert</b>\",\n#                                 \"imageUrl\": \"https://greatexpectations.io/static/protag-f9bde762a58323b62e2c19c514c74ba8.png\"\n#                                 },\n\n#                                 \"sections\": [\n\n#                                 {\n\n#                                     \"widgets\": widgets,\n\n#                                 },\n\n#                                 ],\n\n#                             },\n#                             ]\n#                     }\n\n#             time.sleep(10)\n#             for hook in gchat_webhook_list:\n#                 response = requests.post(\n#                     hook,\n#                     data=json.dumps(message),\n#                     headers={'Content-Type': 'application/json'})\n#                 print(response.status_code)\n#                 if response.status_code != 200:\n#                     raise ValueError('Request to gchat returned an error %s, response: \\n%s '\n#                                         % (response.status_code, response.text))\n\n    else:\n        print(\"There aren't any anomalies.\")\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-tfdv-slim:1.0.0"
+          }
+        },
+        "exec-visualize-stats": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "visualize_stats"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef visualize_stats(\n    statistics: Input[Artifact],\n    view: Output[HTML],\n    op_type: str = \"\",\n    stats_nm: str = \"\",\n    base_stats_path: str = None,\n    base_stats_nm: str = \"\"\n):\n    '''\n    Inputs:\n        - op_type: training or serving or predictions\n        - stats_nm: name of new stats\n        - base_stats_path: path to base stats in gcs (usually training)\n        - base_stats_nm: base stats name\n        - statistics: path to statistics imported from generate stats component\n\n    Outputs:\n        - html artifact\n    '''\n\n    import tensorflow_data_validation as tfdv\n    from tensorflow_data_validation.utils.display_util import (\n        get_statistics_html,\n    )\n\n    # load stats\n    stats = tfdv.load_statistics(input_path=statistics.uri)\n    print(\"statistics uri\")\n    print(statistics.uri)\n\n    # create html content\n    if base_stats_path is not None:\n        base_stats = tfdv.load_statistics(input_path=base_stats_path)\n\n        html = get_statistics_html(\n            lhs_statistics=stats,\n            lhs_name=stats_nm,\n            rhs_statistics=base_stats,\n            rhs_name=base_stats_nm,\n        )\n\n    else:\n        html = get_statistics_html(\n            lhs_statistics=stats,\n            lhs_name=stats_nm,\n        )\n\n    # ensure view is stored as html (this will set content-type to text/html)\n    if not view.path.endswith(\".html\"):\n        view.path += \".html\"\n\n    print(\"view path\")\n    print(view.path)\n\n    # write html to output file\n    with open(view.path, \"w\") as f:\n        f.write(html)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-tfdv-slim:1.0.0"
+          }
+        }
+      }
+    },
+    "pipelineInfo": {
+      "name": "churn-12-months-serving-pipeline"
+    },
+    "root": {
+      "dag": {
+        "outputs": {
+          "artifacts": {
+            "batch-prediction-metrics": {
+              "artifactSelectors": [
+                {
+                  "outputArtifactKey": "metrics",
+                  "producerSubtask": "batch-prediction"
+                }
+              ]
+            },
+            "batch-prediction-metricsc": {
+              "artifactSelectors": [
+                {
+                  "outputArtifactKey": "metricsc",
+                  "producerSubtask": "batch-prediction"
+                }
+              ]
+            }
+          }
+        },
+        "tasks": {
+          "batch-prediction": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-batch-prediction"
+            },
+            "dependentTasks": [
+              "load-ml-model"
+            ],
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "churn_12_months"
+                    }
+                  }
+                },
+                "file_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-josh-pr-d1cc3a-default"
+                    }
+                  }
+                },
+                "model_uri": {
+                  "taskOutputParameter": {
+                    "outputParameterKey": "model_uri",
+                    "producerTask": "load-ml-model"
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-josh-pr-d1cc3a"
+                    }
+                  }
+                },
+                "save_data_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/churn_12_months_score.csv.gz"
+                    }
+                  }
+                },
+                "score_date_dash": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "2023-10-10"
+                    }
+                  }
+                },
+                "score_table": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bq_churn_12_months_scores"
+                    }
+                  }
+                },
+                "service_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "churn_12_months"
+                    }
+                  }
+                },
+                "table_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bq_c12m_serving_dataset_preprocessed"
+                    }
+                  }
+                },
+                "temp_table": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "temp_churn_12_months_scores"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "batch-prediction"
+            }
+          },
+          "bq-create-dataset": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-bq-create-dataset"
+            },
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "churn_12_months"
+                    }
+                  }
+                },
+                "environment": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "serving"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-josh-pr-d1cc3a"
+                    }
+                  }
+                },
+                "region": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "northamerica-northeast1"
+                    }
+                  }
+                },
+                "score_date": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "2023-10-10"
+                    }
+                  }
+                },
+                "score_date_delta": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "0"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.a0AfB_byD2q_LORebOaaIAhbg-e7YvO9_OPoLJZiQbUBl2dJNA_QkJORtHfGAcI8GvJ1CRQw5ZROSiy_AInXQoMpJpg7a_dboYMu4-zL7uH__Nr04_OF1R2sAl-e_KXINQqTsCMXuABXxNP6TYocm38cJmxVnrjbesWRDTfMRVFrp0aCgYKATgSARISFQGOcNnCNMPElau8GDCDVyHmlOzapw0179"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "bq-create-dataset"
+            }
+          },
+          "generate-data-stats": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-generate-data-stats"
+            },
+            "dependentTasks": [
+              "postprocess"
+            ],
+            "inputs": {
+              "parameters": {
+                "bucket_nm": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-josh-pr-d1cc3a-default"
+                    }
+                  }
+                },
+                "data_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "csv"
+                    }
+                  }
+                },
+                "date_col": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": ""
+                    }
+                  }
+                },
+                "date_filter": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": ""
+                    }
+                  }
+                },
+                "dest_schema_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": ""
+                    }
+                  }
+                },
+                "dest_stats_bq_dataset": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "churn_12_months"
+                    }
+                  }
+                },
+                "dest_stats_gcs_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/statistics/serving_statistics_2023-10-13"
+                    }
+                  }
+                },
+                "in_bq_ind": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "1"
+                    }
+                  }
+                },
+                "model_nm": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "churn_12_months"
+                    }
+                  }
+                },
+                "model_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "supervised"
+                    }
+                  }
+                },
+                "op_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "serving"
+                    }
+                  }
+                },
+                "pass_through_features": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "[\"ban\"]"
+                    }
+                  }
+                },
+                "pred_cols": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "[]"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-josh-pr-d1cc3a"
+                    }
+                  }
+                },
+                "row_sample": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "1"
+                    }
+                  }
+                },
+                "src_bq_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": ""
+                    }
+                  }
+                },
+                "src_csv_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/churn_12_months_score_monitoring.csv"
+                    }
+                  }
+                },
+                "table_block_sample": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "1"
+                    }
+                  }
+                },
+                "training_target_col": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": ""
+                    }
+                  }
+                },
+                "update_ts": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "2023-10-13 00:00:42"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "generate-serving-data-statistics"
+            }
+          },
+          "load-ml-model": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-load-ml-model"
+            },
+            "dependentTasks": [
+              "preprocess"
+            ],
+            "inputs": {
+              "parameters": {
+                "model_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "churn_12_months"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-josh-pr-d1cc3a"
+                    }
+                  }
+                },
+                "region": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "northamerica-northeast1"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "load-ml-model"
+            }
+          },
+          "postprocess": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-postprocess"
+            },
+            "dependentTasks": [
+              "batch-prediction"
+            ],
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "churn_12_months"
+                    }
+                  }
+                },
+                "file_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-josh-pr-d1cc3a-default"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-josh-pr-d1cc3a"
+                    }
+                  }
+                },
+                "score_date_dash": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "2023-10-10"
+                    }
+                  }
+                },
+                "service_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "churn_12_months"
+                    }
+                  }
+                },
+                "temp_table": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "temp_churn_12_months_scores"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.a0AfB_byD2q_LORebOaaIAhbg-e7YvO9_OPoLJZiQbUBl2dJNA_QkJORtHfGAcI8GvJ1CRQw5ZROSiy_AInXQoMpJpg7a_dboYMu4-zL7uH__Nr04_OF1R2sAl-e_KXINQqTsCMXuABXxNP6TYocm38cJmxVnrjbesWRDTfMRVFrp0aCgYKATgSARISFQGOcNnCNMPElau8GDCDVyHmlOzapw0179"
+                    }
+                  }
+                },
+                "ucar_score_table": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bi-srv-mobilityds-pr-80a48d.ucar_ingestion.bq_product_instance_model_score"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "postprocess"
+            }
+          },
+          "preprocess": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-preprocess"
+            },
+            "dependentTasks": [
+              "bq-create-dataset"
+            ],
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "churn_12_months"
+                    }
+                  }
+                },
+                "file_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-josh-pr-d1cc3a-default"
+                    }
+                  }
+                },
+                "pipeline_dataset": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bq_c12m_serving_dataset"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-josh-pr-d1cc3a"
+                    }
+                  }
+                },
+                "save_data_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/churn_12_months_score.csv.gz"
+                    }
+                  }
+                },
+                "service_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "churn_12_months"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "preprocess"
+            }
+          },
+          "validate-stats": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-validate-stats"
+            },
+            "dependentTasks": [
+              "generate-data-stats",
+              "visualize-stats"
+            ],
+            "inputs": {
+              "artifacts": {
+                "statistics": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "statistics",
+                    "producerTask": "generate-data-stats"
+                  }
+                }
+              },
+              "parameters": {
+                "base_stats_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/statistics/training_statistics_2023-10-12"
+                    }
+                  }
+                },
+                "bucket_nm": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-josh-pr-d1cc3a-default"
+                    }
+                  }
+                },
+                "dest_anomalies_bq_dataset": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "churn_12_months"
+                    }
+                  }
+                },
+                "dest_anomalies_gcs_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/anomalies/anomalies_2023-10-13"
+                    }
+                  }
+                },
+                "in_bq_ind": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "1"
+                    }
+                  }
+                },
+                "model_nm": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "churn_12_months"
+                    }
+                  }
+                },
+                "op_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "serving"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-josh-pr-d1cc3a"
+                    }
+                  }
+                },
+                "src_anomaly_thresholds_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "churn_12_months/training_statistics/anomaly_thresholds.json"
+                    }
+                  }
+                },
+                "src_schema_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/schemas/training_stats_schema_2023-10-12"
+                    }
+                  }
+                },
+                "update_ts": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "2023-10-13 00:00:42"
+                    }
+                  }
+                },
+                "validation_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "skew"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "validate-stats"
+            }
+          },
+          "visualize-stats": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-visualize-stats"
+            },
+            "dependentTasks": [
+              "generate-data-stats"
+            ],
+            "inputs": {
+              "artifacts": {
+                "statistics": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "statistics",
+                    "producerTask": "generate-data-stats"
+                  }
+                }
+              },
+              "parameters": {
+                "base_stats_nm": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "Training Statistics 2023-10-12 16:13:36"
+                    }
+                  }
+                },
+                "base_stats_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/statistics/training_statistics_2023-10-12"
+                    }
+                  }
+                },
+                "op_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "serving"
+                    }
+                  }
+                },
+                "stats_nm": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "Serving Statistics 2023-10-13 00:00:42"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "visualize-serving-data-statistics"
+            }
+          }
+        }
+      },
+      "inputDefinitions": {
+        "parameters": {
+          "file_bucket": {
+            "type": "STRING"
+          },
+          "project_id": {
+            "type": "STRING"
+          },
+          "region": {
+            "type": "STRING"
+          },
+          "resource_bucket": {
+            "type": "STRING"
+          }
+        }
+      },
+      "outputDefinitions": {
+        "artifacts": {
+          "batch-prediction-metrics": {
+            "artifactType": {
+              "schemaTitle": "system.Metrics",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "batch-prediction-metricsc": {
+            "artifactType": {
+              "schemaTitle": "system.ClassificationMetrics",
+              "schemaVersion": "0.0.1"
+            }
+          }
+        }
+      }
+    },
+    "schemaVersion": "2.0.0",
+    "sdkVersion": "kfp-1.8.18"
+  },
+  "runtimeConfig": {
+    "parameters": {
+      "file_bucket": {
+        "stringValue": "divg-josh-pr-d1cc3a-default"
+      },
+      "project_id": {
+        "stringValue": "divg-josh-pr-d1cc3a"
+      },
+      "region": {
+        "stringValue": "northamerica-northeast1"
+      },
+      "resource_bucket": {
+        "stringValue": "divg-josh-pr-d1cc3a-default"
+      }
+    }
+  }
+}
