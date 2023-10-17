@@ -61,12 +61,17 @@ implementation:
       \ to anomalies file          \n    ''' \n\n    import logging \n    import tensorflow_data_validation\
       \ as tfdv \n    from google.cloud import storage \n    from google.cloud import\
       \ bigquery \n    import json \n    import pandas as pd \n    from datetime import\
-      \ datetime \n\n    # convert timestamp to datetime \n    update_ts = datetime.strptime(update_ts,\
-      \ '%Y-%m-%d %H:%M:%S') \n\n    # set uri of anomalies output \n    anomalies.uri\
-      \ = dest_anomalies_gcs_path \n\n    def load_stats(path): \n        print(f'loading\
-      \ stats from: {path}') \n        return tfdv.load_statistics(input_path=path)\
-      \ \n\n    base_stats = load_stats(base_stats_path) \n    stats = load_stats(statistics.uri)\
-      \ \n\n    # get schema \n    schema = tfdv.load_schema_text(\n        input_path=src_schema_path\n\
+      \ datetime \n\n    if (validation_type != \"skew\") and (validation_type !=\
+      \ \"drift\"):\n        raise ValueError(\"Error: the validation_type can only\
+      \ be one of skew or drift\")\n\n    if (op_type != \"serving\") and (op_type\
+      \ != \"predictions\"):\n        raise ValueError(\"Error: the op_type can only\
+      \ be one of serving or predictions\")\n\n    # convert timestamp to datetime\
+      \ \n    update_ts = datetime.strptime(update_ts, '%Y-%m-%d %H:%M:%S') \n\n \
+      \   # set uri of anomalies output \n    anomalies.uri = dest_anomalies_gcs_path\
+      \ \n\n    def load_stats(path): \n        print(f'loading stats from: {path}')\
+      \ \n        return tfdv.load_statistics(input_path=path) \n\n    base_stats\
+      \ = load_stats(base_stats_path) \n    stats = load_stats(statistics.uri) \n\n\
+      \    # get schema \n    schema = tfdv.load_schema_text(\n        input_path=src_schema_path\n\
       \        ) \n\n    if op_type == 'serving': \n        # set anomaly check to\
       \ features \n        anomaly_check = 'features' \n\n        # ensure that serving\
       \ set as env \n        if 'SERVING' not in schema.default_environment: \n  \
@@ -109,7 +114,8 @@ implementation:
       \ = pd.Series({ \n                'model_nm': model_nm, \n                'update_ts':\
       \ update_ts, \n                'feature_nm': feature, \n                'short_description':\
       \ short_description, \n                'long_description': long_description\n\
-      \                }) \n\n    #check for skew-drift \n    if bool(skew_drift_dict):\
+      \                }) \n\n    # check for skew-drift\n    df_sd = pd.DataFrame(columns=['feature_nm',\
+      \ 'skew_drift'])\n\n    #check for skew-drift \n    if bool(skew_drift_dict):\
       \ \n        for sd in skew_drift_dict: \n\n            feature = sd.path.step[0]\n\
       \n            if validation_type == 'skew': \n                value = sd.skew_measurements[0].value\
       \ \n                threshold = sd.skew_measurements[0].threshold \n       \
@@ -120,15 +126,15 @@ implementation:
       \ = sd.drift_measurements[0].type \n            else: \n                print(\"\
       Please specify skew or drift\") \n\n            if skew_drift_type_num == 1:\
       \ \n                skew_drift_type = 'L_INFTY' \n            elif skew_drift_type_num\
-      \ == 2: \n                skew_drift_type == 'JENSEN_SHANNON_DIVERGENCE' \n\
-      \            elif skew_drift_type_num == 3: \n                skew_drift_type\
+      \ == 2: \n                skew_drift_type = 'JENSEN_SHANNON_DIVERGENCE' \n \
+      \           elif skew_drift_type_num == 3: \n                skew_drift_type\
       \ = 'NORMALIZED_ABSOLUTE_DIFFERENCE' \n            else: \n                skew_drift_type\
       \ = 'UNKNOWN' \n\n            df_sd.loc[len(df_sd.index)] = pd.Series({ \n \
       \               'feature_nm': feature, \n                'skew_drift': {'type':\
       \ skew_drift_type, 'validation_type': val_type, 'value': value, 'threshold':\
       \ threshold}\n                }) \n\n            print(feature) \n\n    df_anomalies\
-      \ = pd.merge(df_anomalies, df_sd, on='feature_nm', how='left') \n\n#     # load\
-      \ data stats into BQ table \n#     client = bigquery.Client(project=project_id)\
+      \ = pd.merge(df_anomalies, df_sd, on='feature_nm', how='left') \n\n    # load\
+      \ data stats into BQ table \n    client = bigquery.Client(project=project_id)\
       \ \n\n    job_config = bigquery.LoadJobConfig(write_disposition='WRITE_APPEND',\
       \ \n                                        schema=[bigquery.SchemaField(\n\
       \                                                    'model_nm', 'STRING'),\

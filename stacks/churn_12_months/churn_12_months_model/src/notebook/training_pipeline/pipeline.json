@@ -189,8 +189,8 @@
           }
         }
       },
-      "comp-train-and-save-model": {
-        "executorLabel": "exec-train-and-save-model",
+      "comp-train-and-save-model-pycaret": {
+        "executorLabel": "exec-train-and-save-model-pycaret",
         "inputDefinitions": {
           "parameters": {
             "dataset_id": {
@@ -452,13 +452,13 @@
             }
           }
         },
-        "exec-train-and-save-model": {
+        "exec-train-and-save-model-pycaret": {
           "container": {
             "args": [
               "--executor_input",
               "{{$}}",
               "--function_to_execute",
-              "train_and_save_model"
+              "train_and_save_model_pycaret"
             ],
             "command": [
               "sh",
@@ -467,12 +467,12 @@
               "sh",
               "-ec",
               "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
-              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef train_and_save_model(file_bucket: str\n                        , service_type: str\n                        , score_date_dash: str\n                        , score_date_val_dash: str\n                        , project_id: str\n                        , dataset_id: str\n                        , metrics: Output[Metrics]\n                        , metricsc: Output[ClassificationMetrics]\n                        , model: Output[Model]\n                        , token: str\n            )-> NamedTuple(\"output\", [(\"col_list\", list), (\"model_uri\", str)]):\n\n    import gc\n    import time\n    import pandas as pd\n    import numpy as np\n    import pickle\n    import xgboost as xgb\n    from datetime import datetime\n    from sklearn.metrics import roc_auc_score\n    from sklearn.preprocessing import normalize\n    from sklearn.model_selection import train_test_split\n    from google.cloud import storage\n    from google.cloud import bigquery\n\n    def get_lift(prob, y_test, q):\n        result = pd.DataFrame(columns=['Prob', 'Churn'])\n        result['Prob'] = prob\n        result['Churn'] = y_test\n        # result['Decile'] = pd.qcut(1-result['Prob'], 10, labels = False)\n        result['Decile'] = pd.qcut(result['Prob'], q, labels=[i for i in range(q, 0, -1)])\n        add = pd.DataFrame(result.groupby('Decile')['Churn'].mean()).reset_index()\n        add.columns = ['Decile', 'avg_real_churn_rate']\n        result = result.merge(add, on='Decile', how='left')\n        result.sort_values('Decile', ascending=True, inplace=True)\n        lg = pd.DataFrame(result.groupby('Decile')['Prob'].mean()).reset_index()\n        lg.columns = ['Decile', 'avg_model_pred_churn_rate']\n        lg.sort_values('Decile', ascending=False, inplace=True)\n        lg['avg_churn_rate_total'] = result['Churn'].mean()\n        lg['total_churn'] = result['Churn'].sum()\n        lg = lg.merge(add, on='Decile', how='left')\n        lg['lift'] = lg['avg_real_churn_rate'] / lg['avg_churn_rate_total']\n\n        return lg\n\n    df_train = pd.read_csv('gs://{}/{}/{}_train.csv.gz'.format(file_bucket, service_type, service_type),\n                           compression='gzip')  \n    df_test = pd.read_csv('gs://{}/{}/{}_validation.csv.gz'.format(file_bucket, service_type, service_type),  \n                          compression='gzip')\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    #set up df_train\n    sql_train = ''' SELECT * FROM `{}.{}.bq_churn_12_months_targets` '''.format(project_id, dataset_id) \n    df_target_train = client.query(sql_train).to_dataframe()\n    df_target_train = df_target_train.loc[\n        df_target_train['YEAR_MONTH'] == '-'.join(score_date_dash.split('-')[:2])]  # score_date_dash = '2022-08-31'\n    df_target_train['ban'] = df_target_train['ban'].astype('int64')\n    df_target_train = df_target_train.groupby('ban').tail(1)\n    df_train = df_train.merge(df_target_train[['ban', 'target_ind']], on='ban', how='left')\n    df_train.rename(columns={'target_ind': 'target'}, inplace=True)\n    df_train['target'].fillna(0, inplace=True)\n    df_train['target'] = df_train['target'].astype(int)\n    print(df_train.shape)\n\n    #set up df_test\n    sql_test = ''' SELECT * FROM `{}.{}.bq_churn_12_months_targets` '''.format(project_id, dataset_id) \n    df_target_test = client.query(sql_test).to_dataframe()\n    df_target_test = df_target_test.loc[\n        df_target_test['YEAR_MONTH'] == '-'.join(score_date_val_dash.split('-')[:2])]  # score_date_dash = '2022-09-30'\n    df_target_test['ban'] = df_target_test['ban'].astype('int64')\n    df_target_test = df_target_test.groupby('ban').tail(1)\n    df_test = df_test.merge(df_target_test[['ban', 'target_ind']], on='ban', how='left')\n    df_test.rename(columns={'target_ind': 'target'}, inplace=True)\n    df_test['target'].fillna(0, inplace=True)\n    df_test['target'] = df_test['target'].astype(int)\n    print(df_test.shape)\n\n    df_train.to_csv('gs://{}/{}/{}_train_monitoring.csv'.format(file_bucket, service_type, service_type))\n    df_test.to_csv('gs://{}/{}/{}_validation_monitoring.csv'.format(file_bucket, service_type, service_type))\n\n    #set up features (list)\n    cols_1 = df_train.columns.values\n    cols_2 = df_test.columns.values\n    cols = set(cols_1).intersection(set(cols_2))\n    features = [f for f in cols if f not in ['ban', 'target']]\n\n    #train test split\n    df_train, df_val = train_test_split(df_train, shuffle=True, test_size=0.25, random_state=42,\n                                        stratify=df_train['target']\n                                        )\n\n    create_time = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\n    df_train.to_csv('gs://{}/{}/backup/{}_train_{}.csv'.format(file_bucket, service_type, service_type, create_time))\n    df_val.to_csv('gs://{}/{}/backup/{}_train_{}.csv'.format(file_bucket, service_type, service_type, create_time))\n    df_test.to_csv('gs://{}/{}/backup/{}_train_{}.csv'.format(file_bucket, service_type, service_type, create_time))\n\n    ban_train = df_train['ban']\n    X_train = df_train[features]\n    y_train = np.squeeze(df_train['target'].values)\n\n    ban_val = df_val['ban']\n    X_val = df_val[features]\n    y_val = np.squeeze(df_val['target'].values)\n\n    ban_test = df_test['ban']\n    X_test = df_test[features]\n    y_test = np.squeeze(df_test['target'].values)\n\n    del df_train, df_val, df_test\n    gc.collect()\n\n    # build model and fit in training data\n    xgb_model = xgb.XGBClassifier(\n        learning_rate=0.1,\n        n_estimators=100,\n        max_depth=8,\n        min_child_weight=1,\n        gamma=0,\n        subsample=0.8,\n        colsample_bytree=0.8,\n        objective='binary:logistic',\n        nthread=4,\n        scale_pos_weight=1\n        # seed=27\n    )\n\n    xgb_model.fit(X_train, y_train)\n    print('xgb training done')\n\n    #predictions on X_val\n    y_pred = xgb_model.predict_proba(X_val, ntree_limit=xgb_model.best_iteration)[:, 1]\n    y_pred_label = (y_pred > 0.5).astype(int)\n    auc = roc_auc_score(y_val, y_pred_label)\n    metrics.log_metric(\"AUC\", auc)\n\n    pred_prb = xgb_model.predict_proba(X_test, ntree_limit=xgb_model.best_iteration)[:, 1]\n    lg = get_lift(pred_prb, y_test, 10)\n\n    # save the model in GCS\n    models_dict = {}\n    create_time = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\n    models_dict['create_time'] = create_time\n    models_dict['model'] = xgb_model\n    models_dict['features'] = features\n    lg.to_csv('gs://{}/{}/lift_on_scoring_data_{}.csv'.format(file_bucket, service_type, create_time, index=False))\n\n    with open('model_dict.pkl', 'wb') as handle:\n        pickle.dump(models_dict, handle)\n    handle.close()\n\n    storage_client = storage.Client()\n    bucket = storage_client.get_bucket(file_bucket)\n\n    MODEL_PATH = '{}/{}_xgb_models/'.format(service_type, service_type)\n    blob = bucket.blob(MODEL_PATH)\n    if not blob.exists(storage_client):\n        blob.upload_from_string('')\n\n    model_name_onbkt = '{}{}_models_xgb_{}'.format(MODEL_PATH, service_type, models_dict['create_time'])\n    blob = bucket.blob(model_name_onbkt)\n    blob.upload_from_filename('model_dict.pkl')\n\n    model.uri = f'gs://{file_bucket}/{model_name_onbkt}'\n\n    print(f\"....model loaded to GCS done at {str(create_time)}\")\n\n    col_list = features\n\n    return (col_list, model.uri)\n\n"
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef train_and_save_model_pycaret(file_bucket: str\n                        , service_type: str\n                        , score_date_dash: str\n                        , score_date_val_dash: str\n                        , project_id: str\n                        , dataset_id: str\n                        , metrics: Output[Metrics]\n                        , metricsc: Output[ClassificationMetrics]\n                        , model: Output[Model]\n                        , token: str\n                        )-> NamedTuple(\"output\", [(\"col_list\", list), (\"model_uri\", str)]):\n\n    #### Import Libraries ####\n\n    import gc\n    import time\n    import pandas as pd\n    import numpy as np\n    import pickle\n    import xgboost as xgb\n    import seaborn as sns\n    import logging \n    from datetime import datetime\n    from sklearn.metrics import roc_auc_score\n    from sklearn.preprocessing import normalize\n    from sklearn.model_selection import train_test_split\n    from google.cloud import storage\n    from google.cloud import bigquery\n\n    from pycaret.classification import setup,create_model,tune_model, predict_model,get_config,compare_models,save_model,tune_model, models\n    from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve, mean_squared_error, f1_score, precision_score, recall_score, confusion_matrix, roc_curve\n    from pycaret.datasets import get_data\n\n    def get_lift(prob, y_test, q):\n        result = pd.DataFrame(columns=['Prob', 'Churn'])\n        result['Prob'] = prob\n        result['Churn'] = y_test\n        # result['Decile'] = pd.qcut(1-result['Prob'], 10, labels = False)\n        result['Decile'] = pd.qcut(result['Prob'], q, labels=[i for i in range(q, 0, -1)])\n        add = pd.DataFrame(result.groupby('Decile')['Churn'].mean()).reset_index()\n        add.columns = ['Decile', 'avg_real_churn_rate']\n        result = result.merge(add, on='Decile', how='left')\n        result.sort_values('Decile', ascending=True, inplace=True)\n        lg = pd.DataFrame(result.groupby('Decile')['Prob'].mean()).reset_index()\n        lg.columns = ['Decile', 'avg_model_pred_churn_rate']\n        lg.sort_values('Decile', ascending=False, inplace=True)\n        lg['avg_churn_rate_total'] = result['Churn'].mean()\n        lg['total_churn'] = result['Churn'].sum()\n        lg = lg.merge(add, on='Decile', how='left')\n        lg['lift'] = lg['avg_real_churn_rate'] / lg['avg_churn_rate_total']\n\n        return lg\n\n    df_train = pd.read_csv('gs://{}/{}/{}_train.csv.gz'.format(file_bucket, service_type, service_type),\n                           compression='gzip')  \n    df_test = pd.read_csv('gs://{}/{}/{}_validation.csv.gz'.format(file_bucket, service_type, service_type),  \n                          compression='gzip')\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    #set up df_train\n    sql_train = ''' SELECT * FROM `{}.{}.bq_churn_12_months_targets` '''.format(project_id, dataset_id) \n    df_target_train = client.query(sql_train).to_dataframe()\n    df_target_train = df_target_train.loc[\n        df_target_train['YEAR_MONTH'] == '-'.join(score_date_dash.split('-')[:2])]  # score_date_dash = '2022-08-31'\n    df_target_train['ban'] = df_target_train['ban'].astype('int64')\n    df_target_train = df_target_train.groupby('ban').tail(1)\n    df_train = df_train.merge(df_target_train[['ban', 'target_ind']], on='ban', how='left')\n    df_train.rename(columns={'target_ind': 'target'}, inplace=True)\n    df_train['target'].fillna(0, inplace=True)\n    df_train['target'] = df_train['target'].astype(int)\n    print(df_train.shape)\n\n    #set up df_test\n    sql_test = ''' SELECT * FROM `{}.{}.bq_churn_12_months_targets` '''.format(project_id, dataset_id) \n    df_target_test = client.query(sql_test).to_dataframe()\n    df_target_test = df_target_test.loc[\n        df_target_test['YEAR_MONTH'] == '-'.join(score_date_val_dash.split('-')[:2])]  # score_date_dash = '2022-09-30'\n    df_target_test['ban'] = df_target_test['ban'].astype('int64')\n    df_target_test = df_target_test.groupby('ban').tail(1)\n    df_test = df_test.merge(df_target_test[['ban', 'target_ind']], on='ban', how='left')\n    df_test.rename(columns={'target_ind': 'target'}, inplace=True)\n    df_test['target'].fillna(0, inplace=True)\n    df_test['target'] = df_test['target'].astype(int)\n    print(df_test.shape)\n\n    df_train.to_csv('gs://{}/{}/{}_train_monitoring.csv'.format(file_bucket, service_type, service_type))\n    df_test.to_csv('gs://{}/{}/{}_validation_monitoring.csv'.format(file_bucket, service_type, service_type))\n\n    #### Define Variables\n\n    # Define target variable\n    target = 'target'\n    drop_cols = ['ban', 'target']\n    cat_feat = []\n\n    # define X and y\n    X = df_train.drop(columns=drop_cols) \n    y = df_train[target]\n\n    X_test = df_test.drop(columns=drop_cols) \n    y_test = df_test[target]\n\n    # Split the data into training and testing sets with a 70-30 split\n    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.3, random_state=42)\n\n    df_train = X_train.join(y_train)\n    df_val = X_val.join(y_val)\n    df_test = X_test.join(y_test)\n\n    # save backups\n    create_time = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\n    df_train.to_csv('gs://{}/{}/backup/{}_train_{}.csv'.format(file_bucket, service_type, service_type, create_time))\n    df_val.to_csv('gs://{}/{}/backup/{}_train_{}.csv'.format(file_bucket, service_type, service_type, create_time))\n    df_test.to_csv('gs://{}/{}/backup/{}_train_{}.csv'.format(file_bucket, service_type, service_type, create_time))\n\n    #set up features (list)\n    cols_1 = df_train.columns.values\n    cols_2 = df_test.columns.values\n    cols = set(cols_1).intersection(set(cols_2))\n    features = [f for f in cols if f not in ['ban', 'target']]\n\n    # assign numeric and categorical features\n    numeric_features = [col for col in df_train.columns if col not in drop_cols+cat_feat]\n    categorical_features = [col for col in df_train.columns if col in cat_feat]\n\n    #### Pycaret Setup initialize\n    classification_setup = setup(data=df_train, \n                             target=target,\n                             normalize=True,\n                             normalize_method='zscore',\n                             log_experiment=False,\n                             fold=5,\n                             fold_shuffle=True,\n                             session_id=123,\n                             numeric_features=numeric_features,\n                             categorical_features=categorical_features, \n                             fix_imbalance=True, \n                             remove_multicollinearity=True, \n                             multicollinearity_threshold=0.95, \n                             silent=True)\n\n    ##### experiment with xgboost\n    top_models = compare_models(include = ['rf','xgboost','lightgbm'], errors='raise', n_select=3)\n\n    # assign best_model to models for code simplicity\n    models = top_models.copy()\n\n    # define dictionaries to contain results\n    eval_results = {}\n    model_dict = {}\n\n    for i in range(len(models)):\n\n        # print model name\n        model_name = models[i].__class__.__name__\n        print(model_name)\n\n        # Get predictions on test set for model\n        predictions = predict_model(models[i], data=df_test, raw_score=True)\n\n        # Actual vs predicted\n        y_true = predictions[target]\n        y_pred = predictions[\"Label\"]\n        y_score = predictions[\"Score_1\"]\n\n        # calculate Accuracy, AUC, Recall, Precision, F1 \n        accuracy = accuracy_score(y_true, y_pred)\n        auc = roc_auc_score(y_true, y_score)\n        recall = recall_score(y_true, y_pred)\n        precision = precision_score(y_true, y_pred)\n        f1 = f1_score(y_true, y_pred)\n\n        # use rmse as the key indicator for best performance\n        eval_results[model_name] = f1\n        model_dict[model_name] = models[i]\n\n    # Find the model with the lowest rmse\n    top_model = max(eval_results, key=eval_results.get)\n\n    # Print the result\n    print(\"The top performing model on the test dataset:\", top_model, \", f1 score:\", eval_results[top_model])\n\n    #### Model Tuning ###\n    model_base = create_model(model_dict[top_model])\n    tuned_model, tuner = tune_model(model_base, optimize='F1', return_tuner = True, n_iter = 25)\n    # model_reports_tuned, model_to_report_map_tuned = evaluate_and_save_models(models=tuned_model, \n    #                                      bucket_name=bucket_name,\n    #                                      save_path=save_path, \n    #                                      test_df=test_df,\n    #                                      actual_label_str='target',\n    #                                      columns = get_config('X_train').columns,\n    #                                      save_columns=True,\n    #                                      show_report=False)\n\n    #### Final Evaluation ####\n    # print model name\n    model_name = tuned_model.__class__.__name__\n    print(f'model_name: {model_name}')\n\n    # Get predictions on test set for model\n    predictions = predict_model(tuned_model, data=df_test, raw_score=True)\n\n    # Actual vs predicted\n    y_true = predictions[target]\n    y_pred = predictions[\"Label\"]\n    y_score = predictions[\"Score_1\"]\n\n    # get lift\n    lg = get_lift(y_score, y_true, 10)\n\n    # save the lift calc in GCS\n    models_dict = {}\n    create_time = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\n    models_dict['create_time'] = create_time\n    models_dict['model'] = tuned_model\n    models_dict['features'] = features\n    lg.to_csv('gs://{}/{}/lift_on_scoring_data_{}.csv'.format(file_bucket, service_type, create_time, index=False))\n\n    # calculate Accuracy, AUC, Recall, Precision, F1 \n    accuracy = accuracy_score(y_true, y_pred)\n    auc = roc_auc_score(y_true, y_score)\n    recall = recall_score(y_true, y_pred)\n    precision = precision_score(y_true, y_pred)\n    f1 = f1_score(y_true, y_pred)\n\n    print(f'accuracy: {accuracy}')\n    print(f'auc: {auc}')\n    print(f'recall: {recall}')\n    print(f'precision: {precision}')\n    print(f'f1: {f1}')\n\n    with open('model_dict.pkl', 'wb') as handle:\n        pickle.dump(models_dict, handle)\n    handle.close()\n\n    storage_client = storage.Client()\n    bucket = storage_client.get_bucket(file_bucket)\n\n    model_path = '{}/{}_models/'.format(service_type, service_type)\n    blob = bucket.blob(model_path)\n    if not blob.exists(storage_client):\n        blob.upload_from_string('')\n\n    model_name_onbkt = '{}{}_models_{}'.format(model_path, service_type, models_dict['create_time'])\n    blob = bucket.blob(model_name_onbkt)\n    blob.upload_from_filename('model_dict.pkl')\n\n    model.uri = f'gs://{file_bucket}/{model_name_onbkt}'\n\n    print(f\"....model loaded to GCS done at {str(create_time)}\")\n\n    col_list = features\n\n    return (col_list, model.uri)\n\n"
             ],
             "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
             "resources": {
-              "cpuLimit": 4.0,
-              "memoryLimit": 32.0
+              "cpuLimit": 16.0,
+              "memoryLimit": 128.0
             }
           }
         },
@@ -529,19 +529,19 @@
       "dag": {
         "outputs": {
           "artifacts": {
-            "train-and-save-model-metrics": {
+            "train-and-save-model-pycaret-metrics": {
               "artifactSelectors": [
                 {
                   "outputArtifactKey": "metrics",
-                  "producerSubtask": "train-and-save-model"
+                  "producerSubtask": "train-and-save-model-pycaret"
                 }
               ]
             },
-            "train-and-save-model-metricsc": {
+            "train-and-save-model-pycaret-metricsc": {
               "artifactSelectors": [
                 {
                   "outputArtifactKey": "metricsc",
-                  "producerSubtask": "train-and-save-model"
+                  "producerSubtask": "train-and-save-model-pycaret"
                 }
               ]
             }
@@ -602,7 +602,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0AfB_byBTZ9dCo8UqcVb_VwoZqTa6WrhZh55W4fcf8HBhAwm9nRcymXycf7_mNmo3XxcYm78gBPk_oZgmLuasUY42nTG5zUt0btglfwPhtKbfEHMhUFCTuR3wCIAuQM77c1dDk-oHK_7ZCuomS7VFCxPN8C1irrXY_LgIgzKB2mWVaCgYKAXISARISFQGOcNnCcm8d4tQk4JRA3BkufLiwwA0179"
+                      "stringValue": "ya29.a0AfB_byDymCbfnxwuimQ8qSQUPO5R_SaidGxIRXVgqFAkX85taoFl-te9QxpdO0Oq9uvSIhEj-fBh7M4W3gD5Xe5jp7o-5OialTjtbkfj24YlTU4R_N3d3rgaCluw8b652m_1Wggx1Jm7H4Nfh8a5BVmI3Zie6LRvK8TDepRR-20waCgYKAWgSARISFQGOcNnCr-_ETQ0JLL_4ZcSCu37g_A0179"
                     }
                   }
                 }
@@ -669,7 +669,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0AfB_byBTZ9dCo8UqcVb_VwoZqTa6WrhZh55W4fcf8HBhAwm9nRcymXycf7_mNmo3XxcYm78gBPk_oZgmLuasUY42nTG5zUt0btglfwPhtKbfEHMhUFCTuR3wCIAuQM77c1dDk-oHK_7ZCuomS7VFCxPN8C1irrXY_LgIgzKB2mWVaCgYKAXISARISFQGOcNnCcm8d4tQk4JRA3BkufLiwwA0179"
+                      "stringValue": "ya29.a0AfB_byDymCbfnxwuimQ8qSQUPO5R_SaidGxIRXVgqFAkX85taoFl-te9QxpdO0Oq9uvSIhEj-fBh7M4W3gD5Xe5jp7o-5OialTjtbkfj24YlTU4R_N3d3rgaCluw8b652m_1Wggx1Jm7H4Nfh8a5BVmI3Zie6LRvK8TDepRR-20waCgYKAWgSARISFQGOcNnCr-_ETQ0JLL_4ZcSCu37g_A0179"
                     }
                   }
                 }
@@ -722,7 +722,7 @@
                 "dest_schema_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/schemas/training_stats_schema_2023-10-12"
+                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/schemas/training_stats_schema_2023-10-17"
                     }
                   }
                 },
@@ -736,7 +736,7 @@
                 "dest_stats_gcs_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/statistics/training_statistics_2023-10-12"
+                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/statistics/training_statistics_2023-10-17"
                     }
                   }
                 },
@@ -820,7 +820,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0AfB_byBTZ9dCo8UqcVb_VwoZqTa6WrhZh55W4fcf8HBhAwm9nRcymXycf7_mNmo3XxcYm78gBPk_oZgmLuasUY42nTG5zUt0btglfwPhtKbfEHMhUFCTuR3wCIAuQM77c1dDk-oHK_7ZCuomS7VFCxPN8C1irrXY_LgIgzKB2mWVaCgYKAXISARISFQGOcNnCcm8d4tQk4JRA3BkufLiwwA0179"
+                      "stringValue": "ya29.a0AfB_byDymCbfnxwuimQ8qSQUPO5R_SaidGxIRXVgqFAkX85taoFl-te9QxpdO0Oq9uvSIhEj-fBh7M4W3gD5Xe5jp7o-5OialTjtbkfj24YlTU4R_N3d3rgaCluw8b652m_1Wggx1Jm7H4Nfh8a5BVmI3Zie6LRvK8TDepRR-20waCgYKAWgSARISFQGOcNnCr-_ETQ0JLL_4ZcSCu37g_A0179"
                     }
                   }
                 },
@@ -834,7 +834,7 @@
                 "update_ts": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-10-12 15:01:45"
+                      "stringValue": "2023-10-17 16:18:28"
                     }
                   }
                 }
@@ -936,12 +936,12 @@
               "name": "preprocess-2"
             }
           },
-          "train-and-save-model": {
+          "train-and-save-model-pycaret": {
             "cachingOptions": {
               "enableCache": true
             },
             "componentRef": {
-              "name": "comp-train-and-save-model"
+              "name": "comp-train-and-save-model-pycaret"
             },
             "dependentTasks": [
               "preprocess-2"
@@ -993,14 +993,14 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0AfB_byBTZ9dCo8UqcVb_VwoZqTa6WrhZh55W4fcf8HBhAwm9nRcymXycf7_mNmo3XxcYm78gBPk_oZgmLuasUY42nTG5zUt0btglfwPhtKbfEHMhUFCTuR3wCIAuQM77c1dDk-oHK_7ZCuomS7VFCxPN8C1irrXY_LgIgzKB2mWVaCgYKAXISARISFQGOcNnCcm8d4tQk4JRA3BkufLiwwA0179"
+                      "stringValue": "ya29.a0AfB_byDymCbfnxwuimQ8qSQUPO5R_SaidGxIRXVgqFAkX85taoFl-te9QxpdO0Oq9uvSIhEj-fBh7M4W3gD5Xe5jp7o-5OialTjtbkfj24YlTU4R_N3d3rgaCluw8b652m_1Wggx1Jm7H4Nfh8a5BVmI3Zie6LRvK8TDepRR-20waCgYKAWgSARISFQGOcNnCr-_ETQ0JLL_4ZcSCu37g_A0179"
                     }
                   }
                 }
               }
             },
             "taskInfo": {
-              "name": "train-and-save-model"
+              "name": "train-and-save-model-pycaret"
             }
           },
           "upload-model": {
@@ -1011,14 +1011,14 @@
               "name": "comp-upload-model"
             },
             "dependentTasks": [
-              "train-and-save-model"
+              "train-and-save-model-pycaret"
             ],
             "inputs": {
               "artifacts": {
                 "model": {
                   "taskOutputArtifact": {
                     "outputArtifactKey": "model",
-                    "producerTask": "train-and-save-model"
+                    "producerTask": "train-and-save-model-pycaret"
                   }
                 }
               },
@@ -1026,7 +1026,7 @@
                 "col_list": {
                   "taskOutputParameter": {
                     "outputParameterKey": "col_list",
-                    "producerTask": "train-and-save-model"
+                    "producerTask": "train-and-save-model-pycaret"
                   }
                 },
                 "model_name": {
@@ -1039,7 +1039,7 @@
                 "model_uri": {
                   "taskOutputParameter": {
                     "outputParameterKey": "model_uri",
-                    "producerTask": "train-and-save-model"
+                    "producerTask": "train-and-save-model-pycaret"
                   }
                 },
                 "prediction_image": {
@@ -1106,7 +1106,7 @@
                 "stats_nm": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "Training Data Statistics 2023-10-12 15:01:45"
+                      "stringValue": "Training Data Statistics 2023-10-17 16:18:28"
                     }
                   }
                 }
@@ -1136,13 +1136,13 @@
       },
       "outputDefinitions": {
         "artifacts": {
-          "train-and-save-model-metrics": {
+          "train-and-save-model-pycaret-metrics": {
             "artifactType": {
               "schemaTitle": "system.Metrics",
               "schemaVersion": "0.0.1"
             }
           },
-          "train-and-save-model-metricsc": {
+          "train-and-save-model-pycaret-metricsc": {
             "artifactType": {
               "schemaTitle": "system.ClassificationMetrics",
               "schemaVersion": "0.0.1"

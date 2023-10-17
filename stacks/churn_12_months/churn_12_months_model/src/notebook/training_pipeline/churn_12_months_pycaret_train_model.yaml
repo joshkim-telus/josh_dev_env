@@ -1,0 +1,178 @@
+name: Train and save model pycaret
+inputs:
+- {name: file_bucket, type: String}
+- {name: service_type, type: String}
+- {name: score_date_dash, type: String}
+- {name: score_date_val_dash, type: String}
+- {name: project_id, type: String}
+- {name: dataset_id, type: String}
+- {name: token, type: String}
+outputs:
+- {name: metrics, type: Metrics}
+- {name: metricsc, type: ClassificationMetrics}
+- {name: model, type: Model}
+- {name: col_list, type: JsonArray}
+- {name: model_uri, type: String}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef train_and_save_model_pycaret(file_bucket: str\n          \
+      \              , service_type: str\n                        , score_date_dash:\
+      \ str\n                        , score_date_val_dash: str\n                \
+      \        , project_id: str\n                        , dataset_id: str\n    \
+      \                    , metrics: Output[Metrics]\n                        , metricsc:\
+      \ Output[ClassificationMetrics]\n                        , model: Output[Model]\n\
+      \                        , token: str\n                        )-> NamedTuple(\"\
+      output\", [(\"col_list\", list), (\"model_uri\", str)]):\n\n    #### Import\
+      \ Libraries ####\n\n    import gc\n    import time\n    import pandas as pd\n\
+      \    import numpy as np\n    import pickle\n    import xgboost as xgb\n    import\
+      \ seaborn as sns\n    import logging \n    from datetime import datetime\n \
+      \   from sklearn.metrics import roc_auc_score\n    from sklearn.preprocessing\
+      \ import normalize\n    from sklearn.model_selection import train_test_split\n\
+      \    from google.cloud import storage\n    from google.cloud import bigquery\n\
+      \n    from pycaret.classification import setup,create_model,tune_model, predict_model,get_config,compare_models,save_model,tune_model,\
+      \ models\n    from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve,\
+      \ mean_squared_error, f1_score, precision_score, recall_score, confusion_matrix,\
+      \ roc_curve\n    from pycaret.datasets import get_data\n\n    def get_lift(prob,\
+      \ y_test, q):\n        result = pd.DataFrame(columns=['Prob', 'Churn'])\n  \
+      \      result['Prob'] = prob\n        result['Churn'] = y_test\n        # result['Decile']\
+      \ = pd.qcut(1-result['Prob'], 10, labels = False)\n        result['Decile']\
+      \ = pd.qcut(result['Prob'], q, labels=[i for i in range(q, 0, -1)])\n      \
+      \  add = pd.DataFrame(result.groupby('Decile')['Churn'].mean()).reset_index()\n\
+      \        add.columns = ['Decile', 'avg_real_churn_rate']\n        result = result.merge(add,\
+      \ on='Decile', how='left')\n        result.sort_values('Decile', ascending=True,\
+      \ inplace=True)\n        lg = pd.DataFrame(result.groupby('Decile')['Prob'].mean()).reset_index()\n\
+      \        lg.columns = ['Decile', 'avg_model_pred_churn_rate']\n        lg.sort_values('Decile',\
+      \ ascending=False, inplace=True)\n        lg['avg_churn_rate_total'] = result['Churn'].mean()\n\
+      \        lg['total_churn'] = result['Churn'].sum()\n        lg = lg.merge(add,\
+      \ on='Decile', how='left')\n        lg['lift'] = lg['avg_real_churn_rate'] /\
+      \ lg['avg_churn_rate_total']\n\n        return lg\n\n    df_train = pd.read_csv('gs://{}/{}/{}_train.csv.gz'.format(file_bucket,\
+      \ service_type, service_type),\n                           compression='gzip')\
+      \  \n    df_test = pd.read_csv('gs://{}/{}/{}_validation.csv.gz'.format(file_bucket,\
+      \ service_type, service_type),  \n                          compression='gzip')\n\
+      \n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\
+      \n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n\
+      \    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client\
+      \ = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\
+      \n    #set up df_train\n    sql_train = ''' SELECT * FROM `{}.{}.bq_churn_12_months_targets`\
+      \ '''.format(project_id, dataset_id) \n    df_target_train = client.query(sql_train).to_dataframe()\n\
+      \    df_target_train = df_target_train.loc[\n        df_target_train['YEAR_MONTH']\
+      \ == '-'.join(score_date_dash.split('-')[:2])]  # score_date_dash = '2022-08-31'\n\
+      \    df_target_train['ban'] = df_target_train['ban'].astype('int64')\n    df_target_train\
+      \ = df_target_train.groupby('ban').tail(1)\n    df_train = df_train.merge(df_target_train[['ban',\
+      \ 'target_ind']], on='ban', how='left')\n    df_train.rename(columns={'target_ind':\
+      \ 'target'}, inplace=True)\n    df_train['target'].fillna(0, inplace=True)\n\
+      \    df_train['target'] = df_train['target'].astype(int)\n    print(df_train.shape)\n\
+      \n    #set up df_test\n    sql_test = ''' SELECT * FROM `{}.{}.bq_churn_12_months_targets`\
+      \ '''.format(project_id, dataset_id) \n    df_target_test = client.query(sql_test).to_dataframe()\n\
+      \    df_target_test = df_target_test.loc[\n        df_target_test['YEAR_MONTH']\
+      \ == '-'.join(score_date_val_dash.split('-')[:2])]  # score_date_dash = '2022-09-30'\n\
+      \    df_target_test['ban'] = df_target_test['ban'].astype('int64')\n    df_target_test\
+      \ = df_target_test.groupby('ban').tail(1)\n    df_test = df_test.merge(df_target_test[['ban',\
+      \ 'target_ind']], on='ban', how='left')\n    df_test.rename(columns={'target_ind':\
+      \ 'target'}, inplace=True)\n    df_test['target'].fillna(0, inplace=True)\n\
+      \    df_test['target'] = df_test['target'].astype(int)\n    print(df_test.shape)\n\
+      \n    df_train.to_csv('gs://{}/{}/{}_train_monitoring.csv'.format(file_bucket,\
+      \ service_type, service_type))\n    df_test.to_csv('gs://{}/{}/{}_validation_monitoring.csv'.format(file_bucket,\
+      \ service_type, service_type))\n\n    #### Define Variables\n\n    # Define\
+      \ target variable\n    target = 'target'\n    drop_cols = ['ban', 'target']\n\
+      \    cat_feat = []\n\n    # define X and y\n    X = df_train.drop(columns=drop_cols)\
+      \ \n    y = df_train[target]\n\n    X_test = df_test.drop(columns=drop_cols)\
+      \ \n    y_test = df_test[target]\n\n    # Split the data into training and testing\
+      \ sets with a 70-30 split\n    X_train, X_val, y_train, y_val = train_test_split(X,\
+      \ y, test_size=0.3, random_state=42)\n\n    df_train = X_train.join(y_train)\n\
+      \    df_val = X_val.join(y_val)\n    df_test = X_test.join(y_test)\n\n    #\
+      \ save backups\n    create_time = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\"\
+      )\n    df_train.to_csv('gs://{}/{}/backup/{}_train_{}.csv'.format(file_bucket,\
+      \ service_type, service_type, create_time))\n    df_val.to_csv('gs://{}/{}/backup/{}_train_{}.csv'.format(file_bucket,\
+      \ service_type, service_type, create_time))\n    df_test.to_csv('gs://{}/{}/backup/{}_train_{}.csv'.format(file_bucket,\
+      \ service_type, service_type, create_time))\n\n    #set up features (list)\n\
+      \    cols_1 = df_train.columns.values\n    cols_2 = df_test.columns.values\n\
+      \    cols = set(cols_1).intersection(set(cols_2))\n    features = [f for f in\
+      \ cols if f not in ['ban', 'target']]\n\n    # assign numeric and categorical\
+      \ features\n    numeric_features = [col for col in df_train.columns if col not\
+      \ in drop_cols+cat_feat]\n    categorical_features = [col for col in df_train.columns\
+      \ if col in cat_feat]\n\n    #### Pycaret Setup initialize\n    classification_setup\
+      \ = setup(data=df_train, \n                             target=target,\n   \
+      \                          normalize=True,\n                             normalize_method='zscore',\n\
+      \                             log_experiment=False,\n                      \
+      \       fold=5,\n                             fold_shuffle=True,\n         \
+      \                    session_id=123,\n                             numeric_features=numeric_features,\n\
+      \                             categorical_features=categorical_features, \n\
+      \                             fix_imbalance=True, \n                       \
+      \      remove_multicollinearity=True, \n                             multicollinearity_threshold=0.95,\
+      \ \n                             silent=True)\n\n    ##### experiment with xgboost\n\
+      \    top_models = compare_models(include = ['rf','xgboost','lightgbm'], errors='raise',\
+      \ n_select=3)\n\n    # assign best_model to models for code simplicity\n   \
+      \ models = top_models.copy()\n\n    # define dictionaries to contain results\n\
+      \    eval_results = {}\n    model_dict = {}\n\n    for i in range(len(models)):\n\
+      \n        # print model name\n        model_name = models[i].__class__.__name__\n\
+      \        print(model_name)\n\n        # Get predictions on test set for model\n\
+      \        predictions = predict_model(models[i], data=df_test, raw_score=True)\n\
+      \n        # Actual vs predicted\n        y_true = predictions[target]\n    \
+      \    y_pred = predictions[\"Label\"]\n        y_score = predictions[\"Score_1\"\
+      ]\n\n        # calculate Accuracy, AUC, Recall, Precision, F1 \n        accuracy\
+      \ = accuracy_score(y_true, y_pred)\n        auc = roc_auc_score(y_true, y_score)\n\
+      \        recall = recall_score(y_true, y_pred)\n        precision = precision_score(y_true,\
+      \ y_pred)\n        f1 = f1_score(y_true, y_pred)\n\n        # use rmse as the\
+      \ key indicator for best performance\n        eval_results[model_name] = f1\n\
+      \        model_dict[model_name] = models[i]\n\n    # Find the model with the\
+      \ lowest rmse\n    top_model = max(eval_results, key=eval_results.get)\n\n \
+      \   # Print the result\n    print(\"The top performing model on the test dataset:\"\
+      , top_model, \", f1 score:\", eval_results[top_model])\n\n    #### Model Tuning\
+      \ ###\n    model_base = create_model(model_dict[top_model])\n    tuned_model,\
+      \ tuner = tune_model(model_base, optimize='F1', return_tuner = True, n_iter\
+      \ = 25)\n    # model_reports_tuned, model_to_report_map_tuned = evaluate_and_save_models(models=tuned_model,\
+      \ \n    #                                      bucket_name=bucket_name,\n  \
+      \  #                                      save_path=save_path, \n    #     \
+      \                                 test_df=test_df,\n    #                  \
+      \                    actual_label_str='target',\n    #                     \
+      \                 columns = get_config('X_train').columns,\n    #          \
+      \                            save_columns=True,\n    #                     \
+      \                 show_report=False)\n\n    #### Final Evaluation ####\n   \
+      \ # print model name\n    model_name = tuned_model.__class__.__name__\n    print(f'model_name:\
+      \ {model_name}')\n\n    # Get predictions on test set for model\n    predictions\
+      \ = predict_model(tuned_model, data=df_test, raw_score=True)\n\n    # Actual\
+      \ vs predicted\n    y_true = predictions[target]\n    y_pred = predictions[\"\
+      Label\"]\n    y_score = predictions[\"Score_1\"]\n\n    # get lift\n    lg =\
+      \ get_lift(y_score, y_true, 10)\n\n    # save the lift calc in GCS\n    models_dict\
+      \ = {}\n    create_time = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\n \
+      \   models_dict['create_time'] = create_time\n    models_dict['model'] = tuned_model\n\
+      \    models_dict['features'] = features\n    lg.to_csv('gs://{}/{}/lift_on_scoring_data_{}.csv'.format(file_bucket,\
+      \ service_type, create_time, index=False))\n\n    # calculate Accuracy, AUC,\
+      \ Recall, Precision, F1 \n    accuracy = accuracy_score(y_true, y_pred)\n  \
+      \  auc = roc_auc_score(y_true, y_score)\n    recall = recall_score(y_true, y_pred)\n\
+      \    precision = precision_score(y_true, y_pred)\n    f1 = f1_score(y_true,\
+      \ y_pred)\n\n    print(f'accuracy: {accuracy}')\n    print(f'auc: {auc}')\n\
+      \    print(f'recall: {recall}')\n    print(f'precision: {precision}')\n    print(f'f1:\
+      \ {f1}')\n\n    with open('model_dict.pkl', 'wb') as handle:\n        pickle.dump(models_dict,\
+      \ handle)\n    handle.close()\n\n    storage_client = storage.Client()\n   \
+      \ bucket = storage_client.get_bucket(file_bucket)\n\n    model_path = '{}/{}_models/'.format(service_type,\
+      \ service_type)\n    blob = bucket.blob(model_path)\n    if not blob.exists(storage_client):\n\
+      \        blob.upload_from_string('')\n\n    model_name_onbkt = '{}{}_models_{}'.format(model_path,\
+      \ service_type, models_dict['create_time'])\n    blob = bucket.blob(model_name_onbkt)\n\
+      \    blob.upload_from_filename('model_dict.pkl')\n\n    model.uri = f'gs://{file_bucket}/{model_name_onbkt}'\n\
+      \n    print(f\"....model loaded to GCS done at {str(create_time)}\")\n\n   \
+      \ col_list = features\n\n    return (col_list, model.uri)\n\n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - train_and_save_model_pycaret

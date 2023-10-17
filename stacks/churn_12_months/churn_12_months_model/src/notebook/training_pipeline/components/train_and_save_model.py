@@ -7,7 +7,7 @@ from typing import NamedTuple
 
 @component(
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
-    output_component_file="call_to_retention_xgb_train_model.yaml",
+    output_component_file="churn_12_months_xgb_train_model.yaml",
 )
 def train_and_save_model(file_bucket: str
                         , service_type: str

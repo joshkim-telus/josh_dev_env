@@ -403,6 +403,12 @@ def validate_stats(
     import json 
     import pandas as pd 
     from datetime import datetime 
+
+    if (validation_type != "skew") and (validation_type != "drift"):
+        raise ValueError("Error: the validation_type can only be one of skew or drift")
+        
+    if (op_type != "serving") and (op_type != "predictions"):
+        raise ValueError("Error: the op_type can only be one of serving or predictions")
     
     # convert timestamp to datetime 
     update_ts = datetime.strptime(update_ts, '%Y-%m-%d %H:%M:%S') 
@@ -511,7 +517,10 @@ def validate_stats(
                 'short_description': short_description, 
                 'long_description': long_description
                 }) 
-    
+
+    # check for skew-drift
+    df_sd = pd.DataFrame(columns=['feature_nm', 'skew_drift'])
+
     #check for skew-drift 
     if bool(skew_drift_dict): 
         for sd in skew_drift_dict: 
@@ -535,7 +544,7 @@ def validate_stats(
             if skew_drift_type_num == 1: 
                 skew_drift_type = 'L_INFTY' 
             elif skew_drift_type_num == 2: 
-                skew_drift_type == 'JENSEN_SHANNON_DIVERGENCE' 
+                skew_drift_type = 'JENSEN_SHANNON_DIVERGENCE' 
             elif skew_drift_type_num == 3: 
                 skew_drift_type = 'NORMALIZED_ABSOLUTE_DIFFERENCE' 
             else: 
@@ -550,8 +559,8 @@ def validate_stats(
             
     df_anomalies = pd.merge(df_anomalies, df_sd, on='feature_nm', how='left') 
     
-#     # load data stats into BQ table 
-#     client = bigquery.Client(project=project_id) 
+    # load data stats into BQ table 
+    client = bigquery.Client(project=project_id) 
     
     job_config = bigquery.LoadJobConfig(write_disposition='WRITE_APPEND', 
                                         schema=[bigquery.SchemaField(
