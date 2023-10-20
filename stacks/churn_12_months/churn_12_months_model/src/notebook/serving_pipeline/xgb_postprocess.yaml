@@ -36,9 +36,9 @@ implementation:
       \ bigquery\n\n    def if_tbl_exists(client, table_ref):\n        from google.cloud.exceptions\
       \ import NotFound\n        try:\n            client.get_table(table_ref)\n \
       \           return True\n        except NotFound:\n            return False\n\
-      \n    MODEL_ID = '5900'\n    file_name = 'gs://{}/ucar/{}_prediction.csv.gz'.format(file_bucket,\
-      \ service_type)\n    df_orig = pd.read_csv(file_name, compression='gzip')\n\
-      \    df_orig.dropna(subset=['ban'], inplace=True)\n    df_orig.reset_index(drop=True,\
+      \n    MODEL_ID = '5220'\n    file_name = 'gs://{}/ucar/{}_prediction.csv'.format(file_bucket,\
+      \ service_type)\n    df_orig = pd.read_csv(file_name, index_col=False)\n   \
+      \ df_orig.dropna(subset=['ban'], inplace=True)\n    df_orig.reset_index(drop=True,\
       \ inplace=True)\n    df_orig['scoring_date'] = score_date_dash\n    df_orig.ban\
       \ = df_orig.ban.astype(int)\n    df_orig = df_orig.rename(columns={'ban': 'bus_bacct_num',\
       \ 'score': 'score_num'})\n    df_orig.score_num = df_orig.score_num.astype(float)\n\
@@ -78,8 +78,7 @@ implementation:
       \n    df_cust = client.query(get_cust_id).to_dataframe()\n    df_final = df_orig.set_index('bus_bacct_num').join(df_cust.set_index('bacct_bus_bacct_num')).reset_index()\n\
       \    df_final = df_final.rename(columns={'index': 'bus_bacct_num', 'cust_bus_cust_id':\
       \ 'cust_id'})\n    df_final = df_final.sort_values(by=['score_num'], ascending=False)\n\
-      \    df_final.to_csv(file_name, compression='gzip', index=False)\n    time.sleep(120)\n\
-      \n"
+      \    df_final.to_csv(file_name, index=False)\n    time.sleep(120)\n\n"
     args:
     - --executor_input
     - {executorInput: null}

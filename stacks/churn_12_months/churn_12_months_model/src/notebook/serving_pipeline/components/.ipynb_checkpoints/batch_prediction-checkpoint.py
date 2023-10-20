@@ -4,30 +4,31 @@ from kfp.v2.dsl import (Artifact, Dataset, Input, InputPath, Model, Output, Outp
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
     output_component_file="xgb_batch_prediction.yaml",
 )
-def batch_prediction(
-        project_id: str,
-        dataset_id: str,
-        table_id: str, 
-        file_bucket: str,
-        save_data_path: str, 
-        service_type: str,
-        score_table: str,
-        score_date_dash: str,
-        temp_table: str,
-        metrics: Output[Metrics],
-        metricsc: Output[ClassificationMetrics],
-        model_uri: str, 
-):
+def batch_prediction(project_id: str
+                     , dataset_id: str
+                     , table_id: str
+                     , file_bucket: str
+                     , save_data_path: str
+                     , service_type: str
+                     , score_table: str
+                     , score_date_dash: str
+                     , temp_table: str
+                     , metrics: Output[Metrics]
+                     , metricsc: Output[ClassificationMetrics]
+                     , model_uri: str
+                     ):
+    
     import time
     import pandas as pd
     import numpy as np
     import pickle
     from datetime import date
+    from datetime import datetime
     from dateutil.relativedelta import relativedelta
     from google.cloud import bigquery
     from google.cloud import storage
     
-    MODEL_ID = '5090'
+    MODEL_ID = '5220'
     
     def if_tbl_exists(bq_client, table_ref):
         from google.cloud.exceptions import NotFound
@@ -99,12 +100,16 @@ def batch_prediction(
 
     # MODEL_PATH = '{}_xgb_models/'.format(service_type)
     MODEL_PATH = right(model_uri, (len(model_uri) - 6 - len(file_bucket)))
-    df_score = pd.read_csv(save_data_path, compression='gzip')
+    df_score = pd.read_csv(save_data_path)
     print(f'save_data_path: {save_data_path}')
     df_score.dropna(subset=['ban'], inplace=True)
     df_score.reset_index(drop=True, inplace=True)
     print('......scoring data loaded:{}'.format(df_score.shape))
     time.sleep(10)
+    
+    # save backups
+    create_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    df_score.to_csv('gs://{}/{}/backup/{}_score_{}.csv'.format(file_bucket, service_type, service_type, create_time))
 
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(file_bucket)
@@ -127,7 +132,7 @@ def batch_prediction(
     sql = generate_sql_file(ll)
 
     df_score['ban'] = df_score['ban'].astype(int)
-    print('.... scoring for {} promo expiry bans base'.format(len(df_score)))
+    print('.... scoring for {} FFH bans base'.format(len(df_score)))
 
     # get full score to cave into bucket
     pred_prob = model_xgb.predict_proba(df_score[features], ntree_limit=model_xgb.best_iteration)[:, 1]
@@ -139,8 +144,7 @@ def batch_prediction(
     result['score_date'] = score_date_dash
     result['model_id'] = MODEL_ID
 
-    result.to_csv('gs://{}/ucar/{}_prediction.csv.gz'.format(file_bucket, service_type), compression='gzip',
-                  index=False)
+    result.to_csv('gs://{}/ucar/{}_prediction.csv'.format(file_bucket, service_type), index=False)
         
     # define df_final
     df_final = df_score[features]

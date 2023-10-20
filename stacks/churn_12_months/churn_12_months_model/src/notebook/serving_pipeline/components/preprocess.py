@@ -4,14 +4,12 @@ from kfp.v2.dsl import (Artifact, Output, Input, HTML, component)
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
     output_component_file="churn_12_months_model_preprocess.yaml"
 )
-def preprocess(
-        pipeline_dataset: str, 
-        save_data_path: str,
-        project_id: str,
-        dataset_id: str, 
-        service_type: str, 
-        file_bucket: str 
-):
+def preprocess(pipeline_dataset: str
+               , save_data_path: str
+               , project_id: str
+               , dataset_id: str
+               ):
+    
     from google.cloud import bigquery
     import pandas as pd
     import numpy as np
@@ -54,9 +52,7 @@ def preprocess(
     for f in df_final.columns:
         df_final[f] = list(df_final[f])
 
-    df_final.to_csv(save_data_path, index=True, compression='gzip')
-    
-    df_final.to_csv('gs://{}/{}/{}_score_monitoring.csv'.format(file_bucket, service_type, service_type))  
+    df_final.to_csv(save_data_path, index=True)
 
 #     # define dtype_bq_mapping
 #     dtype_bq_mapping = {np.dtype('int64'): 'INTEGER', 

@@ -83,38 +83,37 @@ implementation:
       \ as tfdv\n    from apache_beam.options.pipeline_options import (\n        PipelineOptions\n\
       \    )\n    from google.cloud import storage\n    from google.cloud import bigquery\n\
       \    from datetime import datetime\n    import json\n    import pandas as pd\n\
-      \    import numpy as np\n    import google.oauth2.credentials\n\n    print('msg1:\
-      \ all libraries imported')\n\n    # convert timestamp to datetime\n    update_ts\
-      \ = datetime.strptime(update_ts, '%Y-%m-%d %H:%M:%S')\n\n    statistics.uri\
-      \ = dest_stats_gcs_path\n\n    pipeline_options = PipelineOptions()\n    stats_options\
-      \ = tfdv.StatsOptions()\n\n    # import from csv in GCS\n    if data_type ==\
-      \ 'csv':\n        df = pd.read_csv(src_csv_path)\n\n        if op_type == 'predictions':\n\
-      \            df = df[pred_cols]\n\n    # import from Big Query\n    elif data_type\
-      \ == 'bigquery':\n\n        percent_table_sample = table_block_sample * 100\n\
-      \n        if op_type == 'predictions':\n            # query data stored in BQ\
-      \ and load into pandas dataframe\n            build_df = '''SELECT '''\n   \
-      \         for pred_col in pred_cols:\n                build_df = build_df +\
-      \ f\"{pred_col}, \"\n            build_df = build_df + '''FROM `{bq_table}`\
-      \ TABLESAMPLE SYSTEM ({percent_table_sample} PERCENT)\n                    \
-      \    WHERE rand() < {row_sample} \n                    '''.format(bq_table =\
-      \ src_bq_path,\n                               percent_table_sample = percent_table_sample,\
-      \ \n                               row_sample = row_sample)\n        else:\n\
-      \            # query data stored in BQ and load into pandas dataframe\n    \
-      \        build_df = '''\n            SELECT * FROM `{bq_table}` TABLESAMPLE\
-      \ SYSTEM ({percent_table_sample} PERCENT)\n                        WHERE rand()\
-      \ < {row_sample} \n                    '''.format(bq_table = src_bq_path,\n\
-      \                               percent_table_sample = percent_table_sample,\
-      \ \n                               row_sample = row_sample)\n\n        if len(date_filter)\
-      \ > 0:\n            build_df = build_df + ''' AND {date_col}=\"{date_filter}\"\
-      \n            '''.format(date_col=date_col, date_filter=date_filter)\n\n   \
-      \     job_config = bigquery.QueryJobConfig()\n        df = client.query(build_df,\
-      \ job_config=job_config).to_dataframe()\n\n        # check this: if dataframe\
-      \ is empty, return error\n        if (df.size == 0):\n            raise TypeError(\"\
-      Dataframe is empty, cannot generate statistics.\")\n\n    else:\n        print(\"\
-      This data type is not supported. Please use a csv or Big Query table, otherwise\
-      \ create your own custom component\")\n\n    print('msg2: df created')\n\n \
-      \   # drop pass-through features\n    if len(pass_through_features) > 0:\n \
-      \       df = df.drop(columns=pass_through_features)\n\n    stats = tfdv.generate_statistics_from_dataframe(\n\
+      \    import numpy as np\n    import google.oauth2.credentials\n\n    # convert\
+      \ timestamp to datetime\n    update_ts = datetime.strptime(update_ts, '%Y-%m-%d\
+      \ %H:%M:%S')\n\n    statistics.uri = dest_stats_gcs_path\n\n    pipeline_options\
+      \ = PipelineOptions()\n    stats_options = tfdv.StatsOptions()\n\n    # import\
+      \ from csv in GCS\n    if data_type == 'csv':\n        df = pd.read_csv(src_csv_path)\n\
+      \n        if op_type == 'predictions':\n            df = df[pred_cols]\n\n \
+      \   # import from Big Query\n    elif data_type == 'bigquery':\n\n        percent_table_sample\
+      \ = table_block_sample * 100\n\n        if op_type == 'predictions':\n     \
+      \       # query data stored in BQ and load into pandas dataframe\n         \
+      \   build_df = '''SELECT '''\n            for pred_col in pred_cols:\n     \
+      \           build_df = build_df + f\"{pred_col}, \"\n            build_df =\
+      \ build_df + '''FROM `{bq_table}` TABLESAMPLE SYSTEM ({percent_table_sample}\
+      \ PERCENT)\n                        WHERE rand() < {row_sample} \n         \
+      \           '''.format(bq_table = src_bq_path,\n                           \
+      \    percent_table_sample = percent_table_sample, \n                       \
+      \        row_sample = row_sample)\n        else:\n            # query data stored\
+      \ in BQ and load into pandas dataframe\n            build_df = '''\n       \
+      \     SELECT * FROM `{bq_table}` TABLESAMPLE SYSTEM ({percent_table_sample}\
+      \ PERCENT)\n                        WHERE rand() < {row_sample} \n         \
+      \           '''.format(bq_table = src_bq_path,\n                           \
+      \    percent_table_sample = percent_table_sample, \n                       \
+      \        row_sample = row_sample)\n\n        if len(date_filter) > 0:\n    \
+      \        build_df = build_df + ''' AND {date_col}=\"{date_filter}\"\n      \
+      \      '''.format(date_col=date_col, date_filter=date_filter)\n\n        job_config\
+      \ = bigquery.QueryJobConfig()\n        df = client.query(build_df, job_config=job_config).to_dataframe()\n\
+      \n        # check this: if dataframe is empty, return error\n        if (df.size\
+      \ == 0):\n            raise TypeError(\"Dataframe is empty, cannot generate\
+      \ statistics.\")\n\n    else:\n        print(\"This data type is not supported.\
+      \ Please use a csv or Big Query table, otherwise create your own custom component\"\
+      )\n\n    # drop pass-through features\n    if len(pass_through_features) > 0:\n\
+      \        df = df.drop(columns=pass_through_features)\n\n    stats = tfdv.generate_statistics_from_dataframe(\n\
       \        dataframe=df,\n        stats_options=stats_options,\n        n_jobs=1\n\
       \    )\n    tfdv.write_stats_text(\n        stats=stats, \n        output_path=dest_stats_gcs_path\n\
       \    )\n\n    # generate schema for training data\n    if op_type == 'training':\n\
@@ -129,10 +128,10 @@ implementation:
       \                    tfdv.get_feature(\n                        schema, training_target_col).not_in_environment.append('SERVING')\
       \ \n            else:\n                print(\"No training target column specified\"\
       )\n\n        tfdv.write_schema_text(\n            schema=schema, output_path=dest_schema_path\n\
-      \        )\n\n    print('msg3: stats generated')\n\n    if (op_type == 'predictions')\
-      \ | (model_type == 'unsupervised'):\n        # if schema does not exist create\
-      \ new one for predictions or unsupervised model\n        storage_client = storage.Client()\n\
-      \        bucket = storage_client.bucket(bucket_nm)\n        blob = bucket.blob(dest_schema_path.split(f'gs://{bucket_nm}/')[1])\n\
+      \        )\n\n    if (op_type == 'predictions') | (model_type == 'unsupervised'):\n\
+      \        # if schema does not exist create new one for predictions or unsupervised\
+      \ model\n        storage_client = storage.Client()\n        bucket = storage_client.bucket(bucket_nm)\n\
+      \        blob = bucket.blob(dest_schema_path.split(f'gs://{bucket_nm}/')[1])\n\
       \n        if not blob.exists():\n            # generate schema for predictions\
       \ data or unsupervised learning model\n            schema = tfdv.infer_schema(stats)\n\
       \            tfdv.write_schema_text(\n                schema=schema, output_path=dest_schema_path\n\
@@ -149,15 +148,14 @@ implementation:
       \                              'median',\n                                 \
       \    'max_val',\n                                     'unique_values',\n   \
       \                                  'top_value_freq',\n                     \
-      \                'avg_length'])\n\n    print('msg4: save stats in data monitoring\
-      \ table')\n\n    # OPTIONAL: save stats in data monitoring table\n    if in_bq_ind\
-      \ == True:\n\n        for feature in stats.datasets[0].features:\n         \
-      \   feature_nm = feature.path.step[0]\n            if (feature.type == 0):\n\
-      \                feature_type = 'INT'\n            elif (feature.type == 1):\n\
-      \                feature_type = 'FLOAT'\n            elif (feature.type == 2):\n\
-      \                feature_type = 'STRING'\n            else:\n              \
-      \  featue_type = 'UNKNOWN'\n\n            if (feature_type == 'INT') | (feature_type\
-      \ == 'FLOAT'):\n                num_non_missing = feature.num_stats.common_stats.num_non_missing\n\
+      \                'avg_length'])\n\n    # OPTIONAL: save stats in data monitoring\
+      \ table\n    if in_bq_ind == True:\n\n        for feature in stats.datasets[0].features:\n\
+      \            feature_nm = feature.path.step[0]\n            if (feature.type\
+      \ == 0):\n                feature_type = 'INT'\n            elif (feature.type\
+      \ == 1):\n                feature_type = 'FLOAT'\n            elif (feature.type\
+      \ == 2):\n                feature_type = 'STRING'\n            else:\n     \
+      \           featue_type = 'UNKNOWN'\n\n            if (feature_type == 'INT')\
+      \ | (feature_type == 'FLOAT'):\n                num_non_missing = feature.num_stats.common_stats.num_non_missing\n\
       \                min_num_values = feature.num_stats.common_stats.min_num_values\n\
       \                max_num_values = feature.num_stats.common_stats.max_num_values\n\
       \                avg_num_values = feature.num_stats.common_stats.avg_num_values\n\
@@ -247,11 +245,11 @@ implementation:
       \                                \"avg_length\", \"FLOAT\")\n              \
       \                              ],)  # create new table or append if already\
       \ exists\n\n        data_stats_table = f\"{project_id}.{dest_stats_bq_dataset}.bq_data_monitoring\"\
-      \n\n        print(f'msg5: {data_stats_table}')\n\n        job = client.load_table_from_dataframe(#\
-      \ Make an API request.\n            df_stats, data_stats_table, job_config=job_config\n\
-      \        )\n        job.result()\n        table = client.get_table(data_stats_table)\
-      \  # Make an API request.\n        print(\n            \"Loaded {} rows and\
-      \ {} columns to {}\".format(\n                table.num_rows, len(table.schema),\
+      \n\n        job = client.load_table_from_dataframe(# Make an API request.\n\
+      \            df_stats, data_stats_table, job_config=job_config\n        )\n\
+      \        job.result()\n        table = client.get_table(data_stats_table)  #\
+      \ Make an API request.\n        print(\n            \"Loaded {} rows and {}\
+      \ columns to {}\".format(\n                table.num_rows, len(table.schema),\
       \ data_stats_table\n            )\n        )\n\n"
     args:
     - --executor_input

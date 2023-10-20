@@ -11,8 +11,6 @@ from typing import NamedTuple
 )
 def train_and_save_model_pycaret(file_bucket: str
                         , service_type: str
-                        , score_date_dash: str
-                        , score_date_val_dash: str
                         , project_id: str
                         , dataset_id: str
                         , metrics: Output[Metrics]
@@ -62,10 +60,8 @@ def train_and_save_model_pycaret(file_bucket: str
 
         return lg
 
-    df_train = pd.read_csv('gs://{}/{}/{}_train.csv.gz'.format(file_bucket, service_type, service_type),
-                           compression='gzip')  
-    df_test = pd.read_csv('gs://{}/{}/{}_validation.csv.gz'.format(file_bucket, service_type, service_type),  
-                          compression='gzip')
+    df_train = pd.read_csv('gs://{}/{}/{}_train.csv'.format(file_bucket, service_type, service_type))
+    df_test = pd.read_csv('gs://{}/{}/{}_validation.csv'.format(file_bucket, service_type, service_type))
 
     #### For wb
     import google.oauth2.credentials
@@ -78,35 +74,6 @@ def train_and_save_model_pycaret(file_bucket: str
 #     client = bigquery.Client(project=project_id)
 #     job_config = bigquery.QueryJobConfig()
 
-    #set up df_train
-    sql_train = ''' SELECT * FROM `{}.{}.bq_churn_12_months_targets` '''.format(project_id, dataset_id) 
-    df_target_train = client.query(sql_train).to_dataframe()
-    df_target_train = df_target_train.loc[
-        df_target_train['YEAR_MONTH'] == '-'.join(score_date_dash.split('-')[:2])]  # score_date_dash = '2022-08-31'
-    df_target_train['ban'] = df_target_train['ban'].astype('int64')
-    df_target_train = df_target_train.groupby('ban').tail(1)
-    df_train = df_train.merge(df_target_train[['ban', 'target_ind']], on='ban', how='left')
-    df_train.rename(columns={'target_ind': 'target'}, inplace=True)
-    df_train['target'].fillna(0, inplace=True)
-    df_train['target'] = df_train['target'].astype(int)
-    print(df_train.shape)
-    
-    #set up df_test
-    sql_test = ''' SELECT * FROM `{}.{}.bq_churn_12_months_targets` '''.format(project_id, dataset_id) 
-    df_target_test = client.query(sql_test).to_dataframe()
-    df_target_test = df_target_test.loc[
-        df_target_test['YEAR_MONTH'] == '-'.join(score_date_val_dash.split('-')[:2])]  # score_date_dash = '2022-09-30'
-    df_target_test['ban'] = df_target_test['ban'].astype('int64')
-    df_target_test = df_target_test.groupby('ban').tail(1)
-    df_test = df_test.merge(df_target_test[['ban', 'target_ind']], on='ban', how='left')
-    df_test.rename(columns={'target_ind': 'target'}, inplace=True)
-    df_test['target'].fillna(0, inplace=True)
-    df_test['target'] = df_test['target'].astype(int)
-    print(df_test.shape)
-    
-    df_train.to_csv('gs://{}/{}/{}_train_monitoring.csv'.format(file_bucket, service_type, service_type))
-    df_test.to_csv('gs://{}/{}/{}_validation_monitoring.csv'.format(file_bucket, service_type, service_type))
-    
     #### Define Variables
     
     # Define target variable
@@ -131,8 +98,8 @@ def train_and_save_model_pycaret(file_bucket: str
     # save backups
     create_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     df_train.to_csv('gs://{}/{}/backup/{}_train_{}.csv'.format(file_bucket, service_type, service_type, create_time))
-    df_val.to_csv('gs://{}/{}/backup/{}_train_{}.csv'.format(file_bucket, service_type, service_type, create_time))
-    df_test.to_csv('gs://{}/{}/backup/{}_train_{}.csv'.format(file_bucket, service_type, service_type, create_time))
+    df_val.to_csv('gs://{}/{}/backup/{}_val_{}.csv'.format(file_bucket, service_type, service_type, create_time))
+    df_test.to_csv('gs://{}/{}/backup/{}_test_{}.csv'.format(file_bucket, service_type, service_type, create_time))
     
     #set up features (list)
     cols_1 = df_train.columns.values
@@ -161,10 +128,13 @@ def train_and_save_model_pycaret(file_bucket: str
                              silent=True)
     
     ##### experiment with xgboost
-    top_models = compare_models(include = ['rf','xgboost','lightgbm'], errors='raise', n_select=3)
+    top_models = compare_models(include = ['lightgbm'], errors='raise', n_select=1)
 
     # assign best_model to models for code simplicity
-    models = top_models.copy()
+    if type(top_models) == "list": 
+        models = top_models.copy() 
+    else: 
+        models = [top_models].copy()
 
     # define dictionaries to contain results
     eval_results = {}
@@ -195,7 +165,7 @@ def train_and_save_model_pycaret(file_bucket: str
         eval_results[model_name] = f1
         model_dict[model_name] = models[i]
 
-    # Find the model with the lowest rmse
+    # Find the model with the highest f1 score
     top_model = max(eval_results, key=eval_results.get)
 
     # Print the result
@@ -219,7 +189,7 @@ def train_and_save_model_pycaret(file_bucket: str
     print(f'model_name: {model_name}')
 
     # Get predictions on test set for model
-    predictions = predict_model(tuned_model, data=df_test, raw_score=True)
+    predictions = predict_model(tuned_model, data=df_test, raw_score=True, round=10)
 
     # Actual vs predicted
     y_true = predictions[target]

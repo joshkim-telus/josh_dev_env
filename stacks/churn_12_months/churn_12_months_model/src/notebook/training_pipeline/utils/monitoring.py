@@ -69,8 +69,6 @@ def generate_data_stats(
     import numpy as np
     import google.oauth2.credentials
 
-    print('msg1: all libraries imported')
-
     # convert timestamp to datetime
     update_ts = datetime.strptime(update_ts, '%Y-%m-%d %H:%M:%S')
 
@@ -123,8 +121,6 @@ def generate_data_stats(
 
     else:
         print("This data type is not supported. Please use a csv or Big Query table, otherwise create your own custom component")
-        
-    print('msg2: df created')
     
     # drop pass-through features
     if len(pass_through_features) > 0:
@@ -165,8 +161,6 @@ def generate_data_stats(
             schema=schema, output_path=dest_schema_path
         )
         
-    print('msg3: stats generated')
-        
     if (op_type == 'predictions') | (model_type == 'unsupervised'):
         # if schema does not exist create new one for predictions or unsupervised model
         storage_client = storage.Client()
@@ -199,8 +193,6 @@ def generate_data_stats(
                                      'unique_values',
                                      'top_value_freq',
                                      'avg_length'])
-
-    print('msg4: save stats in data monitoring table')
 
     # OPTIONAL: save stats in data monitoring table
     if in_bq_ind == True:
@@ -342,8 +334,6 @@ def generate_data_stats(
         
         data_stats_table = f"{project_id}.{dest_stats_bq_dataset}.bq_data_monitoring"
         
-        print(f'msg5: {data_stats_table}')
-
         job = client.load_table_from_dataframe(# Make an API request.
             df_stats, data_stats_table, job_config=job_config
         )

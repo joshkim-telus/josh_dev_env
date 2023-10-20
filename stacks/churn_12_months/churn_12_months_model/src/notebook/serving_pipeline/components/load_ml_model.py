@@ -7,12 +7,11 @@ from typing import NamedTuple
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-load-model-slim:1.0.0",
     output_component_file="load_ml_model.yaml"
 )
-def load_ml_model(
-    project_id: str, 
-    region: str, 
-    model_name: str, 
-    model: Output[Artifact]
-) -> NamedTuple("output", [("model_uri", str)]):
+def load_ml_model(project_id: str
+                  , region: str
+                  , model_name: str
+                  , model: Output[Artifact]
+                  ) -> NamedTuple("output", [("model_uri", str)]):
 
     from google.cloud import aiplatform
     
@@ -37,27 +36,3 @@ def load_ml_model(
     # Return the model URI as part of the output
     return (env_var,)
 
-
-# # this component returns a model artifact which will be passed to Batch Predictions 
-# def load_ml_model(
-#     project_id: str, 
-#     region: str, 
-#     model_name: str, 
-#     model: Output[Artifact]
-#     )-> NamedTuple("output", [("model_uri", str)]):
-    
-#     from google.cloud import aiplatform
-    
-#     model_uid = aiplatform.Model.list(
-#         filter=f'display_name={model_name}', 
-#         order_by="update_time",
-#         location=region)[-1].resource_name
-    
-#     model.uri = model_uid
-#     model.metadata['resourceName'] = model_uid
-
-#     return (model.environment_variables["model_uri"])
-    
-# from typing import NamedTuple
-# from google.cloud import aiplatform
-# from pulumi import Output, Artifact

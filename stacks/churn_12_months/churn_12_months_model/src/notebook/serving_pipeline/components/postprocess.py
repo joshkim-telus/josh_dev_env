@@ -28,9 +28,9 @@ def postprocess(
         except NotFound:
             return False
     
-    MODEL_ID = '5900'
-    file_name = 'gs://{}/ucar/{}_prediction.csv.gz'.format(file_bucket, service_type)
-    df_orig = pd.read_csv(file_name, compression='gzip')
+    MODEL_ID = '5220'
+    file_name = 'gs://{}/ucar/{}_prediction.csv'.format(file_bucket, service_type)
+    df_orig = pd.read_csv(file_name, index_col=False)
     df_orig.dropna(subset=['ban'], inplace=True)
     df_orig.reset_index(drop=True, inplace=True)
     df_orig['scoring_date'] = score_date_dash
@@ -104,7 +104,7 @@ def postprocess(
     df_final = df_orig.set_index('bus_bacct_num').join(df_cust.set_index('bacct_bus_bacct_num')).reset_index()
     df_final = df_final.rename(columns={'index': 'bus_bacct_num', 'cust_bus_cust_id': 'cust_id'})
     df_final = df_final.sort_values(by=['score_num'], ascending=False)
-    df_final.to_csv(file_name, compression='gzip', index=False)
+    df_final.to_csv(file_name, index=False)
     time.sleep(120)
 
 #     # ------------------- directly write into UCAR score tables ----------------- #
