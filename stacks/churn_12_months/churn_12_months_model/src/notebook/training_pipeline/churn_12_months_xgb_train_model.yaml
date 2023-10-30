@@ -51,11 +51,13 @@ implementation:
       \ models\n    from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve,\
       \ mean_squared_error, f1_score, precision_score, recall_score, confusion_matrix,\
       \ roc_curve, classification_report\n    from pycaret.datasets import get_data\n\
-      \n    def get_lift(prob, y_test, q):\n        result = pd.DataFrame(columns=['Prob',\
-      \ 'Churn'])\n        result['Prob'] = prob\n        result['Churn'] = y_test\n\
-      \        # result['Decile'] = pd.qcut(1-result['Prob'], 10, labels = False)\n\
-      \        result['Decile'] = pd.qcut(result['Prob'], q, labels=[i for i in range(q,\
-      \ 0, -1)])\n        add = pd.DataFrame(result.groupby('Decile')['Churn'].mean()).reset_index()\n\
+      \n    import pandas as pd\n    from sklearn.compose import ColumnTransformer\n\
+      \    from sklearn.pipeline import Pipeline\n    from sklearn.preprocessing import\
+      \ MinMaxScaler, StandardScaler, OneHotEncoder\n\n    def get_lift(prob, y_test,\
+      \ q):\n        result = pd.DataFrame(columns=['Prob', 'Churn'])\n        result['Prob']\
+      \ = prob\n        result['Churn'] = y_test\n        # result['Decile'] = pd.qcut(1-result['Prob'],\
+      \ 10, labels = False)\n        result['Decile'] = pd.qcut(result['Prob'], q,\
+      \ labels=[i for i in range(q, 0, -1)])\n        add = pd.DataFrame(result.groupby('Decile')['Churn'].mean()).reset_index()\n\
       \        add.columns = ['Decile', 'avg_real_churn_rate']\n        result = result.merge(add,\
       \ on='Decile', how='left')\n        result.sort_values('Decile', ascending=True,\
       \ inplace=True)\n        lg = pd.DataFrame(result.groupby('Decile')['Prob'].mean()).reset_index()\n\
@@ -287,34 +289,56 @@ implementation:
       \     # report_fig.write_html(f\"{save_path}{todays_date}_{model.__class__.__name__}.html\"\
       )\n            model_test_set_reports.append(report_df)\n\n        model_test_set_reports_concat\
       \ = pd.concat(model_test_set_reports)\n\n        return model_test_set_reports_concat,\
-      \ model_to_report_map\n\n    df_train = pd.read_csv('gs://{}/{}/{}_train.csv'.format(file_bucket,\
-      \ service_type, service_type), index_col=False)  \n    df_test = pd.read_csv('gs://{}/{}/{}_validation.csv'.format(file_bucket,\
-      \ service_type, service_type), index_col=False)\n\n    #### For wb\n    import\
+      \ model_to_report_map\n\n    def preprocess_ml(df): \n\n        # Step 1: Get\
+      \ a list of all column names\n        all_columns = df.columns.tolist()\n\n\
+      \        # Step 2: Initialize empty lists for numerical and categorical columns\n\
+      \        numerical_features = []\n        categorical_features = []\n\n    \
+      \    # Step 3: Loop through each column to determine its data type\n       \
+      \ for column in all_columns:\n            if pd.api.types.is_numeric_dtype(df[column]):\n\
+      \                numerical_features.append(column)\n            else:\n    \
+      \            categorical_features.append(column)\n\n        preprocessor = ColumnTransformer(\n\
+      \            transformers=[\n                ('num', MinMaxScaler(), numerical_features),\
+      \  # Standardization for numerical features\n                ('cat', OneHotEncoder(),\
+      \ categorical_features)  # One-hot encoding for categorical features\n     \
+      \       ],\n            remainder='passthrough'  # Include any unprocessed columns\n\
+      \        )\n\n        pipeline = Pipeline([\n            ('preprocessor', preprocessor)\n\
+      \        ])\n\n        pipeline.fit(df)\n\n        transformed_df = pipeline.transform(df)\n\
+      \n        df_result = pd.DataFrame(transformed_df, columns=df.columns)\n\n \
+      \       return df_result\n\n    df_train = pd.read_csv('gs://{}/{}/{}_train.csv'.format(file_bucket,\
+      \ service_type, service_type), index_col=False)  \n\n    #### For wb\n    import\
       \ google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\
       \n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n\
       \    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client\
       \ = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\
-      \n    #set up features (list)\n    cols_1 = df_train.columns.values\n    cols_2\
-      \ = df_test.columns.values\n    cols = set(cols_1).intersection(set(cols_2))\n\
+      \n    #train test split\n    df_train, df_test = train_test_split(df_train,\
+      \ shuffle=True, test_size=0.3, random_state=42,\n                          \
+      \              stratify=df_train['target']\n                               \
+      \         )\n    #train val split\n    df_train, df_val = train_test_split(df_train,\
+      \ shuffle=True, test_size=0.3, random_state=42,\n                          \
+      \              stratify=df_train['target']\n                               \
+      \         )\n\n    #set up features (list)\n    cols_1 = df_train.columns.values\n\
+      \    cols_2 = df_test.columns.values\n    cols = set(cols_1).intersection(set(cols_2))\n\
       \    features = [f for f in cols if f not in ['ban', 'target', 'Unnamed: 0']]\n\
-      \n    #train test split\n    df_train, df_val = train_test_split(df_train, shuffle=True,\
-      \ test_size=0.25, random_state=42,\n                                       \
-      \ stratify=df_train['target']\n                                        )\n\n\
-      \    create_time = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\n    df_train.to_csv('gs://{}/{}/backup/{}_train_{}.csv'.format(file_bucket,\
-      \ service_type, service_type, create_time))\n    df_val.to_csv('gs://{}/{}/backup/{}_val_{}.csv'.format(file_bucket,\
+      \n    print(df_train.shape) \n    print(df_val.shape) \n    print(df_test.shape)\
+      \ \n\n    create_time = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\n   \
+      \ df_train.to_csv('gs://{}/{}/backup/{}_train_{}.csv'.format(file_bucket, service_type,\
+      \ service_type, create_time))\n    df_val.to_csv('gs://{}/{}/backup/{}_val_{}.csv'.format(file_bucket,\
       \ service_type, service_type, create_time))\n    df_test.to_csv('gs://{}/{}/backup/{}_test_{}.csv'.format(file_bucket,\
       \ service_type, service_type, create_time))\n\n    ban_train = df_train['ban']\n\
       \    X_train = df_train[features]\n    y_train = np.squeeze(df_train['target'].values)\n\
       \n    ban_val = df_val['ban']\n    X_val = df_val[features]\n    y_val = np.squeeze(df_val['target'].values)\n\
       \n    ban_test = df_test['ban']\n    X_test = df_test[features]\n    y_test\
       \ = np.squeeze(df_test['target'].values)\n\n    del df_train, df_val, df_test\n\
-      \    gc.collect()\n\n    # build model and fit in training data\n    # xgb_model\
-      \ = xgb.XGBClassifier(\n    #     learning_rate=0.1,\n    #     n_estimators=100,\n\
-      \    #     max_depth=8,\n    #     min_child_weight=1,\n    #     gamma=0,\n\
-      \    #     subsample=0.8,\n    #     colsample_bytree=0.8,\n    #     objective='binary:logistic',\n\
-      \    #     nthread=4,\n    #     scale_pos_weight=1\n    #     # seed=27\n \
-      \   # )\n\n    xgb_model = xgb.XGBClassifier(\n        learning_rate=0.02,\n\
-      \        n_estimators=1000,\n        max_depth=10,\n        min_child_weight=1,\n\
+      \    gc.collect()\n\n    X_train = preprocess_ml(X_train)\n    X_val = preprocess_ml(X_val)\n\
+      \    X_test = preprocess_ml(X_test)\n\n    print(f'X_train shape: {X_train.shape}')\
+      \ \n    print(f'X_val shape: {X_val.shape}') \n    print(f'X_test shape: {X_test.shape}')\
+      \ \n\n#     # build model and fit in training data\n#     xgb_model = xgb.XGBClassifier(\n\
+      #         learning_rate=0.1,\n#         n_estimators=100,\n#         max_depth=8,\n\
+      #         min_child_weight=1,\n#         gamma=0,\n#         subsample=0.8,\n\
+      #         colsample_bytree=0.8,\n#         objective='binary:logistic',\n# \
+      \        nthread=4,\n#         scale_pos_weight=1\n#         # seed=27\n#  \
+      \   )\n\n    xgb_model = xgb.XGBClassifier(\n        learning_rate=0.02,\n \
+      \       n_estimators=1000,\n        max_depth=10,\n        min_child_weight=1,\n\
       \        gamma=0,\n        subsample=0.8,\n        colsample_bytree=0.8,\n \
       \       objective='binary:logistic',\n        nthread=4,\n        scale_pos_weight=1,\n\
       \        seed=27\n    )\n\n    xgb_model.fit(X_train, y_train)\n    print('xgb\
@@ -333,13 +357,27 @@ implementation:
       \ save_path = 'churn_12_months/reports/'\n                                 \
       \                           , columns = features\n                         \
       \                                   , show_report=False\n                  \
-      \                                          )\n\n    model_class_name = xgb_model.__class__.__name__\n\
-      \    final_model_report = model_to_report_map[model_class_name]    \n\n    ####\
-      \ Save the Report and Model \n    storage_client = storage.Client()\n    bucket\
-      \ = storage_client.get_bucket(file_bucket)\n\n    # save the model in GCS\n\
-      \    models_dict = {}\n    create_time = datetime.now().strftime(\"%Y-%m-%d\
-      \ %H:%M:%S\")\n    models_dict['create_time'] = create_time\n    models_dict['model']\
-      \ = xgb_model\n    models_dict['features'] = features\n    lg.to_csv('gs://{}/{}/lift_on_scoring_data_{}.csv'.format(file_bucket,\
+      \                                          )\n\n#     # Pass data to generate\
+      \ plotly_report\n#     report_df,report_fig = plotly_model_report(model=xgb_model,\n\
+      #                                     actual=y_true,\n#                    \
+      \                 predicted=y_pred,\n#                                     predictions_prob=y_score,\n\
+      #                                     bucket_name = file_bucket,\n#        \
+      \                             show_report = True,\n#                       \
+      \              columns = features,\n#                                     save_path\
+      \ = 'churn_12_months/reports/'\n#                                    )\n\n \
+      \   model_class_name = xgb_model.__class__.__name__\n    final_model_report\
+      \ = model_to_report_map[model_class_name]\n\n    #### Save the Report and Model\
+      \ \n    storage_client = storage.Client()\n    bucket = storage_client.get_bucket(file_bucket)\n\
+      \n#     # save HTML report \n#     todays_date = datetime.now().strftime(\"\
+      %Y-%m-%d\")\n#     save_path = f'churn_12_months/reports/'\n#     create_folder_if_not_exists(save_path)\n\
+      #     final_model_report.write_html(f\"{save_path}{model_class_name}_{todays_date}.html\"\
+      )\n#     filename = f\"{model_class_name}_{todays_date}.html\"\n#     blob =\
+      \ bucket.blob(f\"{save_path}{filename}\")\n#     blob.upload_from_filename(f\"\
+      {save_path}{todays_date}_{model_class_name}.html\")\n#     print(f\"{filename}\
+      \ sucessfully uploaded to GCS bucket!\")\n\n    # save the model in GCS\n  \
+      \  models_dict = {}\n    create_time = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\"\
+      )\n    models_dict['create_time'] = create_time\n    models_dict['model'] =\
+      \ xgb_model\n    models_dict['features'] = features\n    lg.to_csv('gs://{}/{}/lift_on_scoring_data_{}.csv'.format(file_bucket,\
       \ service_type, create_time, index=False))\n\n    with open('model_dict.pkl',\
       \ 'wb') as handle:\n        pickle.dump(models_dict, handle)\n    handle.close()\n\
       \n    MODEL_PATH = '{}/{}_xgb_models/'.format(service_type, service_type)\n\

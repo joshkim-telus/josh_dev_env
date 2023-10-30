@@ -81,22 +81,21 @@ implementation:
       \ inplace=True)\n    print('......scoring data loaded:{}'.format(df_score.shape))\n\
       \    time.sleep(10)\n\n    # save backups\n    create_time = datetime.now().strftime(\"\
       %Y-%m-%d %H:%M:%S\")\n    df_score.to_csv('gs://{}/{}/backup/{}_score_{}.csv'.format(file_bucket,\
-      \ service_type, service_type, create_time))\n\n    storage_client = storage.Client()\n\
-      \    bucket = storage_client.get_bucket(file_bucket)\n    # blobs = storage_client.list_blobs(file_bucket,\
-      \ prefix='{}{}_models_xgb_'.format(MODEL_PATH, service_type))\n    blobs = storage_client.list_blobs(file_bucket,\
-      \ prefix=MODEL_PATH)\n\n    model_lists = []\n    for blob in blobs:\n     \
-      \   model_lists.append(blob.name)\n\n    blob = bucket.blob(model_lists[-1])\n\
-      \    blob_in = blob.download_as_string()\n    model_dict = pickle.loads(blob_in)\n\
-      \    model_xgb = model_dict['model']\n    features = model_dict['features']\n\
-      \    print('...... model loaded')\n    time.sleep(10)\n\n    ll = [('ban', 'string'),\
-      \ ('score_date', 'string'), ('model_id', 'string'), ('score', 'float64')]\n\
-      \    sql = generate_sql_file(ll)\n\n    df_score['ban'] = df_score['ban'].astype(int)\n\
-      \    print('.... scoring for {} FFH bans base'.format(len(df_score)))\n\n  \
-      \  # get full score to cave into bucket\n    pred_prob = model_xgb.predict_proba(df_score[features],\
-      \ ntree_limit=model_xgb.best_iteration)[:, 1]\n    result = pd.DataFrame(columns=['ban',\
-      \ 'score_date', 'model_id', 'score'])\n    result['score'] = list(pred_prob)\n\
-      \    result['score'] = result['score'].fillna(0.0).astype('float64')\n    result['ban']\
-      \ = list(df_score['ban'])\n    result['ban'] = result['ban'].astype('str')\n\
+      \ service_type, service_type, create_time))\n\n    # load model to the notebook\n\
+      \    storage_client = storage.Client()\n    bucket = storage_client.get_bucket(file_bucket)\n\
+      \    blobs = storage_client.list_blobs(file_bucket, prefix=MODEL_PATH)\n\n \
+      \   model_lists = []\n    for blob in blobs:\n        model_lists.append(blob.name)\n\
+      \n    blob = bucket.blob(model_lists[-1])\n    blob_in = blob.download_as_string()\n\
+      \    model_dict = pickle.loads(blob_in)\n    model_xgb = model_dict['model']\n\
+      \    features = model_dict['features']\n    print('...... model loaded')\n \
+      \   time.sleep(10)\n\n    ll = [('ban', 'string'), ('score_date', 'string'),\
+      \ ('model_id', 'string'), ('score', 'float64')]\n    sql = generate_sql_file(ll)\n\
+      \n    df_score['ban'] = df_score['ban'].astype(int)\n    print('.... scoring\
+      \ for {} FFH bans base'.format(len(df_score)))\n\n    # get full score to cave\
+      \ into bucket\n    pred_prob = model_xgb.predict_proba(df_score[features], ntree_limit=model_xgb.best_iteration)[:,\
+      \ 1]\n    result = pd.DataFrame(columns=['ban', 'score_date', 'model_id', 'score'])\n\
+      \    result['score'] = list(pred_prob)\n    result['score'] = result['score'].fillna(0.0).astype('float64')\n\
+      \    result['ban'] = list(df_score['ban'])\n    result['ban'] = result['ban'].astype('str')\n\
       \    result['score_date'] = score_date_dash\n    result['model_id'] = MODEL_ID\n\
       \n    result.to_csv('gs://{}/ucar/{}_prediction.csv'.format(file_bucket, service_type),\
       \ index=False)\n\n    # define df_final\n    df_final = df_score[features]\n\
@@ -107,26 +106,26 @@ implementation:
       \ \n\n    # export df_final to bigquery \n    schema_list = [] \n    for column\
       \ in df_final.columns: \n        schema_list.append(bigquery.SchemaField(column,\
       \ dtype_bq_mapping[df_final.dtypes[column]], mode='NULLABLE')) \n    print(schema_list)\
-      \ \n\n    dest_table = f'{dataset_id}.{table_id}'\n\n    # Sending to bigquery\
-      \ \n    client = bigquery.Client(project=project_id)\n    job_config = bigquery.LoadJobConfig(schema=schema_list,\
-      \ write_disposition='WRITE_TRUNCATE') \n    job = client.load_table_from_dataframe(df_final,\
-      \ dest_table, job_config=job_config) \n    job.result() \n    table = client.get_table(dest_table)\
-      \ # Make an API request \n    print(\"Loaded {} rows and {} columns to {}\"\
-      .format(table.num_rows, len(table.schema), table_id)) \n\n    time.sleep(60)\n\
-      \n    table_ref = f'{project_id}.{dataset_id}.{score_table}'\n    client = bigquery.Client(project=project_id)\n\
-      \    table = client.get_table(table_ref)\n    schema = table.schema\n\n    ll\
-      \ = []\n    for item in schema:\n        col = item.name\n        d_type = item.field_type\n\
-      \        if 'float' in str(d_type).lower():\n            d_type = 'FLOAT64'\n\
-      \        ll.append((col, d_type))\n\n        if 'integer' in str(d_type).lower():\n\
-      \            result[col] = result[col].fillna(0).astype(int)\n        if 'float'\
-      \ in str(d_type).lower():\n            result[col] = result[col].fillna(0.0).astype(float)\n\
+      \ \n\n    dest_table = f'{dataset_id}.{table_id}' # 'churn_12_months.bq_c12m_serving_dataset_preprocessed'\n\
+      \n    # Sending to bigquery \n    client = bigquery.Client(project=project_id)\n\
+      \    job_config = bigquery.LoadJobConfig(schema=schema_list, write_disposition='WRITE_TRUNCATE')\
+      \ \n    job = client.load_table_from_dataframe(df_final, dest_table, job_config=job_config)\
+      \ \n    job.result() \n    table = client.get_table(dest_table) # Make an API\
+      \ request \n    print(\"Loaded {} rows and {} columns to {}\".format(table.num_rows,\
+      \ len(table.schema), table_id)) \n\n    time.sleep(60)\n\n    table_ref = f'{project_id}.{dataset_id}.{score_table}'\n\
+      \    client = bigquery.Client(project=project_id)\n    table = client.get_table(table_ref)\n\
+      \    schema = table.schema\n\n    ll = []\n    for item in schema:\n       \
+      \ col = item.name\n        d_type = item.field_type\n        if 'float' in str(d_type).lower():\n\
+      \            d_type = 'FLOAT64'\n        ll.append((col, d_type))\n\n      \
+      \  if 'integer' in str(d_type).lower():\n            result[col] = result[col].fillna(0).astype(int)\n\
+      \        if 'float' in str(d_type).lower():\n            result[col] = result[col].fillna(0.0).astype(float)\n\
       \        if 'string' in str(d_type).lower():\n            result[col] = result[col].fillna('').astype(str)\n\
       \n    table_ref = '{}.{}.{}'.format(project_id, dataset_id, temp_table)\n  \
       \  client = bigquery.Client(project=project_id)\n    if if_tbl_exists(client,\
       \ table_ref):\n        client.delete_table(table_ref)\n\n    client.create_table(table_ref)\n\
       \    config = bigquery.LoadJobConfig(schema=schema)\n    config.write_disposition\
       \ = bigquery.WriteDisposition.WRITE_TRUNCATE\n    bq_table_instance = client.load_table_from_dataframe(result,\
-      \ table_ref, job_config=config)\n    time.sleep(5)\n\n    drop_sql = f\"\"\"\
+      \ table_ref, job_config=config)\n    time.sleep(20)\n\n    drop_sql = f\"\"\"\
       delete from `{project_id}.{dataset_id}.{score_table}` where score_date = '{score_date_dash}'\"\
       \"\"  # .format(project_id, dataset_id, score_date_dash)\n    client.query(drop_sql)\n\
       \    #\n    load_sql = f\"\"\"insert into `{project_id}.{dataset_id}.{score_table}`\n\

@@ -366,7 +366,7 @@
               "sh",
               "-ec",
               "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
-              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef batch_prediction(project_id: str\n                     , dataset_id: str\n                     , table_id: str\n                     , file_bucket: str\n                     , save_data_path: str\n                     , service_type: str\n                     , score_table: str\n                     , score_date_dash: str\n                     , temp_table: str\n                     , metrics: Output[Metrics]\n                     , metricsc: Output[ClassificationMetrics]\n                     , model_uri: str\n                     ):\n\n    import time\n    import pandas as pd\n    import numpy as np\n    import pickle\n    from datetime import date\n    from datetime import datetime\n    from dateutil.relativedelta import relativedelta\n    from google.cloud import bigquery\n    from google.cloud import storage\n\n    MODEL_ID = '5220'\n\n    def if_tbl_exists(bq_client, table_ref):\n        from google.cloud.exceptions import NotFound\n        try:\n            bq_client.get_table(table_ref)\n            return True\n        except NotFound:\n            return False\n\n    def upsert_table(project_id, dataset_id, table_id, sql, result):\n        new_values = ',\\n'.join(result.apply(lambda row: row_format(row), axis=1))\n        new_sql = sql.format(proj_id=project_id, dataset_id=dataset_id, table_id=table_id,\n                             new_values=new_values)\n        bq_client = bigquery.Client(project=project_id)\n        code = bq_client.query(new_sql)\n        time.sleep(5)\n\n    def row_format(row):\n        values = row.values\n        new_values = \"\"\n        v = str(values[0]) if not pd.isnull(values[0]) else 'NULL'\n        if 'str' in str(type(values[0])):\n            new_values += f\"'{v}'\"\n        else:\n            new_values += f\"{v}\"\n\n        for i in range(1, len(values)):\n            v = str(values[i]) if not pd.isnull(values[i]) else 'NULL'\n            if 'str' in str(type(values[i])):\n                new_values += f\",'{v}'\"\n            else:\n                new_values += f\",{v}\"\n        return '(' + new_values + ')'\n\n    def generate_sql_file(ll):\n        s = 'MERGE INTO `{proj_id}.{dataset_id}.{table_id}` a'\n        s += \" USING UNNEST(\"\n        s += \"[struct<\"\n        for i in range(len(ll) - 1):\n            v = ll[i]\n            s += \"{} {},\".format(v[0], v[1])\n        s += \"{} {}\".format(ll[-1][0], ll[-1][1])\n        s += \">{new_values}]\"\n        s += \") b\"\n        s += \" ON a.ban = b.ban and a.score_date = b.score_date\"\n        s += \" WHEN MATCHED THEN\"\n        s += \" UPDATE SET \"\n        s += \"a.{}=b.{},\".format(ll[0][0], ll[0][0])\n        for i in range(1, len(ll) - 1):\n            v = ll[i]\n            s += \"a.{}=b.{},\".format(v[0], v[0])\n        s += \"a.{}=b.{}\".format(ll[-1][0], ll[-1][0])\n        s += \" WHEN NOT MATCHED THEN\"\n        s += \" INSERT(\"\n        for i in range(len(ll) - 1):\n            v = ll[i]\n            s += \"{},\".format(v[0])\n        s += \"{})\".format(ll[-1][0])\n        s += \" VALUES(\"\n        for i in range(len(ll) - 1):\n            s += \"b.{},\".format(ll[i][0])\n        s += \"b.{}\".format(ll[-1][0])\n        s += \")\"\n\n        return s\n\n    def right(s, amount):\n        return s[-amount:]\n\n    # MODEL_PATH = '{}_xgb_models/'.format(service_type)\n    MODEL_PATH = right(model_uri, (len(model_uri) - 6 - len(file_bucket)))\n    df_score = pd.read_csv(save_data_path)\n    print(f'save_data_path: {save_data_path}')\n    df_score.dropna(subset=['ban'], inplace=True)\n    df_score.reset_index(drop=True, inplace=True)\n    print('......scoring data loaded:{}'.format(df_score.shape))\n    time.sleep(10)\n\n    # save backups\n    create_time = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\n    df_score.to_csv('gs://{}/{}/backup/{}_score_{}.csv'.format(file_bucket, service_type, service_type, create_time))\n\n    storage_client = storage.Client()\n    bucket = storage_client.get_bucket(file_bucket)\n    # blobs = storage_client.list_blobs(file_bucket, prefix='{}{}_models_xgb_'.format(MODEL_PATH, service_type))\n    blobs = storage_client.list_blobs(file_bucket, prefix=MODEL_PATH)\n\n    model_lists = []\n    for blob in blobs:\n        model_lists.append(blob.name)\n\n    blob = bucket.blob(model_lists[-1])\n    blob_in = blob.download_as_string()\n    model_dict = pickle.loads(blob_in)\n    model_xgb = model_dict['model']\n    features = model_dict['features']\n    print('...... model loaded')\n    time.sleep(10)\n\n    ll = [('ban', 'string'), ('score_date', 'string'), ('model_id', 'string'), ('score', 'float64')]\n    sql = generate_sql_file(ll)\n\n    df_score['ban'] = df_score['ban'].astype(int)\n    print('.... scoring for {} FFH bans base'.format(len(df_score)))\n\n    # get full score to cave into bucket\n    pred_prob = model_xgb.predict_proba(df_score[features], ntree_limit=model_xgb.best_iteration)[:, 1]\n    result = pd.DataFrame(columns=['ban', 'score_date', 'model_id', 'score'])\n    result['score'] = list(pred_prob)\n    result['score'] = result['score'].fillna(0.0).astype('float64')\n    result['ban'] = list(df_score['ban'])\n    result['ban'] = result['ban'].astype('str')\n    result['score_date'] = score_date_dash\n    result['model_id'] = MODEL_ID\n\n    result.to_csv('gs://{}/ucar/{}_prediction.csv'.format(file_bucket, service_type), index=False)\n\n    # define df_final\n    df_final = df_score[features]\n\n    # define dtype_bq_mapping\n    dtype_bq_mapping = {np.dtype('int64'): 'INTEGER', \n    np.dtype('float64'):  'FLOAT', \n    np.dtype('float32'):  'FLOAT', \n    np.dtype('object'):  'STRING', \n    np.dtype('bool'):  'BOOLEAN', \n    np.dtype('datetime64[ns]'):  'DATE', \n    pd.Int64Dtype(): 'INTEGER'} \n\n    # export df_final to bigquery \n    schema_list = [] \n    for column in df_final.columns: \n        schema_list.append(bigquery.SchemaField(column, dtype_bq_mapping[df_final.dtypes[column]], mode='NULLABLE')) \n    print(schema_list) \n\n    dest_table = f'{dataset_id}.{table_id}'\n\n    # Sending to bigquery \n    client = bigquery.Client(project=project_id)\n    job_config = bigquery.LoadJobConfig(schema=schema_list, write_disposition='WRITE_TRUNCATE') \n    job = client.load_table_from_dataframe(df_final, dest_table, job_config=job_config) \n    job.result() \n    table = client.get_table(dest_table) # Make an API request \n    print(\"Loaded {} rows and {} columns to {}\".format(table.num_rows, len(table.schema), table_id)) \n\n    time.sleep(60)\n\n    table_ref = f'{project_id}.{dataset_id}.{score_table}'\n    client = bigquery.Client(project=project_id)\n    table = client.get_table(table_ref)\n    schema = table.schema\n\n    ll = []\n    for item in schema:\n        col = item.name\n        d_type = item.field_type\n        if 'float' in str(d_type).lower():\n            d_type = 'FLOAT64'\n        ll.append((col, d_type))\n\n        if 'integer' in str(d_type).lower():\n            result[col] = result[col].fillna(0).astype(int)\n        if 'float' in str(d_type).lower():\n            result[col] = result[col].fillna(0.0).astype(float)\n        if 'string' in str(d_type).lower():\n            result[col] = result[col].fillna('').astype(str)\n\n    table_ref = '{}.{}.{}'.format(project_id, dataset_id, temp_table)\n    client = bigquery.Client(project=project_id)\n    if if_tbl_exists(client, table_ref):\n        client.delete_table(table_ref)\n\n    client.create_table(table_ref)\n    config = bigquery.LoadJobConfig(schema=schema)\n    config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE\n    bq_table_instance = client.load_table_from_dataframe(result, table_ref, job_config=config)\n    time.sleep(5)\n\n    drop_sql = f\"\"\"delete from `{project_id}.{dataset_id}.{score_table}` where score_date = '{score_date_dash}'\"\"\"  # .format(project_id, dataset_id, score_date_dash)\n    client.query(drop_sql)\n    #\n    load_sql = f\"\"\"insert into `{project_id}.{dataset_id}.{score_table}`\n                  select * from `{project_id}.{dataset_id}.{temp_table}`\"\"\"\n    client.query(load_sql)\n\n"
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef batch_prediction(project_id: str\n                     , dataset_id: str\n                     , table_id: str\n                     , file_bucket: str\n                     , save_data_path: str\n                     , service_type: str\n                     , score_table: str\n                     , score_date_dash: str\n                     , temp_table: str\n                     , metrics: Output[Metrics]\n                     , metricsc: Output[ClassificationMetrics]\n                     , model_uri: str\n                     ):\n\n    import time\n    import pandas as pd\n    import numpy as np\n    import pickle\n    from datetime import date\n    from datetime import datetime\n    from dateutil.relativedelta import relativedelta\n    from google.cloud import bigquery\n    from google.cloud import storage\n\n    MODEL_ID = '5220'\n\n    def if_tbl_exists(bq_client, table_ref):\n        from google.cloud.exceptions import NotFound\n        try:\n            bq_client.get_table(table_ref)\n            return True\n        except NotFound:\n            return False\n\n    def upsert_table(project_id, dataset_id, table_id, sql, result):\n        new_values = ',\\n'.join(result.apply(lambda row: row_format(row), axis=1))\n        new_sql = sql.format(proj_id=project_id, dataset_id=dataset_id, table_id=table_id,\n                             new_values=new_values)\n        bq_client = bigquery.Client(project=project_id)\n        code = bq_client.query(new_sql)\n        time.sleep(5)\n\n    def row_format(row):\n        values = row.values\n        new_values = \"\"\n        v = str(values[0]) if not pd.isnull(values[0]) else 'NULL'\n        if 'str' in str(type(values[0])):\n            new_values += f\"'{v}'\"\n        else:\n            new_values += f\"{v}\"\n\n        for i in range(1, len(values)):\n            v = str(values[i]) if not pd.isnull(values[i]) else 'NULL'\n            if 'str' in str(type(values[i])):\n                new_values += f\",'{v}'\"\n            else:\n                new_values += f\",{v}\"\n        return '(' + new_values + ')'\n\n    def generate_sql_file(ll):\n        s = 'MERGE INTO `{proj_id}.{dataset_id}.{table_id}` a'\n        s += \" USING UNNEST(\"\n        s += \"[struct<\"\n        for i in range(len(ll) - 1):\n            v = ll[i]\n            s += \"{} {},\".format(v[0], v[1])\n        s += \"{} {}\".format(ll[-1][0], ll[-1][1])\n        s += \">{new_values}]\"\n        s += \") b\"\n        s += \" ON a.ban = b.ban and a.score_date = b.score_date\"\n        s += \" WHEN MATCHED THEN\"\n        s += \" UPDATE SET \"\n        s += \"a.{}=b.{},\".format(ll[0][0], ll[0][0])\n        for i in range(1, len(ll) - 1):\n            v = ll[i]\n            s += \"a.{}=b.{},\".format(v[0], v[0])\n        s += \"a.{}=b.{}\".format(ll[-1][0], ll[-1][0])\n        s += \" WHEN NOT MATCHED THEN\"\n        s += \" INSERT(\"\n        for i in range(len(ll) - 1):\n            v = ll[i]\n            s += \"{},\".format(v[0])\n        s += \"{})\".format(ll[-1][0])\n        s += \" VALUES(\"\n        for i in range(len(ll) - 1):\n            s += \"b.{},\".format(ll[i][0])\n        s += \"b.{}\".format(ll[-1][0])\n        s += \")\"\n\n        return s\n\n    def right(s, amount):\n        return s[-amount:]\n\n    # MODEL_PATH = '{}_xgb_models/'.format(service_type)\n    MODEL_PATH = right(model_uri, (len(model_uri) - 6 - len(file_bucket)))\n    df_score = pd.read_csv(save_data_path)\n    print(f'save_data_path: {save_data_path}')\n    df_score.dropna(subset=['ban'], inplace=True)\n    df_score.reset_index(drop=True, inplace=True)\n    print('......scoring data loaded:{}'.format(df_score.shape))\n    time.sleep(10)\n\n    # save backups\n    create_time = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\n    df_score.to_csv('gs://{}/{}/backup/{}_score_{}.csv'.format(file_bucket, service_type, service_type, create_time))\n\n    # load model to the notebook\n    storage_client = storage.Client()\n    bucket = storage_client.get_bucket(file_bucket)\n    blobs = storage_client.list_blobs(file_bucket, prefix=MODEL_PATH)\n\n    model_lists = []\n    for blob in blobs:\n        model_lists.append(blob.name)\n\n    blob = bucket.blob(model_lists[-1])\n    blob_in = blob.download_as_string()\n    model_dict = pickle.loads(blob_in)\n    model_xgb = model_dict['model']\n    features = model_dict['features']\n    print('...... model loaded')\n    time.sleep(10)\n\n    ll = [('ban', 'string'), ('score_date', 'string'), ('model_id', 'string'), ('score', 'float64')]\n    sql = generate_sql_file(ll)\n\n    df_score['ban'] = df_score['ban'].astype(int)\n    print('.... scoring for {} FFH bans base'.format(len(df_score)))\n\n    # get full score to cave into bucket\n    pred_prob = model_xgb.predict_proba(df_score[features], ntree_limit=model_xgb.best_iteration)[:, 1]\n    result = pd.DataFrame(columns=['ban', 'score_date', 'model_id', 'score'])\n    result['score'] = list(pred_prob)\n    result['score'] = result['score'].fillna(0.0).astype('float64')\n    result['ban'] = list(df_score['ban'])\n    result['ban'] = result['ban'].astype('str')\n    result['score_date'] = score_date_dash\n    result['model_id'] = MODEL_ID\n\n    result.to_csv('gs://{}/ucar/{}_prediction.csv'.format(file_bucket, service_type), index=False)\n\n    # define df_final\n    df_final = df_score[features]\n\n    # define dtype_bq_mapping\n    dtype_bq_mapping = {np.dtype('int64'): 'INTEGER', \n    np.dtype('float64'):  'FLOAT', \n    np.dtype('float32'):  'FLOAT', \n    np.dtype('object'):  'STRING', \n    np.dtype('bool'):  'BOOLEAN', \n    np.dtype('datetime64[ns]'):  'DATE', \n    pd.Int64Dtype(): 'INTEGER'} \n\n    # export df_final to bigquery \n    schema_list = [] \n    for column in df_final.columns: \n        schema_list.append(bigquery.SchemaField(column, dtype_bq_mapping[df_final.dtypes[column]], mode='NULLABLE')) \n    print(schema_list) \n\n    dest_table = f'{dataset_id}.{table_id}' # 'churn_12_months.bq_c12m_serving_dataset_preprocessed'\n\n    # Sending to bigquery \n    client = bigquery.Client(project=project_id)\n    job_config = bigquery.LoadJobConfig(schema=schema_list, write_disposition='WRITE_TRUNCATE') \n    job = client.load_table_from_dataframe(df_final, dest_table, job_config=job_config) \n    job.result() \n    table = client.get_table(dest_table) # Make an API request \n    print(\"Loaded {} rows and {} columns to {}\".format(table.num_rows, len(table.schema), table_id)) \n\n    time.sleep(60)\n\n    table_ref = f'{project_id}.{dataset_id}.{score_table}'\n    client = bigquery.Client(project=project_id)\n    table = client.get_table(table_ref)\n    schema = table.schema\n\n    ll = []\n    for item in schema:\n        col = item.name\n        d_type = item.field_type\n        if 'float' in str(d_type).lower():\n            d_type = 'FLOAT64'\n        ll.append((col, d_type))\n\n        if 'integer' in str(d_type).lower():\n            result[col] = result[col].fillna(0).astype(int)\n        if 'float' in str(d_type).lower():\n            result[col] = result[col].fillna(0.0).astype(float)\n        if 'string' in str(d_type).lower():\n            result[col] = result[col].fillna('').astype(str)\n\n    table_ref = '{}.{}.{}'.format(project_id, dataset_id, temp_table)\n    client = bigquery.Client(project=project_id)\n    if if_tbl_exists(client, table_ref):\n        client.delete_table(table_ref)\n\n    client.create_table(table_ref)\n    config = bigquery.LoadJobConfig(schema=schema)\n    config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE\n    bq_table_instance = client.load_table_from_dataframe(result, table_ref, job_config=config)\n    time.sleep(20)\n\n    drop_sql = f\"\"\"delete from `{project_id}.{dataset_id}.{score_table}` where score_date = '{score_date_dash}'\"\"\"  # .format(project_id, dataset_id, score_date_dash)\n    client.query(drop_sql)\n    #\n    load_sql = f\"\"\"insert into `{project_id}.{dataset_id}.{score_table}`\n                  select * from `{project_id}.{dataset_id}.{temp_table}`\"\"\"\n    client.query(load_sql)\n\n"
             ],
             "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
             "resources": {
@@ -608,7 +608,7 @@
                 "score_date_dash": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-10-16"
+                      "stringValue": "2023-10-18"
                     }
                   }
                 },
@@ -686,7 +686,7 @@
                 "score_date": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-10-16"
+                      "stringValue": "2023-10-18"
                     }
                   }
                 },
@@ -700,7 +700,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0AfB_byAxDXSninek60AbFv5O4S3k6ZsCYxfWk2Jt9WfWcBaEHAW5BqSmtv1zxR0cZA_6Nl3Q2phkxWzty1hFrocyJmm-0WGUclFhmLJvArdQnz9qUWjmJQJILUrfng4jzZKWtzz2dxeHgTE8HVu2q0-6Aao_QSwOvDRI5g_p1c8paCgYKAQsSARISFQGOcNnCH_0Ft97o0C0Ca7GcdDgYeQ0179"
+                      "stringValue": "ya29.a0AfB_byCKO-jg2AboJwu-ce9U3vfMJkk1BFBRW0_RFmZkqnA9_-LNRv2aqbCA3hJ1bL8ZJbWyWORS8p0jY2B6jHaCpOWidU8UkbvNrfRQGMhmP0J1t66yKKn_1NGgtN2UY0gXvdAQCNurfeuSJptwQwV2cDdts023i1O9LbSct-bOaCgYKARsSARISFQGOcNnCbO_jws4zh8rGZq6SrTawmQ0179"
                     }
                   }
                 }
@@ -767,7 +767,7 @@
                 "dest_stats_gcs_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/statistics/serving_statistics_2023-10-19"
+                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/statistics/serving_statistics_2023-10-21"
                     }
                   }
                 },
@@ -851,7 +851,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0AfB_byAxDXSninek60AbFv5O4S3k6ZsCYxfWk2Jt9WfWcBaEHAW5BqSmtv1zxR0cZA_6Nl3Q2phkxWzty1hFrocyJmm-0WGUclFhmLJvArdQnz9qUWjmJQJILUrfng4jzZKWtzz2dxeHgTE8HVu2q0-6Aao_QSwOvDRI5g_p1c8paCgYKAQsSARISFQGOcNnCH_0Ft97o0C0Ca7GcdDgYeQ0179"
+                      "stringValue": "ya29.a0AfB_byCKO-jg2AboJwu-ce9U3vfMJkk1BFBRW0_RFmZkqnA9_-LNRv2aqbCA3hJ1bL8ZJbWyWORS8p0jY2B6jHaCpOWidU8UkbvNrfRQGMhmP0J1t66yKKn_1NGgtN2UY0gXvdAQCNurfeuSJptwQwV2cDdts023i1O9LbSct-bOaCgYKARsSARISFQGOcNnCbO_jws4zh8rGZq6SrTawmQ0179"
                     }
                   }
                 },
@@ -865,7 +865,7 @@
                 "update_ts": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-10-19 13:18:03"
+                      "stringValue": "2023-10-21 02:50:22"
                     }
                   }
                 }
@@ -950,7 +950,7 @@
                 "score_date_dash": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-10-16"
+                      "stringValue": "2023-10-18"
                     }
                   }
                 },
@@ -971,7 +971,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0AfB_byAxDXSninek60AbFv5O4S3k6ZsCYxfWk2Jt9WfWcBaEHAW5BqSmtv1zxR0cZA_6Nl3Q2phkxWzty1hFrocyJmm-0WGUclFhmLJvArdQnz9qUWjmJQJILUrfng4jzZKWtzz2dxeHgTE8HVu2q0-6Aao_QSwOvDRI5g_p1c8paCgYKAQsSARISFQGOcNnCH_0Ft97o0C0Ca7GcdDgYeQ0179"
+                      "stringValue": "ya29.a0AfB_byCKO-jg2AboJwu-ce9U3vfMJkk1BFBRW0_RFmZkqnA9_-LNRv2aqbCA3hJ1bL8ZJbWyWORS8p0jY2B6jHaCpOWidU8UkbvNrfRQGMhmP0J1t66yKKn_1NGgtN2UY0gXvdAQCNurfeuSJptwQwV2cDdts023i1O9LbSct-bOaCgYKARsSARISFQGOcNnCbO_jws4zh8rGZq6SrTawmQ0179"
                     }
                   }
                 },
@@ -1058,7 +1058,7 @@
                 "base_stats_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/statistics/training_statistics_2023-10-19"
+                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/statistics/training_statistics_2023-10-20"
                     }
                   }
                 },
@@ -1079,7 +1079,7 @@
                 "dest_anomalies_gcs_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/anomalies/anomalies_2023-10-19"
+                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/anomalies/anomalies_2023-10-21"
                     }
                   }
                 },
@@ -1121,14 +1121,14 @@
                 "src_schema_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/schemas/training_stats_schema_2023-10-19"
+                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/schemas/training_stats_schema_2023-10-20"
                     }
                   }
                 },
                 "update_ts": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-10-19 13:18:03"
+                      "stringValue": "2023-10-21 02:50:22"
                     }
                   }
                 },
@@ -1168,14 +1168,14 @@
                 "base_stats_nm": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "Training Statistics 2023-10-19 07:28:42"
+                      "stringValue": "Training Statistics 2023-10-20 18:49:12"
                     }
                   }
                 },
                 "base_stats_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/statistics/training_statistics_2023-10-19"
+                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/statistics/training_statistics_2023-10-20"
                     }
                   }
                 },
@@ -1189,7 +1189,7 @@
                 "stats_nm": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "Serving Statistics 2023-10-19 13:18:03"
+                      "stringValue": "Serving Statistics 2023-10-21 02:50:22"
                     }
                   }
                 }

@@ -35,8 +35,12 @@ def upload_model(
     """
 
     from google.cloud import aiplatform
+    from google.api_core.future.polling import DEFAULT_POLLING
     import os
 
+    ### Set the default timeoutto 3600 seconds
+    DEFAULT_POLLING._timeout = 3000
+    
     aiplatform.init(project=project_id, location=region)
 
     ## check if prediction image is custom or not
@@ -68,7 +72,8 @@ def upload_model(
             serving_container_ports=serving_container_ports,
             serving_container_environment_variables =  {"COL_LIST":str(col_list), "model_uri": model_uri},
             parent_model = model_uid,
-            is_default_version = True
+            is_default_version = True, 
+            upload_request_timeout = 3000
         )
     # if model does not already exist, create a new model
     except:
@@ -80,6 +85,8 @@ def upload_model(
             serving_container_health_route=health_route,
             serving_container_ports=serving_container_ports,
             serving_container_environment_variables =  {"COL_LIST":str(col_list), "model_uri": model_uri},
+            upload_request_timeout = 3000
+
         )
 
     vertex_model.uri = uploaded_model.resource_name

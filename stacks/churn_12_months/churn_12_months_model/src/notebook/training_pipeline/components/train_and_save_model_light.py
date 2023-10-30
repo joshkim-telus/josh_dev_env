@@ -52,6 +52,11 @@ def train_and_save_model(file_bucket: str
     from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve, mean_squared_error, f1_score, precision_score, recall_score, confusion_matrix, roc_curve, classification_report
     from pycaret.datasets import get_data
     
+    import pandas as pd
+    from sklearn.compose import ColumnTransformer
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import MinMaxScaler, StandardScaler, OneHotEncoder
+    
     def get_lift(prob, y_test, q):
         result = pd.DataFrame(columns=['Prob', 'Churn'])
         result['Prob'] = prob
@@ -500,6 +505,42 @@ def train_and_save_model(file_bucket: str
 
         return model_test_set_reports_concat, model_to_report_map
 
+    def preprocess_ml(df): 
+
+        # Step 1: Get a list of all column names
+        all_columns = df.columns.tolist()
+
+        # Step 2: Initialize empty lists for numerical and categorical columns
+        numerical_features = []
+        categorical_features = []
+
+        # Step 3: Loop through each column to determine its data type
+        for column in all_columns:
+            if pd.api.types.is_numeric_dtype(df[column]):
+                numerical_features.append(column)
+            else:
+                categorical_features.append(column)
+
+        preprocessor = ColumnTransformer(
+            transformers=[
+                ('num', MinMaxScaler(), numerical_features),  # Standardization for numerical features
+                ('cat', OneHotEncoder(), categorical_features)  # One-hot encoding for categorical features
+            ],
+            remainder='passthrough'  # Include any unprocessed columns
+        )
+
+        pipeline = Pipeline([
+            ('preprocessor', preprocessor)
+        ])
+
+        pipeline.fit(df)
+
+        transformed_df = pipeline.transform(df)
+
+        df_result = pd.DataFrame(transformed_df, columns=df.columns)
+
+        return df_result
+
     df_train = pd.read_csv('gs://{}/{}/{}_train.csv'.format(file_bucket, service_type, service_type), index_col=False)  
 
     #### For wb
@@ -529,8 +570,8 @@ def train_and_save_model(file_bucket: str
     features = [f for f in cols if f not in ['ban', 'target', 'Unnamed: 0']]
 
     print(df_train.shape) 
-    print(df_test.shape) 
     print(df_val.shape) 
+    print(df_test.shape) 
     
     create_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     df_train.to_csv('gs://{}/{}/backup/{}_train_{}.csv'.format(file_bucket, service_type, service_type, create_time))
@@ -551,35 +592,43 @@ def train_and_save_model(file_bucket: str
 
     del df_train, df_val, df_test
     gc.collect()
+    
+    X_train = preprocess_ml(X_train)
+    X_val = preprocess_ml(X_val)
+    X_test = preprocess_ml(X_test)
+    
+    print(f'X_train shape: {X_train.shape}') 
+    print(f'X_val shape: {X_val.shape}') 
+    print(f'X_test shape: {X_test.shape}') 
 
-    # build model and fit in training data
-    xgb_model = xgb.XGBClassifier(
-        learning_rate=0.1,
-        n_estimators=100,
-        max_depth=8,
-        min_child_weight=1,
-        gamma=0,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        objective='binary:logistic',
-        nthread=4,
-        scale_pos_weight=1
-        # seed=27
-    )
-
+#     # build model and fit in training data
 #     xgb_model = xgb.XGBClassifier(
-#         learning_rate=0.02,
-#         n_estimators=1000,
-#         max_depth=10,
+#         learning_rate=0.1,
+#         n_estimators=100,
+#         max_depth=8,
 #         min_child_weight=1,
 #         gamma=0,
 #         subsample=0.8,
 #         colsample_bytree=0.8,
 #         objective='binary:logistic',
 #         nthread=4,
-#         scale_pos_weight=1,
-#         seed=27
+#         scale_pos_weight=1
+#         # seed=27
 #     )
+
+    xgb_model = xgb.XGBClassifier(
+        learning_rate=0.02,
+        n_estimators=1000,
+        max_depth=10,
+        min_child_weight=1,
+        gamma=0,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        objective='binary:logistic',
+        nthread=4,
+        scale_pos_weight=1,
+        seed=27
+    )
     
     xgb_model.fit(X_train, y_train)
     print('xgb training done')
@@ -606,6 +655,17 @@ def train_and_save_model(file_bucket: str
                                                             , columns = features
                                                             , show_report=False
                                                             )
+    
+#     # Pass data to generate plotly_report
+#     report_df,report_fig = plotly_model_report(model=xgb_model,
+#                                     actual=y_true,
+#                                     predicted=y_pred,
+#                                     predictions_prob=y_score,
+#                                     bucket_name = file_bucket,
+#                                     show_report = True,
+#                                     columns = features,
+#                                     save_path = 'churn_12_months/reports/'
+#                                    )
     
     model_class_name = xgb_model.__class__.__name__
     final_model_report = model_to_report_map[model_class_name]

@@ -1,6 +1,5 @@
 import kfp
 from kfp import dsl
-# from kfp.v2.dsl import (Model, Input, component)
 from kfp.v2.dsl import (Artifact, Dataset, Input, InputPath, Model, Output,HTML,
                         OutputPath, ClassificationMetrics, Metrics, component)
 from typing import NamedTuple
@@ -45,7 +44,6 @@ def bq_create_dataset(score_date: str
                 *
             FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS
             WHERE table_name='bq_c12m_{environment}_dataset'
-            
         '''
     
     df = client.query(query, job_config=job_config).to_dataframe()
@@ -55,17 +53,18 @@ def bq_create_dataset(score_date: str
              {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \
              {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S') } !")
     
-    ######################################## Save column list_##########################
+    ######################### Save column list_##########################
     query =\
         f'''
            SELECT
                 *
             FROM {dataset_id}.bq_c12m_{environment}_dataset
-
+            LIMIT 1
         '''
     
     df = client.query(query, job_config=job_config).to_dataframe()
     
     col_list = list([col for col in df.columns])
+    
     return (col_list,)
     

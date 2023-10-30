@@ -18,13 +18,13 @@ def preprocess(pipeline_dataset: str
     import time
 
     client = bigquery.Client(project=project_id)
-
-    # pipeline_dataset 
+    
+    # pipeline_dataset
     pipeline_dataset_name = f"{project_id}.{dataset_id}.{pipeline_dataset}" 
     build_df_pipeline_dataset = f'SELECT * FROM `{pipeline_dataset_name}`'
     df_pipeline_dataset = client.query(build_df_pipeline_dataset).to_dataframe()
     df_pipeline_dataset = df_pipeline_dataset.set_index('ban') 
-
+    
     # demo columns
     df_pipeline_dataset['demo_urban_flag'] = df_pipeline_dataset.demo_sgname.str.lower().str.contains('urban').fillna(0).astype(int)
     df_pipeline_dataset['demo_rural_flag'] = df_pipeline_dataset.demo_sgname.str.lower().str.contains('rural').fillna(0).astype(int)

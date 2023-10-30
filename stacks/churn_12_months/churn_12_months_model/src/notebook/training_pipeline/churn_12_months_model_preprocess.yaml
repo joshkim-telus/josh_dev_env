@@ -30,7 +30,7 @@ implementation:
       \               , score_date_dash: str\n               ):\n\n    from google.cloud\
       \ import bigquery\n    import pandas as pd\n    import numpy as np\n    import\
       \ gc\n    import time\n\n    client = bigquery.Client(project=project_id)\n\n\
-      \    # pipeline_dataset \n    pipeline_dataset_name = f\"{project_id}.{dataset_id}.{pipeline_dataset}\"\
+      \    # pipeline_dataset\n    pipeline_dataset_name = f\"{project_id}.{dataset_id}.{pipeline_dataset}\"\
       \ \n    build_df_pipeline_dataset = f'SELECT * FROM `{pipeline_dataset_name}`'\n\
       \    df_pipeline_dataset = client.query(build_df_pipeline_dataset).to_dataframe()\n\
       \    df_pipeline_dataset = df_pipeline_dataset.set_index('ban') \n\n    # demo\

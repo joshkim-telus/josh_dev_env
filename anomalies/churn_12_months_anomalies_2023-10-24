@@ -1,0 +1,1220 @@
+drift_skew_info {
+  path {
+    step: "billing_cnt_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.15250086457617898
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "call_count_s"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.5891771670756364
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "cancel_tot_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.5067365622921912
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "cancel_tot_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.5590647383743468
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "chg_tot_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.09483427251184924
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "chg_tot_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.08296975565438983
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "chg_wln_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.3155979819639239
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "chg_wln_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.08432642689327828
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "chg_wls_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.08446913949746462
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "chg_wls_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.07805945290068737
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "customer_tenure"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.10808155946567798
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "days_close_avg_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.09349164309126813
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "days_close_max_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.1321159447167435
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "days_close_min_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.09346029515017407
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "days_resolve_avg_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.14123283213010307
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "days_resolve_max_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.13248665113513583
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "days_resolve_min_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.14127147310363247
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "deal_tot_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.0032884602629633924
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "deal_tot_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.024275222358378815
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "demo_avg_income"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.0011992427512197276
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "demo_family_flag"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 1.3891368783689384e-05
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "demo_lsname_Large_Diverse_Families"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 1.6191772536143165e-05
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "demo_lsname_Mature_Singles_and_Couples"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.00010290473261971578
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "demo_lsname_Middle_Age_Families"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 1.2708398846090433e-05
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "demo_lsname_Older_Families_and_Empty_Nests"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 3.5210668780941362e-06
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "demo_lsname_School_Age_Families"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 6.028595975382891e-05
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "demo_lsname_Unassigned"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 4.9164218413463726e-05
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "demo_lsname_Very_Young_Singles_and_Couples"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.00014871615537868335
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "demo_lsname_Young_Families"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 2.770917606521937e-06
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "demo_lsname_Younger_Singles_and_Couples"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.00024875071917714606
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "demo_rural_flag"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 3.955471256407786e-05
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "demo_urban_flag"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.000384848111138137
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "dial_duration_avg_s"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 2.601215804246266e-08
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "dial_duration_s"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 2.6012158042477907e-08
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "dispatch_cnt_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.12760940924996655
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "effort_durtn_sec_qty_s"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.9099862155756988
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ffh_amt_0"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.3216190554964569
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ffh_amt_1"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.2715043917755353
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ffh_amt_10"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.19428177636028274
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ffh_amt_11"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.18663590021680865
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ffh_amt_2"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.31297906792483143
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ffh_amt_3"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.43761179186925203
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ffh_amt_4"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.3066836191346498
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ffh_amt_5"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.29646802087359303
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ffh_amt_6"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.4856736506348129
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ffh_amt_7"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.27646351293033455
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ffh_amt_8"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.5790275282507302
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ffh_amt_9"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.23949811850738978
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "frequency"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.11460278684012586
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "have_called"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.0004375532170730794
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "hold_duration_avg_s"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 1.6037089184738238e-06
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "hold_duration_s"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.5995338284819074
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "hs_tot_gb_0"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.011616180844382581
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "hs_tot_gb_1"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.18010414126794722
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "hs_tot_gb_2"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.3477112121222593
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "hs_tot_gb_3"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.5285727160176928
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "hs_tot_gb_4"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.27990257811789154
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "hs_tot_gb_5"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.18757648977585023
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "hsic_cnt_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.3276560043134638
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "hsic_count"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.22659155926469454
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "hsic_disc_pct"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.11484748844158614
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "install_cnt_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.0016510849140730344
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "livingwell_cnt_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.0887581744193509
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "mnh_ind"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.008188562275183074
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "mob_count"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.35523160123481845
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "move_tot_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.2392986618643319
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "move_tot_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.5499763214796893
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "new_c_ind"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.0016294625700336717
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "new_hsic_ind"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.0017004323333085674
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "new_sing_ind"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.004377966167230279
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "new_smhm_ind"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 6.332118464474917e-06
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "new_ttv_ind"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 4.158193448186516e-07
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "num_srvc_typ_copper_sum"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.3565640713837188
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "num_srvc_typ_gpon_sum"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.07179481585735106
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "product_mix_all"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.008547599297961256
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "recency"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.0002925239784996763
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ring_duration_avg_s"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 9.900005214329643e-06
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ring_duration_s"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.6719551904079211
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "security_cnt_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.08690481034625097
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "sev1_cnt_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.4376796438164613
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "sev2_cnt_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.13871842627402015
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "sev3_cnt_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.37043447489235953
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "sev4_cnt_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.27370053820672346
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "shs_count"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.12251961889534219
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "sing_cnt_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.040912319757368434
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "sing_count"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.02396931299362396
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "sing_disc_pct"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.5127009971826497
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "smhm_disc_pct"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.6986799249410328
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "supp_tot_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.11269991901475236
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "supp_tot_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.21313882189794495
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "talk_duration_avg_s"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 1.2429337519575018e-07
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "talk_duration_s"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.5515833700955858
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "tckt_cnt_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.3569376473733716
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "tot_click_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.26566306275607193
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "tot_click_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.323627253966645
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "tot_disc_pct"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.569592068043214
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ttv_cnt_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.07058693674352938
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ttv_count"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.00016041291518448822
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "ttv_disc_pct"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.4303301282565877
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "upgr_tot_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.14521195591870587
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "upgr_tot_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.2891218540162412
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "web_portal_cnt_l12m"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.07117111211771632
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wln_fibre_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.039995326774602824
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wln_fibre_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.3595626838835023
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wln_hsic_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.1474485400029652
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wln_hsic_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.35165956332417536
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wln_optik_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.5652591582007176
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wln_optik_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.5823096260453747
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wln_sing_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.12995597412452628
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wln_sing_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.19518606682257608
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wln_smarthome_security_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.33583934354229594
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wln_smarthome_security_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.42097134380788687
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wln_tot_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.40642905463868306
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wln_tot_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.45469938974302104
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wln_tv_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.5138342689452143
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wln_tv_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.5352192676490931
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wls_device_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.26684285088246307
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wls_device_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.04166431291667459
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wls_plan_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.39597317431537093
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wls_plan_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.3530665578005128
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wls_tot_cnt_r30d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.15529587987892873
+    threshold: 1e-08
+  }
+}
+drift_skew_info {
+  path {
+    step: "wls_tot_cnt_r90d"
+  }
+  skew_measurements {
+    type: JENSEN_SHANNON_DIVERGENCE
+    value: 0.15901964368100518
+    threshold: 1e-08
+  }
+}

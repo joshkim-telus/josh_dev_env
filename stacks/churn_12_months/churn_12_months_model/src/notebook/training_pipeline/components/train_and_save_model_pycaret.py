@@ -13,7 +13,6 @@ def train_and_save_model_pycaret(file_bucket: str
                         , service_type: str
                         , project_id: str
                         , dataset_id: str
-                        , save_path: str
                         , metrics: Output[Metrics]
                         , metricsc: Output[ClassificationMetrics]
                         , model: Output[Model]
@@ -50,7 +49,7 @@ def train_and_save_model_pycaret(file_bucket: str
     from google.cloud import bigquery
 
     from pycaret.classification import setup,create_model,tune_model, predict_model,get_config,compare_models,save_model,tune_model, models
-    from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve, mean_squared_error, f1_score, precision_score, recall_score, confusion_matrix, roc_curve
+    from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve, mean_squared_error, f1_score, precision_score, recall_score, confusion_matrix, roc_curve, classification_report
     from pycaret.datasets import get_data
     
     def get_lift(prob, y_test, q):
@@ -118,7 +117,7 @@ def train_and_save_model_pycaret(file_bucket: str
         cm=confusion_matrix(actual, predicted)
 
         if axis_labels=='':
-            x = [str(x) for x in range(actual.nunique())]
+            x = [str(x) for x in range(pd.Series(actual).nunique())]
             #list(np.arange(0, actual.nunique()))
             y = x
         else:
@@ -451,18 +450,20 @@ def train_and_save_model_pycaret(file_bucket: str
 
         #Save html report
         todays_date = datetime.now().strftime("%Y-%m-%d")
-        report_fig.write_html(f"{save_path}{todays_date}_{model.__class__.__name__}.html")
+        report_fig.write_html(f"{save_path}{model.__class__.__name__}_{todays_date}.html")
         bucket = storage.Client().bucket(bucket_name)
-        filename = f"{todays_date}_{model.__class__.__name__}.html"
+        filename = f"{model.__class__.__name__}_{todays_date}.html"
         blob = bucket.blob(f"{save_path}{filename}")
-        blob.upload_from_filename(f"{save_path}{todays_date}_{model.__class__.__name__}.html")
+        blob.upload_from_filename(f"{save_path}{model.__class__.__name__}_{todays_date}.html")
         print(f"{filename} sucessfully uploaded to GCS bucket!")
-        # Return dataframe with metrics
-        return results_df_combined,report_fig
+        
+        return results_df_combined, report_fig
 
-    def evaluate_and_save_models(models, bucket_name, save_path, test_df, actual_label_str, columns, save_columns=False, show_report=False):
+
+    def save_reports_to_gcs(models, y_true, y_pred, y_score, file_bucket, save_path, columns, show_report=False):
+
         # define_the_bucket
-        bucket = storage.Client().bucket(bucket_name)
+        bucket = storage.Client().bucket(file_bucket)
         date=datetime.now().strftime("%Y-%m-%d")
         model_test_set_reports = []
         model_to_report_map = {}
@@ -473,66 +474,31 @@ def train_and_save_model_pycaret(file_bucket: str
 
         create_folder_if_not_exists(save_path)
 
-        if save_columns:
-            with open(f"{save_path}{date}_columns.pkl" , "wb") as f:
-                pickle.dump(columns, f)
-            print(f"Columns saved as {save_path}{date}_columns.pkl !")
-            filename = f"{date}_columns.pkl"
-            blob = bucket.blob(f"{save_path}{filename}")
-            blob.upload_from_filename(f"{save_path}{date}_columns.pkl")
-            print(f"{save_path}/{date}_columns.pkl sucessfully uploaded to GCS bucket!")
-
-         # Add code to set model to a list if only 1 model passed
+        # Add code to set model to a list if only 1 model passed
         for i in range(len(models)):
+
             print(models[i])
-            # Save model
-
-            # Add code to create new folder if it does not exist
-            model_file_name = '{save_path}{model_type}_{date}'.format(save_path = save_path,                                                                     model_type=models[i].__class__.__name__,                                                                    date=datetime.now().strftime("%Y-%m-%d"))
-            save_model(models[i],model_file_name )
-            filename = '{model_type}_{date}.pkl'.format(model_type=models[i].__class__.__name__,                                        date=datetime.now().strftime("%Y-%m-%d"))
-            blob = bucket.blob(f"{save_path}{filename}")
-            blob.upload_from_filename(f"{model_file_name}.pkl")
-            print(f"{filename} sucessfully uploaded to GCS bucket!")
-            # joblib.dump(models[i], '{save_path}{model_type}_{date}.joblib'.format(
-            #                                                                     save_path = save_path,
-            #                                                                     model_type=models[i].__class__.__name__,
-            #                                                                     date=datetime.now().strftime("%Y-%m-%d")))
-
-            # Get predictions on test set for model
-            predictions = predict_model(models[i], data=test_df)
-            # Normalize prediction probabilities 
-            predictions['Score_Normalized']=predictions['Score']
-            predictions.loc[predictions['Label'] == 0,'Score_Normalized'] = 1 - predictions['Score']
-            predictions_prob = predictions["Score_Normalized"].astype(float)
-
-            actual = predictions[actual_label_str].astype(int)
-            predicted = predictions["Label"].astype(int)
 
             # Pass data to generate plotly_report
             report_df,report_fig = plotly_model_report(model=models[i],
-                                            actual=actual,
-                                            predicted=predicted,
-                                            predictions_prob=predictions_prob,
-                                            bucket_name  = bucket_name  ,
+                                            actual=y_true,
+                                            predicted=y_pred,
+                                            predictions_prob=y_score,
+                                            bucket_name  = file_bucket,
                                             show_report = show_report,
                                             columns = columns,
-                                            save_path = save_path      
+                                            save_path = save_path
                                            )
+
             todays_date = datetime.now().strftime("%Y-%m-%d")
             model_to_report_map[models[i].__class__.__name__ ]=report_fig
 
-        # report_fig.write_html(f"{save_path}{todays_date}_{model.__class__.__name__}.html")
+            # report_fig.write_html(f"{save_path}{todays_date}_{model.__class__.__name__}.html")
             model_test_set_reports.append(report_df)
 
         model_test_set_reports_concat = pd.concat(model_test_set_reports)
-        model_test_set_reports_concat.to_csv(f"{save_path}{date}_model_reports.csv", index=False)
 
-        filename = f"{date}_model_reports.csv"
-        blob = bucket.blob(f"{save_path}{filename}")
-        blob.upload_from_filename(f"{save_path}{date}_model_reports.csv")
-        print(f"{filename} sucessfully uploaded to GCS bucket!")
-        return model_test_set_reports_concat,model_to_report_map
+        return model_test_set_reports_concat, model_to_report_map
 
     df_train = pd.read_csv('gs://{}/{}/{}_train.csv'.format(file_bucket, service_type, service_type))
     df_test = pd.read_csv('gs://{}/{}/{}_validation.csv'.format(file_bucket, service_type, service_type))
@@ -552,7 +518,7 @@ def train_and_save_model_pycaret(file_bucket: str
     
     # Define target variable
     target = 'target'
-    drop_cols = ['ban', 'target']
+    drop_cols = ['ban', 'target', 'Unnamed: 0']
     cat_feat = []
 
     # define X and y
@@ -579,7 +545,7 @@ def train_and_save_model_pycaret(file_bucket: str
     cols_1 = df_train.columns.values
     cols_2 = df_test.columns.values
     cols = set(cols_1).intersection(set(cols_2))
-    features = [f for f in cols if f not in ['ban', 'target']]
+    features = [f for f in cols if f not in ['ban', 'target', 'Unnamed: 0']]
 
     # assign numeric and categorical features
     numeric_features = [col for col in df_train.columns if col not in drop_cols+cat_feat]
@@ -648,15 +614,7 @@ def train_and_save_model_pycaret(file_bucket: str
     #### Model Tuning ###
     model_base = create_model(model_dict[top_model])
     tuned_model, tuner = tune_model(model_base, optimize='F1', return_tuner = True, n_iter = 25)
-    # model_reports_tuned, model_to_report_map_tuned = evaluate_and_save_models(models=tuned_model, 
-    #                                      bucket_name=bucket_name,
-    #                                      save_path=save_path, 
-    #                                      test_df=test_df,
-    #                                      actual_label_str='target',
-    #                                      columns = get_config('X_train').columns,
-    #                                      save_columns=True,
-    #                                      show_report=False)
-    
+
     #### Final Evaluation ####
     # print model name
     model_name = tuned_model.__class__.__name__
@@ -669,17 +627,27 @@ def train_and_save_model_pycaret(file_bucket: str
     y_true = predictions[target]
     y_pred = predictions["Label"]
     y_score = predictions["Score_1"]
-    
+
     # get lift
     lg = get_lift(y_score, y_true, 10)
 
+    model_reports, model_to_report_map = save_reports_to_gcs(models = tuned_model
+                                                            , y_true = y_true
+                                                            , y_pred = y_pred
+                                                            , y_score = y_score
+                                                            , file_bucket = file_bucket
+                                                            , save_path = 'churn_12_months/reports/'
+                                                            , columns = features
+                                                            , show_report=False
+                                                            )
+    
     # save the lift calc in GCS
     models_dict = {}
     create_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     models_dict['create_time'] = create_time
     models_dict['model'] = tuned_model
     models_dict['features'] = features
-    lg.to_csv('gs://{}/{}/lift_on_scoring_data_{}.csv'.format(file_bucket, service_type, create_time, index=False))
+    lg.to_csv('gs://{}/{}/lift_on_scoring_data_{}_pycaret.csv'.format(file_bucket, service_type, create_time, index=False))
 
     # calculate Accuracy, AUC, Recall, Precision, F1 
     accuracy = accuracy_score(y_true, y_pred)

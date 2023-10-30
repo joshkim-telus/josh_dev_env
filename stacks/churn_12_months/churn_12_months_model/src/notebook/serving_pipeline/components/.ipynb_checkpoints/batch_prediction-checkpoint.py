@@ -111,9 +111,9 @@ def batch_prediction(project_id: str
     create_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     df_score.to_csv('gs://{}/{}/backup/{}_score_{}.csv'.format(file_bucket, service_type, service_type, create_time))
 
+    # load model to the notebook
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(file_bucket)
-    # blobs = storage_client.list_blobs(file_bucket, prefix='{}{}_models_xgb_'.format(MODEL_PATH, service_type))
     blobs = storage_client.list_blobs(file_bucket, prefix=MODEL_PATH)
 
     model_lists = []
@@ -164,7 +164,7 @@ def batch_prediction(project_id: str
         schema_list.append(bigquery.SchemaField(column, dtype_bq_mapping[df_final.dtypes[column]], mode='NULLABLE')) 
     print(schema_list) 
     
-    dest_table = f'{dataset_id}.{table_id}'
+    dest_table = f'{dataset_id}.{table_id}' # 'churn_12_months.bq_c12m_serving_dataset_preprocessed'
 
     # Sending to bigquery 
     client = bigquery.Client(project=project_id)
@@ -205,7 +205,7 @@ def batch_prediction(project_id: str
     config = bigquery.LoadJobConfig(schema=schema)
     config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
     bq_table_instance = client.load_table_from_dataframe(result, table_ref, job_config=config)
-    time.sleep(5)
+    time.sleep(20)
 
     drop_sql = f"""delete from `{project_id}.{dataset_id}.{score_table}` where score_date = '{score_date_dash}'"""  # .format(project_id, dataset_id, score_date_dash)
     client.query(drop_sql)

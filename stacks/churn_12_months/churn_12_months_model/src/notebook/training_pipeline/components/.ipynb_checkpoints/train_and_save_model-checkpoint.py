@@ -590,15 +590,26 @@ def train_and_save_model(file_bucket: str
     y_pred = (pred_prb > 0.5).astype(int)
     y_score = pred_prb 
 
-    model_reports, model_to_report_map = save_reports_to_gcs(models = xgb_model
-                                                            , y_true = y_true
-                                                            , y_pred = y_pred 
-                                                            , y_score = y_score
-                                                            , file_bucket = file_bucket
-                                                            , save_path = 'churn_12_months/reports/'
-                                                            , columns = features
-                                                            , show_report=False
-                                                            )
+#     model_reports, model_to_report_map = save_reports_to_gcs(models = xgb_model
+#                                                             , y_true = y_true
+#                                                             , y_pred = y_pred 
+#                                                             , y_score = y_score
+#                                                             , file_bucket = file_bucket
+#                                                             , save_path = 'churn_12_months/reports/'
+#                                                             , columns = features
+#                                                             , show_report=False
+#                                                             )
+    
+    # Pass data to generate plotly_report
+    report_df,report_fig = plotly_model_report(model=xgb_model,
+                                    actual=y_true,
+                                    predicted=y_pred,
+                                    predictions_prob=y_score,
+                                    bucket_name = file_bucket,
+                                    show_report = True,
+                                    columns = features,
+                                    save_path = 'churn_12_months/reports/'
+                                   )
     
     model_class_name = xgb_model.__class__.__name__
     final_model_report = model_to_report_map[model_class_name]    
