@@ -581,7 +581,7 @@
                 "file_bucket": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "divg-josh-pr-d1cc3a-default"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default"
                     }
                   }
                 },
@@ -594,21 +594,21 @@
                 "project_id": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "divg-josh-pr-d1cc3a"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
                     }
                   }
                 },
                 "save_data_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/churn_12_months_score.csv"
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/churn_12_months/churn_12_months_score.csv"
                     }
                   }
                 },
                 "score_date_dash": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-10-18"
+                      "stringValue": "2023-09-01"
                     }
                   }
                 },
@@ -672,7 +672,7 @@
                 "project_id": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "divg-josh-pr-d1cc3a"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
                     }
                   }
                 },
@@ -686,7 +686,7 @@
                 "score_date": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-10-18"
+                      "stringValue": "2023-09-01"
                     }
                   }
                 },
@@ -700,7 +700,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0AfB_byCKO-jg2AboJwu-ce9U3vfMJkk1BFBRW0_RFmZkqnA9_-LNRv2aqbCA3hJ1bL8ZJbWyWORS8p0jY2B6jHaCpOWidU8UkbvNrfRQGMhmP0J1t66yKKn_1NGgtN2UY0gXvdAQCNurfeuSJptwQwV2cDdts023i1O9LbSct-bOaCgYKARsSARISFQGOcNnCbO_jws4zh8rGZq6SrTawmQ0179"
+                      "stringValue": "ya29.a0AfB_byCa_V1OGZf--tx0Q_zq-UwVCftT5_OilBausEBRxaDislq49Zmj3TyLIFEYJKkpbzhdpYYdJyMGv87mhMZ4prPi9V5RlO9-XP33sjbD9puylXU7cvTTqzeIikKvTv9TasGcAky7addetAscumGfQviLUotRBPHFy3NVCBgaCgYKAYwSARISFQGOcNnC286C4hs--g-YO_beM6QUCg0178"
                     }
                   }
                 }
@@ -725,7 +725,7 @@
                 "bucket_nm": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "divg-josh-pr-d1cc3a-default"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default"
                     }
                   }
                 },
@@ -767,7 +767,7 @@
                 "dest_stats_gcs_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/statistics/serving_statistics_2023-10-21"
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/churn_12_months/statistics/serving_statistics_2023-11-03"
                     }
                   }
                 },
@@ -816,7 +816,7 @@
                 "project_id": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "divg-josh-pr-d1cc3a"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
                     }
                   }
                 },
@@ -837,7 +837,7 @@
                 "src_csv_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/churn_12_months_score.csv"
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/churn_12_months/churn_12_months_score.csv"
                     }
                   }
                 },
@@ -851,7 +851,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0AfB_byCKO-jg2AboJwu-ce9U3vfMJkk1BFBRW0_RFmZkqnA9_-LNRv2aqbCA3hJ1bL8ZJbWyWORS8p0jY2B6jHaCpOWidU8UkbvNrfRQGMhmP0J1t66yKKn_1NGgtN2UY0gXvdAQCNurfeuSJptwQwV2cDdts023i1O9LbSct-bOaCgYKARsSARISFQGOcNnCbO_jws4zh8rGZq6SrTawmQ0179"
+                      "stringValue": "ya29.a0AfB_byCa_V1OGZf--tx0Q_zq-UwVCftT5_OilBausEBRxaDislq49Zmj3TyLIFEYJKkpbzhdpYYdJyMGv87mhMZ4prPi9V5RlO9-XP33sjbD9puylXU7cvTTqzeIikKvTv9TasGcAky7addetAscumGfQviLUotRBPHFy3NVCBgaCgYKAYwSARISFQGOcNnC286C4hs--g-YO_beM6QUCg0178"
                     }
                   }
                 },
@@ -865,7 +865,7 @@
                 "update_ts": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-10-21 02:50:22"
+                      "stringValue": "2023-11-03 13:38:06"
                     }
                   }
                 }
@@ -897,7 +897,7 @@
                 "project_id": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "divg-josh-pr-d1cc3a"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
                     }
                   }
                 },
@@ -936,21 +936,21 @@
                 "file_bucket": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "divg-josh-pr-d1cc3a-default"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default"
                     }
                   }
                 },
                 "project_id": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "divg-josh-pr-d1cc3a"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
                     }
                   }
                 },
                 "score_date_dash": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-10-18"
+                      "stringValue": "2023-09-01"
                     }
                   }
                 },
@@ -971,7 +971,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0AfB_byCKO-jg2AboJwu-ce9U3vfMJkk1BFBRW0_RFmZkqnA9_-LNRv2aqbCA3hJ1bL8ZJbWyWORS8p0jY2B6jHaCpOWidU8UkbvNrfRQGMhmP0J1t66yKKn_1NGgtN2UY0gXvdAQCNurfeuSJptwQwV2cDdts023i1O9LbSct-bOaCgYKARsSARISFQGOcNnCbO_jws4zh8rGZq6SrTawmQ0179"
+                      "stringValue": "ya29.a0AfB_byCa_V1OGZf--tx0Q_zq-UwVCftT5_OilBausEBRxaDislq49Zmj3TyLIFEYJKkpbzhdpYYdJyMGv87mhMZ4prPi9V5RlO9-XP33sjbD9puylXU7cvTTqzeIikKvTv9TasGcAky7addetAscumGfQviLUotRBPHFy3NVCBgaCgYKAYwSARISFQGOcNnC286C4hs--g-YO_beM6QUCg0178"
                     }
                   }
                 },
@@ -1017,14 +1017,14 @@
                 "project_id": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "divg-josh-pr-d1cc3a"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
                     }
                   }
                 },
                 "save_data_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/churn_12_months_score.csv"
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/churn_12_months/churn_12_months_score.csv"
                     }
                   }
                 }
@@ -1058,14 +1058,14 @@
                 "base_stats_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/statistics/training_statistics_2023-10-20"
+                      "stringValue": ""
                     }
                   }
                 },
                 "bucket_nm": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "divg-josh-pr-d1cc3a-default"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default"
                     }
                   }
                 },
@@ -1079,7 +1079,7 @@
                 "dest_anomalies_gcs_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/anomalies/anomalies_2023-10-21"
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/churn_12_months/anomalies/anomalies_2023-11-03"
                     }
                   }
                 },
@@ -1107,7 +1107,7 @@
                 "project_id": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "divg-josh-pr-d1cc3a"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
                     }
                   }
                 },
@@ -1121,14 +1121,14 @@
                 "src_schema_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/schemas/training_stats_schema_2023-10-20"
+                      "stringValue": ""
                     }
                   }
                 },
                 "update_ts": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-10-21 02:50:22"
+                      "stringValue": "2023-11-03 13:38:06"
                     }
                   }
                 },
@@ -1168,14 +1168,14 @@
                 "base_stats_nm": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "Training Statistics 2023-10-20 18:49:12"
+                      "stringValue": "Training Statistics "
                     }
                   }
                 },
                 "base_stats_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-josh-pr-d1cc3a-default/churn_12_months/statistics/training_statistics_2023-10-20"
+                      "stringValue": ""
                     }
                   }
                 },
@@ -1189,7 +1189,7 @@
                 "stats_nm": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "Serving Statistics 2023-10-21 02:50:22"
+                      "stringValue": "Serving Statistics 2023-11-03 13:38:06"
                     }
                   }
                 }
@@ -1240,16 +1240,16 @@
   "runtimeConfig": {
     "parameters": {
       "file_bucket": {
-        "stringValue": "divg-josh-pr-d1cc3a-default"
+        "stringValue": "divg-groovyhoon-pr-d2eab4-default"
       },
       "project_id": {
-        "stringValue": "divg-josh-pr-d1cc3a"
+        "stringValue": "divg-groovyhoon-pr-d2eab4"
       },
       "region": {
         "stringValue": "northamerica-northeast1"
       },
       "resource_bucket": {
-        "stringValue": "divg-josh-pr-d1cc3a-default"
+        "stringValue": "divg-groovyhoon-pr-d2eab4-default"
       }
     }
   }

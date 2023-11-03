@@ -2,7 +2,7 @@ from kfp.v2.dsl import (Artifact, Output, Input, HTML, component)
  
 # Generate Stats Component: monitoring component for generating statistics on training, serving, or prediction data 
 @component(
-    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-tfdv-slim:latest",
+    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:1.0.0",
     output_component_file="generate_data_stats.yaml"
 )
 def generate_data_stats(
@@ -331,7 +331,7 @@ def generate_data_stats(
 
 
 @component(
-    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-tfdv-slim:latest",
+    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:1.0.0",
     output_component_file="validate_stats.yaml"
 )
 def validate_stats( 

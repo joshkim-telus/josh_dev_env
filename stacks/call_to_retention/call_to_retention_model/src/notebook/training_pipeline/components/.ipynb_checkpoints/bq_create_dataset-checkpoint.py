@@ -6,7 +6,7 @@ from kfp.v2.dsl import (Artifact, Dataset, Input, InputPath, Model, Output,HTML,
 from typing import NamedTuple
 # Create Training Dataset for training pipeline
 @component(
-    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
+    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
     output_component_file="bq_create_dataset.yaml",
 )
 def bq_create_dataset(score_date: str,

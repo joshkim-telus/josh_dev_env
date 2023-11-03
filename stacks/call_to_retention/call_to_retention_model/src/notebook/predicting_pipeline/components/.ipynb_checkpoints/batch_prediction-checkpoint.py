@@ -1,7 +1,7 @@
-from kfp.v2.dsl import (Artifact, Output, Input, HTML, component)
-
+from kfp.v2.dsl import (Artifact, Dataset, Input, InputPath, Model, Output, OutputPath, ClassificationMetrics,
+                        Metrics, component, HTML)
 @component(
-    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
+    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
     output_component_file="xgb_batch_prediction.yaml",
 )
 def batch_prediction(
@@ -11,6 +11,7 @@ def batch_prediction(
         service_type: str,
         score_table: str,
         score_date_dash: str,
+        temp_table: str,
         metrics: Output[Metrics],
         metricsc: Output[ClassificationMetrics],
 ):
@@ -23,7 +24,7 @@ def batch_prediction(
     from google.cloud import bigquery
     from google.cloud import storage
     
-    MODEL_ID = '5060'
+    MODEL_ID = '5090'
     
     def if_tbl_exists(bq_client, table_ref):
         from google.cloud.exceptions import NotFound
@@ -117,7 +118,7 @@ def batch_prediction(
     sql = generate_sql_file(ll)
 
     df_score['ban'] = df_score['ban'].astype(int)
-    print('.... scoring for {} tos cross sell bans base'.format(len(df_score)))
+    print('.... scoring for {} promo expiry bans base'.format(len(df_score)))
 
     # get full score to cave into bucket
     pred_prob = model_xgb.predict_proba(df_score[features], ntree_limit=model_xgb.best_iteration)[:, 1]
@@ -133,37 +134,42 @@ def batch_prediction(
                   index=False)
     time.sleep(60)
 
-    batch_size = 1000
-    n_batchs = int(df_score.shape[0] / batch_size) + 1
-    print('...... will upsert {} batches'.format(n_batchs))
+    table_ref = f'{project_id}.{dataset_id}.{score_table}'
+    client = bigquery.Client(project=project_id)
+    table = client.get_table(table_ref)
+    schema = table.schema
 
-    # start batch prediction
-    all_scores = np.array(result['score'].values)
-    for i in range(n_batchs):
-    
-        s, e = i * batch_size, (i + 1) * batch_size
-        if e >= df_score.shape[0]:
-            e = df_score.shape[0]
+    ll = []
+    for item in schema:
+        col = item.name
+        d_type = item.field_type
+        if 'float' in str(d_type).lower():
+            d_type = 'FLOAT64'
+        ll.append((col, d_type))
 
-        df_temp = df_score.iloc[s:e]
-        pred_prob = all_scores[s:e]
-        batch_result = pd.DataFrame(columns=['ban', 'score_date', 'model_id', 'score'])
-        batch_result['score'] = list(pred_prob)
-        batch_result['score'] = batch_result['score'].fillna(0.0).astype('float64')
-        batch_result['ban'] = list(df_temp['ban'])
-        batch_result['ban'] = batch_result['ban'].astype('str')
-        batch_result['score_date'] = score_date_dash
-        batch_result['model_id'] = MODEL_ID
+        if 'integer' in str(d_type).lower():
+            result[col] = result[col].fillna(0).astype(int)
+        if 'float' in str(d_type).lower():
+            result[col] = result[col].fillna(0.0).astype(float)
+        if 'string' in str(d_type).lower():
+            result[col] = result[col].fillna('').astype(str)
 
-        upsert_table(project_id,
-                     dataset_id,
-                     score_table,
-                     sql,
-                     batch_result,
-                     )
-        if i % 20 == 0:
-            print('predict for batch {} done'.format(i), end=' ')
+    table_ref = '{}.{}.{}'.format(project_id, dataset_id, temp_table)
+    client = bigquery.Client(project=project_id)
+    if if_tbl_exists(client, table_ref):
+        client.delete_table(table_ref)
 
-    time.sleep(120)
-    
+    client.create_table(table_ref)
+    config = bigquery.LoadJobConfig(schema=schema)
+    config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
+    bq_table_instance = client.load_table_from_dataframe(result, table_ref, job_config=config)
+    time.sleep(5)
+
+    drop_sql = f"""delete from `{project_id}.{dataset_id}.{score_table}` where score_date = '{score_date_dash}'"""  # .format(project_id, dataset_id, score_date_dash)
+    client.query(drop_sql)
+    #
+    load_sql = f"""insert into `{project_id}.{dataset_id}.{score_table}`
+                  select * from `{project_id}.{dataset_id}.{temp_table}`"""
+    client.query(load_sql)
+
     

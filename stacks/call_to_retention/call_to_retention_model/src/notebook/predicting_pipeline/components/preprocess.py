@@ -1,7 +1,7 @@
 from kfp.v2.dsl import (Artifact, Output, Input, HTML, component)
 
 @component(
-    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
+    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
     output_component_file="call_to_retention_model_preprocess.yaml"
 )
 def preprocess(
@@ -52,6 +52,7 @@ def preprocess(
         df_final[f] = list(df_final[f])
 
     df_final.to_csv(save_data_path, index=True, compression='gzip') 
+    print(df_final.shape)
     del df_final
     gc.collect()
     print(f'......csv saved in {save_data_path}')

@@ -1,7 +1,7 @@
 from kfp.v2.dsl import (Artifact, Output, Input, HTML, component)
 
 @component(
-    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
+    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
     output_component_file="xgb_postprocess.yaml",
 )
 def postprocess(
