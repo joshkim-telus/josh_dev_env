@@ -1,0 +1,76 @@
+name: Gcs to bq
+inputs:
+- {name: project_id, type: String}
+- {name: dataset_id, type: String}
+- {name: table_id, type: String}
+- {name: region, type: String}
+- {name: file_bucket, type: String}
+- {name: local_path, type: String}
+- {name: file_name, type: String}
+- {name: token, type: String}
+- {name: write, type: String, default: overwrite, optional: true}
+outputs:
+- {name: num_records, type: Integer}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef gcs_to_bq(project_id: str,\n              dataset_id: str,\n\
+      \              table_id: str, \n              region: str, \n              file_bucket:\
+      \ str, \n              local_path: str, \n              file_name: str,\n  \
+      \            token: str, \n              write: str = 'overwrite') -> NamedTuple(\"\
+      output\", [(\"num_records\", int)]):\n\n    import os\n    import google\n \
+      \   import pandas as pd \n    import numpy as np \n\n    from google.cloud import\
+      \ storage\n    from google.cloud import bigquery\n    from google.cloud.bigquery\
+      \ import SchemaField\n    from pathlib import Path\n\n    #### For wb\n    import\
+      \ google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\
+      \n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n\
+      \    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client\
+      \ = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\
+      \n    df = pd.read_csv(f'gs://{local_path}{file_name}')\n\n    # Query schema\
+      \ of the table\n    query =\\\n        f'''\n        SELECT\n          column_name,\n\
+      \          data_type,\n          is_nullable,\n          column_default\n  \
+      \      FROM\n          {dataset_id}.INFORMATION_SCHEMA.COLUMNS\n        WHERE\n\
+      \          table_name = '{table_id}';\n        '''\n\n    # Contain schema table\
+      \ in df_schema\n    df_schema = client.query(query, job_config=job_config).to_dataframe()\n\
+      \n    # dtype mapping for schema\n    str_dtype_bq_mapping = { \n        'INT64':\
+      \ 'INTEGER', \n        'FLOAT64': 'FLOAT', \n        'FLOAT32': 'FLOAT', \n\
+      \        'OBJECT': 'STRING', \n        'BOOL': 'BOOLEAN', \n        'DATE':\
+      \ 'DATE', \n    } \n\n    # nullable mapping for schema\n    nullable_mapping\
+      \ = { \n        'YES': 'NULLABLE',\n        'NO': 'REQUIRED'\n    } \n\n   \
+      \ # built schema_list\n    schema_list = [] \n\n    for idx, row in df_schema.iterrows():\
+      \ \n        schema_list.append(bigquery.SchemaField(row['column_name'], str_dtype_bq_mapping[row['data_type']],\
+      \ nullable_mapping[row['is_nullable']], None, None, (), None))\n\n    # write\
+      \ mode\n    if write == 'overwrite': \n        write_type = 'WRITE_TRUNCATE'\
+      \ \n    elif write == 'append': \n        write_type = 'WRITE_APPEND' \n\n \
+      \   # destination table name\n    dest_tbl = f'{project_id}.{dataset_id}.{table_id}'\n\
+      \n    # load df to dest_tbl\n    try: \n        # Sending to bigquery \n   \
+      \     client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n\
+      \        job_config = bigquery.LoadJobConfig(schema=schema_list, write_disposition=write_type)\
+      \ \n        print(f'table_id: {dest_tbl}')\n        job = client.load_table_from_dataframe(df,\
+      \ dest_tbl, job_config=job_config) \n        job.result() \n        table =\
+      \ client.get_table(dest_tbl) # Make an API request \n        print(\"Loaded\
+      \ {} rows and {} columns to {}\".format(table.num_rows, len(table.schema), table_id))\
+      \ \n\n    except NameError as e: \n        print(f\"Error : {e}\")\n\n    num_records\
+      \ = df.shape[0]\n\n    return (num_records,)\n\n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - gcs_to_bq

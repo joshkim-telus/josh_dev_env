@@ -12,7 +12,8 @@ from typing import NamedTuple
 def bq_run_test_sp(score_date_dash: str,
                   project_id: str,
                   dataset_id: str,
-                  region: str) -> NamedTuple("output", [("num_records", int)]):
+                  region: str, 
+                  token: str) -> NamedTuple("output", [("num_records", int)]):
  
     from datetime import datetime
     from google.cloud import bigquery
@@ -29,21 +30,22 @@ def bq_run_test_sp(score_date_dash: str,
 #     client = bigquery.Client(project=project_id)
 #     job_config = bigquery.QueryJobConfig()
     
-    # Change dataset / table + sp table name to version in bi-layer
+    # Execute stored procedure in BQ
     query =\
         f'''
             DECLARE score_date DATE DEFAULT "{score_date_dash}";
         
             -- Change dataset / sp name to the version in the bi_layer
-            CALL {dataset_id}.bq_sp_campaign_data_delivery(score_date);
+            CALL {dataset_id}.bq_sp_wls_training_dataset(score_date);
             
             SELECT
                 *
             FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS
-            WHERE table_name='bq_campaign_records_hcr'
+            WHERE table_name='bq_wls_training_dataset'
             
         '''
     
+    # Contain query result into df and log
     df = client.query(query, job_config=job_config).to_dataframe()
     logging.info(df.to_string())
     
@@ -51,18 +53,17 @@ def bq_run_test_sp(score_date_dash: str,
              {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \
              {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S') } !")
     
-    # Report Number Of Rows Added 
+    # Report number of rows added
     query =\
         f'''
            SELECT *
-           FROM {dataset_id}.bq_campaign_data_element
-           WHERE initiative_name = "high_churn_risk_email" 
-           AND date_of_run = "{score_date_dash}" 
-           AND field_1 = "test"
+           FROM {dataset_id}.bq_wls_training_dataset
+           WHERE part_dt = "{score_date_dash}" 
         '''
     
     df = client.query(query, job_config=job_config).to_dataframe()
     
     num_records = df.shape[0]
+    
     return (num_records,)
     

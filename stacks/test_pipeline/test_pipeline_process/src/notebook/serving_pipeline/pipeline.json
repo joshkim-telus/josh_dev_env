@@ -1,0 +1,594 @@
+{
+  "pipelineSpec": {
+    "components": {
+      "comp-bq-run-test-sp": {
+        "executorLabel": "exec-bq-run-test-sp",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "region": {
+              "type": "STRING"
+            },
+            "score_date_dash": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "parameters": {
+            "num_records": {
+              "type": "INT"
+            }
+          }
+        }
+      },
+      "comp-gcs-to-bq": {
+        "executorLabel": "exec-gcs-to-bq",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "file_bucket": {
+              "type": "STRING"
+            },
+            "file_name": {
+              "type": "STRING"
+            },
+            "local_path": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "region": {
+              "type": "STRING"
+            },
+            "table_id": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            },
+            "write": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "parameters": {
+            "num_records": {
+              "type": "INT"
+            }
+          }
+        }
+      },
+      "comp-gcs-to-bq-2": {
+        "executorLabel": "exec-gcs-to-bq-2",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "file_bucket": {
+              "type": "STRING"
+            },
+            "file_name": {
+              "type": "STRING"
+            },
+            "local_path": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "region": {
+              "type": "STRING"
+            },
+            "table_id": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            },
+            "write": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "parameters": {
+            "num_records": {
+              "type": "INT"
+            }
+          }
+        }
+      },
+      "comp-gcs-to-bq-3": {
+        "executorLabel": "exec-gcs-to-bq-3",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "file_bucket": {
+              "type": "STRING"
+            },
+            "file_name": {
+              "type": "STRING"
+            },
+            "local_path": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "region": {
+              "type": "STRING"
+            },
+            "table_id": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            },
+            "write": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "parameters": {
+            "num_records": {
+              "type": "INT"
+            }
+          }
+        }
+      }
+    },
+    "deploymentSpec": {
+      "executors": {
+        "exec-bq-run-test-sp": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "bq_run_test_sp"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef bq_run_test_sp(score_date_dash: str,\n                  project_id: str,\n                  dataset_id: str,\n                  region: str, \n                  token: str) -> NamedTuple(\"output\", [(\"num_records\", int)]):\n\n    from datetime import datetime\n    from google.cloud import bigquery\n    import logging \n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    # Execute stored procedure in BQ\n    query =\\\n        f'''\n            DECLARE score_date DATE DEFAULT \"{score_date_dash}\";\n\n            -- Change dataset / sp name to the version in the bi_layer\n            CALL {dataset_id}.bq_sp_wls_training_dataset(score_date);\n\n            SELECT\n                *\n            FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS\n            WHERE table_name='bq_wls_training_dataset'\n\n        '''\n\n    # Contain query result into df and log\n    df = client.query(query, job_config=job_config).to_dataframe()\n    logging.info(df.to_string())\n\n    logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n             {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \\\n             {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S') } !\")\n\n    # Report number of rows added\n    query =\\\n        f'''\n           SELECT *\n           FROM {dataset_id}.bq_wls_training_dataset\n           WHERE part_dt = \"{score_date_dash}\" \n        '''\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n\n    num_records = df.shape[0]\n\n    return (num_records,)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 4.0,
+              "memoryLimit": 32.0
+            }
+          }
+        },
+        "exec-gcs-to-bq": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "gcs_to_bq"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef gcs_to_bq(project_id: str,\n              dataset_id: str,\n              table_id: str, \n              region: str, \n              file_bucket: str, \n              local_path: str, \n              file_name: str,\n              token: str, \n              write: str = 'overwrite') -> NamedTuple(\"output\", [(\"num_records\", int)]):\n\n    import os\n    import google\n    import pandas as pd \n    import numpy as np \n\n    from google.cloud import storage\n    from google.cloud import bigquery\n    from google.cloud.bigquery import SchemaField\n    from pathlib import Path\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    df = pd.read_csv(f'gs://{local_path}{file_name}')\n\n    # Query schema of the table\n    query =\\\n        f'''\n        SELECT\n          column_name,\n          data_type,\n          is_nullable,\n          column_default\n        FROM\n          {dataset_id}.INFORMATION_SCHEMA.COLUMNS\n        WHERE\n          table_name = '{table_id}';\n        '''\n\n    # Contain schema table in df_schema\n    df_schema = client.query(query, job_config=job_config).to_dataframe()\n\n    # dtype mapping for schema\n    str_dtype_bq_mapping = { \n        'INT64': 'INTEGER', \n        'FLOAT64': 'FLOAT', \n        'FLOAT32': 'FLOAT', \n        'OBJECT': 'STRING', \n        'BOOL': 'BOOLEAN', \n        'DATE': 'DATE', \n    } \n\n    # nullable mapping for schema\n    nullable_mapping = { \n        'YES': 'NULLABLE',\n        'NO': 'REQUIRED'\n    } \n\n    # built schema_list\n    schema_list = [] \n\n    for idx, row in df_schema.iterrows(): \n        schema_list.append(bigquery.SchemaField(row['column_name'], str_dtype_bq_mapping[row['data_type']], nullable_mapping[row['is_nullable']], None, None, (), None))\n\n    # write mode\n    if write == 'overwrite': \n        write_type = 'WRITE_TRUNCATE' \n    elif write == 'append': \n        write_type = 'WRITE_APPEND' \n\n    # destination table name\n    dest_tbl = f'{project_id}.{dataset_id}.{table_id}'\n\n    # load df to dest_tbl\n    try: \n        # Sending to bigquery \n        client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n        job_config = bigquery.LoadJobConfig(schema=schema_list, write_disposition=write_type) \n        print(f'table_id: {dest_tbl}')\n        job = client.load_table_from_dataframe(df, dest_tbl, job_config=job_config) \n        job.result() \n        table = client.get_table(dest_tbl) # Make an API request \n        print(\"Loaded {} rows and {} columns to {}\".format(table.num_rows, len(table.schema), table_id)) \n\n    except NameError as e: \n        print(f\"Error : {e}\")\n\n    num_records = df.shape[0]\n\n    return (num_records,)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 4.0,
+              "memoryLimit": 32.0
+            }
+          }
+        },
+        "exec-gcs-to-bq-2": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "gcs_to_bq"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef gcs_to_bq(project_id: str,\n              dataset_id: str,\n              table_id: str, \n              region: str, \n              file_bucket: str, \n              local_path: str, \n              file_name: str,\n              token: str, \n              write: str = 'overwrite') -> NamedTuple(\"output\", [(\"num_records\", int)]):\n\n    import os\n    import google\n    import pandas as pd \n    import numpy as np \n\n    from google.cloud import storage\n    from google.cloud import bigquery\n    from google.cloud.bigquery import SchemaField\n    from pathlib import Path\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    df = pd.read_csv(f'gs://{local_path}{file_name}')\n\n    # Query schema of the table\n    query =\\\n        f'''\n        SELECT\n          column_name,\n          data_type,\n          is_nullable,\n          column_default\n        FROM\n          {dataset_id}.INFORMATION_SCHEMA.COLUMNS\n        WHERE\n          table_name = '{table_id}';\n        '''\n\n    # Contain schema table in df_schema\n    df_schema = client.query(query, job_config=job_config).to_dataframe()\n\n    # dtype mapping for schema\n    str_dtype_bq_mapping = { \n        'INT64': 'INTEGER', \n        'FLOAT64': 'FLOAT', \n        'FLOAT32': 'FLOAT', \n        'OBJECT': 'STRING', \n        'BOOL': 'BOOLEAN', \n        'DATE': 'DATE', \n    } \n\n    # nullable mapping for schema\n    nullable_mapping = { \n        'YES': 'NULLABLE',\n        'NO': 'REQUIRED'\n    } \n\n    # built schema_list\n    schema_list = [] \n\n    for idx, row in df_schema.iterrows(): \n        schema_list.append(bigquery.SchemaField(row['column_name'], str_dtype_bq_mapping[row['data_type']], nullable_mapping[row['is_nullable']], None, None, (), None))\n\n    # write mode\n    if write == 'overwrite': \n        write_type = 'WRITE_TRUNCATE' \n    elif write == 'append': \n        write_type = 'WRITE_APPEND' \n\n    # destination table name\n    dest_tbl = f'{project_id}.{dataset_id}.{table_id}'\n\n    # load df to dest_tbl\n    try: \n        # Sending to bigquery \n        client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n        job_config = bigquery.LoadJobConfig(schema=schema_list, write_disposition=write_type) \n        print(f'table_id: {dest_tbl}')\n        job = client.load_table_from_dataframe(df, dest_tbl, job_config=job_config) \n        job.result() \n        table = client.get_table(dest_tbl) # Make an API request \n        print(\"Loaded {} rows and {} columns to {}\".format(table.num_rows, len(table.schema), table_id)) \n\n    except NameError as e: \n        print(f\"Error : {e}\")\n\n    num_records = df.shape[0]\n\n    return (num_records,)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 4.0,
+              "memoryLimit": 32.0
+            }
+          }
+        },
+        "exec-gcs-to-bq-3": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "gcs_to_bq"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef gcs_to_bq(project_id: str,\n              dataset_id: str,\n              table_id: str, \n              region: str, \n              file_bucket: str, \n              local_path: str, \n              file_name: str,\n              token: str, \n              write: str = 'overwrite') -> NamedTuple(\"output\", [(\"num_records\", int)]):\n\n    import os\n    import google\n    import pandas as pd \n    import numpy as np \n\n    from google.cloud import storage\n    from google.cloud import bigquery\n    from google.cloud.bigquery import SchemaField\n    from pathlib import Path\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    df = pd.read_csv(f'gs://{local_path}{file_name}')\n\n    # Query schema of the table\n    query =\\\n        f'''\n        SELECT\n          column_name,\n          data_type,\n          is_nullable,\n          column_default\n        FROM\n          {dataset_id}.INFORMATION_SCHEMA.COLUMNS\n        WHERE\n          table_name = '{table_id}';\n        '''\n\n    # Contain schema table in df_schema\n    df_schema = client.query(query, job_config=job_config).to_dataframe()\n\n    # dtype mapping for schema\n    str_dtype_bq_mapping = { \n        'INT64': 'INTEGER', \n        'FLOAT64': 'FLOAT', \n        'FLOAT32': 'FLOAT', \n        'OBJECT': 'STRING', \n        'BOOL': 'BOOLEAN', \n        'DATE': 'DATE', \n    } \n\n    # nullable mapping for schema\n    nullable_mapping = { \n        'YES': 'NULLABLE',\n        'NO': 'REQUIRED'\n    } \n\n    # built schema_list\n    schema_list = [] \n\n    for idx, row in df_schema.iterrows(): \n        schema_list.append(bigquery.SchemaField(row['column_name'], str_dtype_bq_mapping[row['data_type']], nullable_mapping[row['is_nullable']], None, None, (), None))\n\n    # write mode\n    if write == 'overwrite': \n        write_type = 'WRITE_TRUNCATE' \n    elif write == 'append': \n        write_type = 'WRITE_APPEND' \n\n    # destination table name\n    dest_tbl = f'{project_id}.{dataset_id}.{table_id}'\n\n    # load df to dest_tbl\n    try: \n        # Sending to bigquery \n        client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n        job_config = bigquery.LoadJobConfig(schema=schema_list, write_disposition=write_type) \n        print(f'table_id: {dest_tbl}')\n        job = client.load_table_from_dataframe(df, dest_tbl, job_config=job_config) \n        job.result() \n        table = client.get_table(dest_tbl) # Make an API request \n        print(\"Loaded {} rows and {} columns to {}\".format(table.num_rows, len(table.schema), table_id)) \n\n    except NameError as e: \n        print(f\"Error : {e}\")\n\n    num_records = df.shape[0]\n\n    return (num_records,)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 4.0,
+              "memoryLimit": 32.0
+            }
+          }
+        }
+      }
+    },
+    "pipelineInfo": {
+      "name": "test-pipeline-process-serving-pipeline"
+    },
+    "root": {
+      "dag": {
+        "tasks": {
+          "bq-run-test-sp": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-bq-run-test-sp"
+            },
+            "dependentTasks": [
+              "gcs-to-bq-3"
+            ],
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "test_pipeline_dataset"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "region": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "northamerica-northeast1"
+                    }
+                  }
+                },
+                "score_date_dash": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "2023-11-16"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.a0AfB_byAZg3cUyedps_6w3gBKMG4wsLtST932SiDlLcQHKfJnfNCJPYjYQ7RzzOBwlfH5sKlsmdkfLJ0e55z48PjQS7XXbwADW0gYJJAQuWt00YoDuEl3PW7R_d_C7mm0hrTXaEn-z2cFhvm1xHUzJNXNrBXHY3Fxxedo17KhvwaCgYKAXISARISFQHGX2MihV4u9jkd928SjzAyBetb8g0177"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "bq-run-test-sp"
+            }
+          },
+          "gcs-to-bq": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-gcs-to-bq"
+            },
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "test_pipeline_dataset"
+                    }
+                  }
+                },
+                "file_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default"
+                    }
+                  }
+                },
+                "file_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "wls_billing.csv"
+                    }
+                  }
+                },
+                "local_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default/test_pipeline/"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "region": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "northamerica-northeast1"
+                    }
+                  }
+                },
+                "table_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bq_wls_billing"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.a0AfB_byAZg3cUyedps_6w3gBKMG4wsLtST932SiDlLcQHKfJnfNCJPYjYQ7RzzOBwlfH5sKlsmdkfLJ0e55z48PjQS7XXbwADW0gYJJAQuWt00YoDuEl3PW7R_d_C7mm0hrTXaEn-z2cFhvm1xHUzJNXNrBXHY3Fxxedo17KhvwaCgYKAXISARISFQHGX2MihV4u9jkd928SjzAyBetb8g0177"
+                    }
+                  }
+                },
+                "write": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "overwrite"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "gcs-to-bq"
+            }
+          },
+          "gcs-to-bq-2": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-gcs-to-bq-2"
+            },
+            "dependentTasks": [
+              "gcs-to-bq"
+            ],
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "test_pipeline_dataset"
+                    }
+                  }
+                },
+                "file_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default"
+                    }
+                  }
+                },
+                "file_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "wls_churn_master_target_t1.csv"
+                    }
+                  }
+                },
+                "local_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default/test_pipeline/"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "region": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "northamerica-northeast1"
+                    }
+                  }
+                },
+                "table_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bq_wls_churn_master_target"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.a0AfB_byAZg3cUyedps_6w3gBKMG4wsLtST932SiDlLcQHKfJnfNCJPYjYQ7RzzOBwlfH5sKlsmdkfLJ0e55z48PjQS7XXbwADW0gYJJAQuWt00YoDuEl3PW7R_d_C7mm0hrTXaEn-z2cFhvm1xHUzJNXNrBXHY3Fxxedo17KhvwaCgYKAXISARISFQHGX2MihV4u9jkd928SjzAyBetb8g0177"
+                    }
+                  }
+                },
+                "write": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "overwrite"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "gcs-to-bq-2"
+            }
+          },
+          "gcs-to-bq-3": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-gcs-to-bq-3"
+            },
+            "dependentTasks": [
+              "gcs-to-bq-2"
+            ],
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "test_pipeline_dataset"
+                    }
+                  }
+                },
+                "file_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default"
+                    }
+                  }
+                },
+                "file_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "wls_customer_demographics_t1.csv"
+                    }
+                  }
+                },
+                "local_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default/test_pipeline/"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "region": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "northamerica-northeast1"
+                    }
+                  }
+                },
+                "table_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bq_wls_customer_demographics"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.a0AfB_byAZg3cUyedps_6w3gBKMG4wsLtST932SiDlLcQHKfJnfNCJPYjYQ7RzzOBwlfH5sKlsmdkfLJ0e55z48PjQS7XXbwADW0gYJJAQuWt00YoDuEl3PW7R_d_C7mm0hrTXaEn-z2cFhvm1xHUzJNXNrBXHY3Fxxedo17KhvwaCgYKAXISARISFQHGX2MihV4u9jkd928SjzAyBetb8g0177"
+                    }
+                  }
+                },
+                "write": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "overwrite"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "gcs-to-bq-3"
+            }
+          }
+        }
+      },
+      "inputDefinitions": {
+        "parameters": {
+          "file_bucket": {
+            "type": "STRING"
+          },
+          "project_id": {
+            "type": "STRING"
+          },
+          "region": {
+            "type": "STRING"
+          },
+          "resource_bucket": {
+            "type": "STRING"
+          }
+        }
+      }
+    },
+    "schemaVersion": "2.0.0",
+    "sdkVersion": "kfp-1.8.18"
+  },
+  "runtimeConfig": {
+    "parameters": {
+      "file_bucket": {
+        "stringValue": "divg-groovyhoon-pr-d2eab4-default"
+      },
+      "project_id": {
+        "stringValue": "divg-groovyhoon-pr-d2eab4"
+      },
+      "region": {
+        "stringValue": "northamerica-northeast1"
+      },
+      "resource_bucket": {
+        "stringValue": "divg-groovyhoon-pr-d2eab4-default"
+      }
+    }
+  }
+}
