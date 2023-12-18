@@ -28,7 +28,7 @@ outputs:
 - {name: statistics, type: Artifact}
 implementation:
   container:
-    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-tfdv-slim:latest
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:1.0.0
     command:
     - sh
     - -c

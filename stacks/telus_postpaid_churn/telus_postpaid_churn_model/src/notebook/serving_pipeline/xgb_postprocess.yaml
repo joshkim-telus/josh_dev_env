@@ -1,0 +1,86 @@
+name: Postprocess
+inputs:
+- {name: project_id, type: String}
+- {name: file_bucket, type: String}
+- {name: dataset_id, type: String}
+- {name: service_type, type: String}
+- {name: score_date_dash, type: String}
+- {name: temp_table, type: String}
+- {name: ucar_score_table, type: String}
+- {name: token, type: String}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef postprocess(\n        project_id: str,\n        file_bucket:\
+      \ str,\n        dataset_id: str,\n        service_type: str,\n        score_date_dash:\
+      \ str,\n        temp_table: str, \n        ucar_score_table: str,\n        token:\
+      \ str\n):\n    import time\n    from datetime import date\n    from dateutil.relativedelta\
+      \ import relativedelta\n    import pandas as pd\n    from google.cloud import\
+      \ bigquery\n\n    def if_tbl_exists(client, table_ref):\n        from google.cloud.exceptions\
+      \ import NotFound\n        try:\n            client.get_table(table_ref)\n \
+      \           return True\n        except NotFound:\n            return False\n\
+      \n    MODEL_ID = '5220'\n    file_name = 'gs://{}/ucar/{}_prediction.csv'.format(file_bucket,\
+      \ service_type)\n    df_orig = pd.read_csv(file_name, index_col=False)\n   \
+      \ df_orig.dropna(subset=['ban'], inplace=True)\n    df_orig.reset_index(drop=True,\
+      \ inplace=True)\n    df_orig['scoring_date'] = score_date_dash\n    df_orig.ban\
+      \ = df_orig.ban.astype(int)\n    df_orig = df_orig.rename(columns={'ban': 'bus_bacct_num',\
+      \ 'score': 'score_num'})\n    df_orig.score_num = df_orig.score_num.astype(float)\n\
+      \    df_orig['decile_grp_num'] = pd.qcut(df_orig['score_num'], q=10, labels=[i\
+      \ for i in range(10, 0, -1)])\n    df_orig.decile_grp_num = df_orig.decile_grp_num.astype(int)\n\
+      \    df_orig['percentile_pct'] = (1 - df_orig.score_num.rank(pct=True))*100\n\
+      \    df_orig['percentile_pct'] = df_orig['percentile_pct'].apply(round, 0).astype(int)\n\
+      \    df_orig['predict_model_nm'] = 'FFH CHURN 12 MONTHS Model - DIVG'\n    df_orig['model_type_cd']\
+      \ = 'FFH'\n    df_orig['subscriber_no'] = \"\"\n    df_orig['prod_instnc_resrc_str']\
+      \ = \"\"\n    df_orig['service_instnc_id'] = \"\"\n    df_orig['segment_nm']\
+      \ = \"\"\n    df_orig['segment_id'] = \"\"\n    df_orig['classn_nm'] = \"\"\n\
+      \    df_orig['predict_model_id'] = MODEL_ID\n    df_orig.drop(columns=['model_id',\
+      \ 'score_date'], axis=1, inplace=True)\n\n    get_cust_id = \"\"\"\n    WITH\
+      \ bq_snpsht_max_date AS(\n    SELECT PARSE_DATE('%Y%m%d', MAX(partition_id))\
+      \ AS max_date\n        FROM `cio-datahub-enterprise-pr-183a.ent_cust_cust.INFORMATION_SCHEMA.PARTITIONS`\
+      \ \n    WHERE table_name = 'bq_prod_instnc_snpsht' \n        AND partition_id\
+      \ <> '__NULL__'\n    ),\n    -- BANs can have multiple Cust ID. Create rank\
+      \ by product type and status, prioritizing ban/cust id with active FFH products\n\
+      \    rank_prod_type AS (\n    SELECT DISTINCT\n        bacct_bus_bacct_num,\n\
+      \        consldt_cust_bus_cust_id AS cust_id,\n        CASE WHEN pi_prod_instnc_resrc_typ_cd\
+      \ IN ('SING', 'HSIC', 'TTV', 'SMHM', 'STV', 'DIIC') AND pi_prod_instnc_stat_cd\
+      \ = 'A' THEN 1\n                WHEN pi_prod_instnc_resrc_typ_cd IN ('SING',\
+      \ 'HSIC', 'TTV', 'SMHM', 'STV', 'DIIC') THEN 2\n                WHEN pi_prod_instnc_stat_cd\
+      \ = 'A' THEN 3\n                ELSE 4\n                END AS prod_rank\n \
+      \   FROM `cio-datahub-enterprise-pr-183a.ent_cust_cust.bq_prod_instnc_snpsht`\n\
+      \    CROSS JOIN bq_snpsht_max_date\n    WHERE CAST(prod_instnc_ts AS DATE)=bq_snpsht_max_date.max_date\n\
+      \    AND bus_prod_instnc_src_id = 1001\n    ),\n    --Rank Cust ID\n    rank_cust_id\
+      \ AS (\n    SELECT DISTINCT\n        bacct_bus_bacct_num,\n        cust_id,\n\
+      \        RANK() OVER(PARTITION BY bacct_bus_bacct_num\n                    \
+      \    ORDER BY prod_rank,\n                                    cust_id) AS cust_id_rank\
+      \               \n    FROM rank_prod_type\n    )\n    --Select best cust id\n\
+      \    SELECT bacct_bus_bacct_num,\n        cust_id\n    FROM rank_cust_id\n \
+      \   WHERE cust_id_rank = 1\n    \"\"\"\n\n    #### For wb\n    import google.oauth2.credentials\n\
+      \    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client\
+      \ = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n\n    #  \
+      \   #### For prod \n    #     client = bigquery.Client(project=project_id)\n\
+      \n    df_cust = client.query(get_cust_id).to_dataframe()\n    df_final = df_orig.set_index('bus_bacct_num').join(df_cust.set_index('bacct_bus_bacct_num')).reset_index()\n\
+      \    df_final = df_final.rename(columns={'index': 'bus_bacct_num', 'cust_bus_cust_id':\
+      \ 'cust_id'})\n    df_final = df_final.sort_values(by=['score_num'], ascending=False)\n\
+      \    df_final.to_csv(file_name, index=False)\n    time.sleep(120)\n\n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - postprocess

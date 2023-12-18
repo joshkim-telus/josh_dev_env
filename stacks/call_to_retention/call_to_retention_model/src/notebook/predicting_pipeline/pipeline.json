@@ -295,7 +295,7 @@
                 "score_date_dash": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-08-01"
+                      "stringValue": "2023-12-01"
                     }
                   }
                 },
@@ -352,14 +352,14 @@
                 "promo_expiry_end": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-12-01"
+                      "stringValue": "2024-04-01"
                     }
                   }
                 },
                 "promo_expiry_start": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-11-01"
+                      "stringValue": "2024-03-01"
                     }
                   }
                 },
@@ -373,7 +373,7 @@
                 "score_date": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-08-01"
+                      "stringValue": "2023-12-01"
                     }
                   }
                 },
@@ -387,21 +387,21 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0AfB_byDF0AZSZ5YPlxnCtxu99hz0RpQfPdurqIgZdEkv3uLPJLjJqBGa7RvGFi6GFCOcscYLLpGZP7KQTgOV29d6Xp5pif6oho1KEZut-_bMhtT9bcBSNSpAzjuICOES4trKrsLJCgLQsejx31pzDXeXuKoRCKVedCVtvF5SIrwaCgYKAZ0SARISFQGOcNnCYRg9dzq-v9t0qh94TjVAJA0178"
+                      "stringValue": "ya29.a0AfB_byD50lDkapZpzA-buHnWlnG50ubnuvdMYfMl20ZkE_Orh7TI5XgaJS_YRsOOWK3LG_OjJB-4Y-dw88liZSkcbsN8GnCImZOnM-9rvUCAqc6ISfxWI5_rLaxt_zYLLZgJzMERhWLaVMf1rK85iPuwSwg-mwE_WTWSyfg1LPGlaCgYKATwSARISFQHGX2MiNr-Szo0lR853XcrETHoMbg0179"
                     }
                   }
                 },
                 "v_end_date": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-07-31"
+                      "stringValue": "2023-11-30"
                     }
                   }
                 },
                 "v_start_date": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-02-01"
+                      "stringValue": "2023-06-01"
                     }
                   }
                 }
@@ -447,7 +447,7 @@
                 "score_date_dash": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-08-01"
+                      "stringValue": "2023-12-01"
                     }
                   }
                 },
@@ -468,7 +468,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0AfB_byDF0AZSZ5YPlxnCtxu99hz0RpQfPdurqIgZdEkv3uLPJLjJqBGa7RvGFi6GFCOcscYLLpGZP7KQTgOV29d6Xp5pif6oho1KEZut-_bMhtT9bcBSNSpAzjuICOES4trKrsLJCgLQsejx31pzDXeXuKoRCKVedCVtvF5SIrwaCgYKAZ0SARISFQGOcNnCYRg9dzq-v9t0qh94TjVAJA0178"
+                      "stringValue": "ya29.a0AfB_byD50lDkapZpzA-buHnWlnG50ubnuvdMYfMl20ZkE_Orh7TI5XgaJS_YRsOOWK3LG_OjJB-4Y-dw88liZSkcbsN8GnCImZOnM-9rvUCAqc6ISfxWI5_rLaxt_zYLLZgJzMERhWLaVMf1rK85iPuwSwg-mwE_WTWSyfg1LPGlaCgYKATwSARISFQHGX2MiNr-Szo0lR853XcrETHoMbg0179"
                     }
                   }
                 }
