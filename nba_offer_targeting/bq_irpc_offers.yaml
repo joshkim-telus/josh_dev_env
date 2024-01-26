@@ -1,0 +1,51 @@
+name: Bq irpc offers
+inputs:
+- {name: irpc_base_csv, type: String}
+- {name: irpc_offer_plans_csv, type: String}
+- {name: irpc_offer_prices_csv, type: String}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef bq_irpc_offers(irpc_base_csv: str\n                   , irpc_offer_plans_csv:\
+      \ str \n                   , irpc_offer_prices_csv: str\n                  ):\
+      \ \n    import pandas as pd \n    import numpy as np \n\n    def convert_df_to_list_dict(df,\
+      \ \n                                channel: str = 'digital' # digital or casa\n\
+      \                                ): \n\n        import re\n        import logging\
+      \ \n        from datetime import datetime\n\n        # Change dataset / table\
+      \ + sp table name to version in bi-layer\n        if channel == 'digital': \n\
+      \            df = df\n        elif channel == 'casa': \n            df = df.iloc[:4]\n\
+      \        else: \n            print(\"a parameter 'channel' can only be either\
+      \ 'digital' or 'casa'\"\"\")\n\n        # create list_hsia_speed = [250, 500,\
+      \ 1000, 1500, 3000]\n        list_hsia_speed = df.columns[3:]\n        list_hsia_speed\
+      \ = [int(re.search(r'\\d+', speed).group()) for speed in list_hsia_speed]\n\n\
+      \        # create dictionary of hsia_prices \n        # Convert DataFrame to\
+      \ a dictionary\n        dict_hsia_details = df.to_dict(orient='list')\n\n  \
+      \      return list_hsia_speed, dict_hsia_details\n\n    # read csv files saved\
+      \ from previous component\n    df_base = pd.read_csv(irpc_base_csv)\n    df_plans\
+      \ = pd.read_csv(irpc_offer_plans_csv)\n    df_prices = pd.read_csv(irpc_offer_prices_csv)\n\
+      \n    # convert df to the list and dictionaries\n    list_hsia_speed, dict_hsia_plans_details\
+      \ = convert_df_to_list_dict(df_plans, 'digital')\n    list_hsia_speed, dict_hsia_prices_details\
+      \ = convert_df_to_list_dict(df_prices, 'digital')\n\n    print(list_hsia_speed)\n\
+      \    print(dict_hsia_plans_details)\n    print(dict_hsia_prices_details) \n\n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - bq_irpc_offers
