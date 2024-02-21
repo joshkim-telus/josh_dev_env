@@ -1,0 +1,187 @@
+
+features:
+    # prod features
+    - name: prod_tot_cnt
+      type: int
+    - name: prod_hsic_cnt
+      type: int
+    - name: prod_wls_cnt
+      type: int
+    - name: prod_sing_cnt
+      type: int
+    - name: prod_whsia_cnt
+      type: int
+    - name: prod_smhm_cnt
+      type: int
+    - name: prod_tos_cnt
+      type: int
+    - name: prod_wifiplus_cnt
+      type: int
+    - name: prod_ttv_cnt
+      type: int
+    - name: prod_stv_cnt
+      type: int
+    - name: prod_act_prod_cnt_r7d
+      type: int
+    # billing features
+    - name: bill_wln_avg_ban_subtotal_amt
+      type: float
+    - name: bill_wln_stddev_ban_subtotal_amt
+      type: float
+    - name: bill_wln_avg_ban_debit_amt
+      type: float
+    - name: bill_wln_stddev_ban_debit_amt
+      type: float
+    - name: bill_wln_avg_ban_discount_amt
+      type: float
+    - name: bill_wln_stddev_ban_discount_amt
+      type: float
+    - name: bill_wln_avg_hsic_debit_amt
+      type: float
+    - name: bill_wln_stddev_hsic_debit_amt
+      type: float
+    - name: bill_wln_stddev_hsic_usg_gb
+      type: float
+    - name: bill_wln_avg_ttv_debit_amt
+      type: float
+    - name: bill_wln_avg_zscore_sing_ld_na_call_cnt
+      type: float
+    - name: bill_wln_avg_smhm_debit_amt
+      type: float
+    - name: bill_wln_avg_zscore_smhm_credit_amt
+      type: float
+    - name: demogr_rural_flag
+      type: float
+    - name: bill_wln_avg_sing_ld_na_call_cnt
+      type: float
+    # demograph features
+    - name: demogr_med_age
+      type: float
+    - name: demogr_avg_child
+      type: float
+    - name: demogr_employment_rate
+      type: float
+    - name: demogr_avg_household_size
+      type: float
+    - name: demogr_avg_income
+      type: float
+    - name: demogr_urban_flag
+      type: float
+    - name: demogr_family_flag
+      type: float
+    - name: demogr_lifestage_sort
+      type: float
+    - name: demogr_retired_pstl_cd_ind
+      type: float
+    - name: demogr_lsname_large_diverse_families
+      type: float
+    - name: demogr_lsname_middle_age_families
+      type: float
+    # tenure
+    - name: hsic_tenure_days
+      type: int
+    - name: sing_tenure_days
+      type: int
+    - name: smhm_tenure_days
+      type: int
+    - name: ffh_tenure
+      type: int
+    - name: ttv_tenure_days
+      type: int
+    # usage
+    - name: hs_usg_avg_tot_gb
+      type: float
+    - name: hs_usg_avg_ul_gb
+      type: float
+    - name: hs_usg_avg_dl_gb
+      type: float
+    # clk
+    - name: clk_wln_wifi_plus_cnt_r30d
+      type: int
+    - name: clk_wln_sing_cnt_r30d
+      type: int
+    - name: clk_health_livingwell_cnt_r30d
+      type: int
+    - name: clk_wln_whsia_cnt_r30d
+      type: int
+    - name: clk_wln_optik_cnt_r30d
+      type: int
+    - name: clk_wln_hsic_cnt_r30d
+      type: int
+    - name: clk_wln_smarthome_security_cnt_r30d
+      type: int
+    - name: clk_chg_wln_security_cnt_r30d
+      type: int
+    - name: clk_wln_smartwear_security_cnt_r30d
+      type: int
+    - name: clk_wln_tv_cnt_r30d
+      type: int
+    - name: clk_deal_wln_cnt_r30d
+      type: int
+    # others
+    - name: AB_BC
+      type: int
+    - name: acct_cr_risk_value
+      type: int
+    - name: acct_ebill_value
+      type: int
+    # - name: fsa
+    #   type: str
+    # pm
+    # - name: ccai_tv_mentions
+    #   type: int
+    # - name: ccai_internet_mentions
+    #   type: int
+    # - name: ccai_tos_mentions
+    #   type: int
+    # - name: ccai_mobile_mentions
+    #   type: int
+    # - name: ccai_streaming_mentions
+    #   type: int
+    # - name: ccai_shs_mentions
+    #   type: int
+    # - name: ccai_smart_hub_mentions
+    #   type: int
+    # - name: ccai_hphone_mentions
+    #   type: int
+    # eligibility
+    - name: hsic_eligible_ind
+      type: int
+    - name: lwc_eligible_ind
+      type: int
+    - name: shs_eligible_ind
+      type: int
+    - name: sing_eligible_ind
+      type: int
+    - name: tos_eligible_ind
+      type: int
+    - name: ttv_eligible_ind
+      type: int
+    - name: whsia_eligible_ind
+      type: int
+    - name: whp_eligible_ind
+      type: int
+    # inbound calls 
+    - name: call_cnt
+      type: int
+    - name: call_avg_talk_time
+      type: float
+    - name: call_avg_hold_time
+      type: float
+    - name: call_avg_emp_cnt
+      type: float
+    - name: call_avg_esc_cnt
+      type: float
+    - name: call_sum_talk_time
+      type: float
+    - name: call_sum_hold_time
+      type: float
+    - name: call_sum_emp_cnt
+      type: int
+    - name: call_sum_esc_cnt
+      type: int
+      
+      
+      
+      
+      
