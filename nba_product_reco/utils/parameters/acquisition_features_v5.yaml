@@ -180,8 +180,27 @@ features:
       type: int
     - name: call_sum_esc_cnt
       type: int
-      
-      
-      
+    # product existing ind
+    - name: hsic_existing_ind
+      type: int
+    - name: ttv_existing_ind
+      type: int
+    - name: sing_existing_ind
+      type: int
+    - name: shs_existing_ind
+      type: int
+    - name: tos_existing_ind
+      type: int
+    - name: wifi_existing_ind
+      type: int
+    - name: lwc_existing_ind
+      type: int
+    - name: sws_existing_ind
+      type: int
+    - name: hpro_existing_ind
+      type: int
+    - name: whsia_existing_ind
+      type: int
+
       
       
