@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 from typing import List, Dict, Tuple, Optional
 import warnings
-# from pandas.errors import SettingWithCopyWarning
-# warnings.simplefilter(action='ignore', category=SettingWithCopyWarning)
+from pandas.errors import SettingWithCopyWarning
+warnings.simplefilter(action='ignore', category=SettingWithCopyWarning)
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
@@ -42,10 +42,10 @@ def _extract_fsa(pstl_cd_list: List[str]):
             return pstl_cd[:3]
             
     return None
-
+        
 
 def process_features(
-    df: pd.DataFrame, 
+    df_input: pd.DataFrame, 
     d_features_metadata: dict, 
     target_name: str,
     d_target_mapping: dict
@@ -59,36 +59,44 @@ def process_features(
     Returns:
     pd.DataFrame: The modified DataFrame with processed features.
     """
-    
+
+    df = df_input.copy() 
     
     # create AB_BC binary feature
     df['AB_BC'] = df.apply(
         lambda row: _extract_AB_BC_flag(row['cust_prov_state_cd']), axis = 1
     )
-    
+
     # create acct risk value
     df['acct_cr_risk_value'] = df.apply(
         lambda row: _extract_account_risk_value(row['acct_cr_risk_txt']), axis = 1
     )
-    
+
     # create ebill value
     df['acct_ebill_value'] = df.apply(
         lambda row: 1 if row['acct_ebill_ind'] == 'Y' else 0, axis = 1
     )
 
-    # # extract FSA
-    # df['fsa'] = df.apply(
-    #     lambda row: _extract_fsa([row['winning_pstl_cd'], row['bill_pstl_cd']]), axis = 1
-    # )
-        
+    # extract FSA
+    if 'fsa' in df.columns:
+        df['fsa'] = df.apply(
+            lambda row: _extract_fsa([row['winning_pstl_cd'], row['bill_pstl_cd']]), axis = 1
+        )
+
+    # diff in days of ref dt
+    for f in d_features_metadata['date_to_days_features']:
+        df[f['name']] = (
+            pd.to_datetime(df[f['name']], errors='coerce') - pd.to_datetime(df['ref_dt'], errors='coerce')
+        ).dt.days
+    
     # extract features name
     l_features = [d_f['name'] for d_f in d_features_metadata['features']]
     df_features = df[l_features + [target_name]]
     df_features = df_features.fillna(0)
     
-#     # convert features to type
-#     for d_f in d_features_metadata['features']:
-#         df_features[d_f['name']] = df_features[d_f['name']].astype(d_f['type'])
+    # convert features to type
+    for d_f in d_features_metadata['features']:
+        df_features[d_f['name']] = df_features[d_f['name']].astype(d_f['type'])
 
     # map arget values
     df_features['target'] = df_features[target_name].map(d_target_mapping)
@@ -256,4 +264,3 @@ def extract_stats(
 #     df_stats['recall'] = round(recall * 100, 2)
 
 #     return df_stats
-
