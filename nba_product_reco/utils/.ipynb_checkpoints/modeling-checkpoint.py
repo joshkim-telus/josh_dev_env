@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 from typing import List, Dict, Tuple, Optional
 import warnings
-from pandas.errors import SettingWithCopyWarning
-warnings.simplefilter(action='ignore', category=SettingWithCopyWarning)
-warnings.simplefilter(action='ignore', category=FutureWarning)
+# from pandas.errors import SettingWithCopyWarning
+# warnings.simplefilter(action='ignore', category=SettingWithCopyWarning)
+# warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 def _extract_AB_BC_flag(province: str):
