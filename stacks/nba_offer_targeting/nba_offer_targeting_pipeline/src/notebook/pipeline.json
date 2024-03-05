@@ -1,0 +1,381 @@
+{
+  "components": {
+    "comp-bq-create-dataset": {
+      "executorLabel": "exec-bq-create-dataset",
+      "inputDefinitions": {
+        "parameters": {
+          "dataset_id": {
+            "parameterType": "STRING"
+          },
+          "project_id": {
+            "parameterType": "STRING"
+          },
+          "token": {
+            "parameterType": "STRING"
+          }
+        }
+      }
+    },
+    "comp-bq-import-tbl-to-df": {
+      "executorLabel": "exec-bq-import-tbl-to-df",
+      "inputDefinitions": {
+        "parameters": {
+          "dataset_id": {
+            "parameterType": "STRING"
+          },
+          "project_id": {
+            "parameterType": "STRING"
+          },
+          "save_data_path": {
+            "parameterType": "STRING"
+          },
+          "table_id": {
+            "parameterType": "STRING"
+          },
+          "token": {
+            "parameterType": "STRING"
+          }
+        }
+      }
+    },
+    "comp-bq-import-tbl-to-df-2": {
+      "executorLabel": "exec-bq-import-tbl-to-df-2",
+      "inputDefinitions": {
+        "parameters": {
+          "dataset_id": {
+            "parameterType": "STRING"
+          },
+          "project_id": {
+            "parameterType": "STRING"
+          },
+          "save_data_path": {
+            "parameterType": "STRING"
+          },
+          "table_id": {
+            "parameterType": "STRING"
+          },
+          "token": {
+            "parameterType": "STRING"
+          }
+        }
+      }
+    },
+    "comp-bq-import-tbl-to-df-3": {
+      "executorLabel": "exec-bq-import-tbl-to-df-3",
+      "inputDefinitions": {
+        "parameters": {
+          "dataset_id": {
+            "parameterType": "STRING"
+          },
+          "project_id": {
+            "parameterType": "STRING"
+          },
+          "save_data_path": {
+            "parameterType": "STRING"
+          },
+          "table_id": {
+            "parameterType": "STRING"
+          },
+          "token": {
+            "parameterType": "STRING"
+          }
+        }
+      }
+    }
+  },
+  "deploymentSpec": {
+    "executors": {
+      "exec-bq-create-dataset": {
+        "container": {
+          "args": [
+            "--executor_input",
+            "{{$}}",
+            "--function_to_execute",
+            "bq_create_dataset"
+          ],
+          "command": [
+            "sh",
+            "-c",
+            "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==2.0.1' && \"$0\" \"$@\"\n",
+            "sh",
+            "-ec",
+            "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+            "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import *\n\ndef bq_create_dataset(project_id: str\n                      , dataset_id: str\n                      , token: str\n                      ):\n\n    from google.cloud import bigquery\n    import logging \n    from datetime import datetime\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    # Change dataset / table + sp table name to version in bi-layer\n    query =\\\n        f'''        \n            -- Change dataset / sp name to the version in the bi_layer\n            CALL nba_offer_targeting.bq_sp_irpc_digital_1p_base();\n\n            CALL nba_offer_targeting.bq_sp_irpc_digital_2p_base(); \n\n            CALL nba_offer_targeting.bq_sp_irpc_casa_base(); \n\n            SELECT\n                *\n            FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS\n            WHERE table_name='bq_irpc_digital_1p_base'\n        '''\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n    logging.info(df.to_string())\n\n    logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n             {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \\\n             {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S') } !\")\n\n"
+          ],
+          "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+          "resources": {
+            "cpuLimit": 4.0,
+            "memoryLimit": 16.0
+          }
+        }
+      },
+      "exec-bq-import-tbl-to-df": {
+        "container": {
+          "args": [
+            "--executor_input",
+            "{{$}}",
+            "--function_to_execute",
+            "bq_import_tbl_to_df"
+          ],
+          "command": [
+            "sh",
+            "-c",
+            "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==2.0.1' && \"$0\" \"$@\"\n",
+            "sh",
+            "-ec",
+            "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+            "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import *\n\ndef bq_import_tbl_to_df(project_id: str\n              , dataset_id: str\n              , table_id: str\n              , save_data_path: str\n              , token: str \n              ): \n\n    from google.cloud import bigquery\n    import logging\n    from datetime import datetime\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    # Change dataset / table + sp table name to version in bi-layer\n    query =\\\n        f'''\n            SELECT * FROM `{project_id}.{dataset_id}.{table_id}`\n        '''\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n\n    df.to_csv(save_data_path, index=False) \n\n    col_list = list([col for col in df.columns])\n\n    return (col_list,)\n\n"
+          ],
+          "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+          "resources": {
+            "cpuLimit": 8.0,
+            "memoryLimit": 16.0
+          }
+        }
+      },
+      "exec-bq-import-tbl-to-df-2": {
+        "container": {
+          "args": [
+            "--executor_input",
+            "{{$}}",
+            "--function_to_execute",
+            "bq_import_tbl_to_df"
+          ],
+          "command": [
+            "sh",
+            "-c",
+            "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==2.0.1' && \"$0\" \"$@\"\n",
+            "sh",
+            "-ec",
+            "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+            "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import *\n\ndef bq_import_tbl_to_df(project_id: str\n              , dataset_id: str\n              , table_id: str\n              , save_data_path: str\n              , token: str \n              ): \n\n    from google.cloud import bigquery\n    import logging\n    from datetime import datetime\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    # Change dataset / table + sp table name to version in bi-layer\n    query =\\\n        f'''\n            SELECT * FROM `{project_id}.{dataset_id}.{table_id}`\n        '''\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n\n    df.to_csv(save_data_path, index=False) \n\n    col_list = list([col for col in df.columns])\n\n    return (col_list,)\n\n"
+          ],
+          "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+          "resources": {
+            "cpuLimit": 8.0,
+            "memoryLimit": 16.0
+          }
+        }
+      },
+      "exec-bq-import-tbl-to-df-3": {
+        "container": {
+          "args": [
+            "--executor_input",
+            "{{$}}",
+            "--function_to_execute",
+            "bq_import_tbl_to_df"
+          ],
+          "command": [
+            "sh",
+            "-c",
+            "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==2.0.1' && \"$0\" \"$@\"\n",
+            "sh",
+            "-ec",
+            "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+            "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import *\n\ndef bq_import_tbl_to_df(project_id: str\n              , dataset_id: str\n              , table_id: str\n              , save_data_path: str\n              , token: str \n              ): \n\n    from google.cloud import bigquery\n    import logging\n    from datetime import datetime\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    # Change dataset / table + sp table name to version in bi-layer\n    query =\\\n        f'''\n            SELECT * FROM `{project_id}.{dataset_id}.{table_id}`\n        '''\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n\n    df.to_csv(save_data_path, index=False) \n\n    col_list = list([col for col in df.columns])\n\n    return (col_list,)\n\n"
+          ],
+          "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+          "resources": {
+            "cpuLimit": 8.0,
+            "memoryLimit": 16.0
+          }
+        }
+      }
+    }
+  },
+  "pipelineInfo": {
+    "description": "nba-offer-targeting-serving-pipeline",
+    "name": "nba-offer-targeting-serving-pipeline"
+  },
+  "root": {
+    "dag": {
+      "tasks": {
+        "bq-create-dataset": {
+          "cachingOptions": {
+            "enableCache": true
+          },
+          "componentRef": {
+            "name": "comp-bq-create-dataset"
+          },
+          "inputs": {
+            "parameters": {
+              "dataset_id": {
+                "runtimeValue": {
+                  "constant": "nba_offer_targeting"
+                }
+              },
+              "project_id": {
+                "runtimeValue": {
+                  "constant": "\tdivg-groovyhoon-pr-d2eab4"
+                }
+              },
+              "token": {
+                "runtimeValue": {
+                  "constant": "ya29.a0AfB_byDm5YqbEn7156h4hav33Ylhsi-YgA-4vphMr_cy5X0mF96AlyMci93q1uhp6IFuXCApyG9vMe7Jo_KyO-6IIR1AwvZwiqhZ2n93kWC4Atf6qorNie_GEniip5Z6EZjCetyEKmQrTEhz2mc_ctG9IsPUresR09vuPg-0BDYaCgYKARISARISFQHGX2MiEs19O576qsTuOsbRbhqdhg0178"
+                }
+              }
+            }
+          },
+          "taskInfo": {
+            "name": "bq-create-dataset"
+          }
+        },
+        "bq-import-tbl-to-df": {
+          "cachingOptions": {
+            "enableCache": true
+          },
+          "componentRef": {
+            "name": "comp-bq-import-tbl-to-df"
+          },
+          "dependentTasks": [
+            "bq-create-dataset"
+          ],
+          "inputs": {
+            "parameters": {
+              "dataset_id": {
+                "runtimeValue": {
+                  "constant": "nba_offer_targeting"
+                }
+              },
+              "project_id": {
+                "runtimeValue": {
+                  "constant": "\tdivg-groovyhoon-pr-d2eab4"
+                }
+              },
+              "save_data_path": {
+                "runtimeValue": {
+                  "constant": "divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/bq_irpc_digital_1p_base.csv"
+                }
+              },
+              "table_id": {
+                "runtimeValue": {
+                  "constant": "bq_irpc_digital_1p_base"
+                }
+              },
+              "token": {
+                "runtimeValue": {
+                  "constant": "ya29.a0AfB_byDm5YqbEn7156h4hav33Ylhsi-YgA-4vphMr_cy5X0mF96AlyMci93q1uhp6IFuXCApyG9vMe7Jo_KyO-6IIR1AwvZwiqhZ2n93kWC4Atf6qorNie_GEniip5Z6EZjCetyEKmQrTEhz2mc_ctG9IsPUresR09vuPg-0BDYaCgYKARISARISFQHGX2MiEs19O576qsTuOsbRbhqdhg0178"
+                }
+              }
+            }
+          },
+          "taskInfo": {
+            "name": "bq-import-tbl-to-df"
+          }
+        },
+        "bq-import-tbl-to-df-2": {
+          "cachingOptions": {
+            "enableCache": true
+          },
+          "componentRef": {
+            "name": "comp-bq-import-tbl-to-df-2"
+          },
+          "dependentTasks": [
+            "bq-import-tbl-to-df"
+          ],
+          "inputs": {
+            "parameters": {
+              "dataset_id": {
+                "runtimeValue": {
+                  "constant": "nba_offer_targeting"
+                }
+              },
+              "project_id": {
+                "runtimeValue": {
+                  "constant": "\tdivg-groovyhoon-pr-d2eab4"
+                }
+              },
+              "save_data_path": {
+                "runtimeValue": {
+                  "constant": "divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/irpc_offer_1p_plans.csv"
+                }
+              },
+              "table_id": {
+                "runtimeValue": {
+                  "constant": "irpc_offer_1p_plans"
+                }
+              },
+              "token": {
+                "runtimeValue": {
+                  "constant": "ya29.a0AfB_byDm5YqbEn7156h4hav33Ylhsi-YgA-4vphMr_cy5X0mF96AlyMci93q1uhp6IFuXCApyG9vMe7Jo_KyO-6IIR1AwvZwiqhZ2n93kWC4Atf6qorNie_GEniip5Z6EZjCetyEKmQrTEhz2mc_ctG9IsPUresR09vuPg-0BDYaCgYKARISARISFQHGX2MiEs19O576qsTuOsbRbhqdhg0178"
+                }
+              }
+            }
+          },
+          "taskInfo": {
+            "name": "bq-import-tbl-to-df-2"
+          }
+        },
+        "bq-import-tbl-to-df-3": {
+          "cachingOptions": {
+            "enableCache": true
+          },
+          "componentRef": {
+            "name": "comp-bq-import-tbl-to-df-3"
+          },
+          "dependentTasks": [
+            "bq-import-tbl-to-df-2"
+          ],
+          "inputs": {
+            "parameters": {
+              "dataset_id": {
+                "runtimeValue": {
+                  "constant": "nba_offer_targeting"
+                }
+              },
+              "project_id": {
+                "runtimeValue": {
+                  "constant": "\tdivg-groovyhoon-pr-d2eab4"
+                }
+              },
+              "save_data_path": {
+                "runtimeValue": {
+                  "constant": "divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/irpc_offer_prices.csv"
+                }
+              },
+              "table_id": {
+                "runtimeValue": {
+                  "constant": "irpc_offer_prices"
+                }
+              },
+              "token": {
+                "runtimeValue": {
+                  "constant": "ya29.a0AfB_byDm5YqbEn7156h4hav33Ylhsi-YgA-4vphMr_cy5X0mF96AlyMci93q1uhp6IFuXCApyG9vMe7Jo_KyO-6IIR1AwvZwiqhZ2n93kWC4Atf6qorNie_GEniip5Z6EZjCetyEKmQrTEhz2mc_ctG9IsPUresR09vuPg-0BDYaCgYKARISARISFQHGX2MiEs19O576qsTuOsbRbhqdhg0178"
+                }
+              }
+            }
+          },
+          "taskInfo": {
+            "name": "bq-import-tbl-to-df-3"
+          }
+        }
+      }
+    },
+    "inputDefinitions": {
+      "parameters": {
+        "file_bucket": {
+          "defaultValue": "divg-groovyhoon-pr-d2eab4-default",
+          "isOptional": true,
+          "parameterType": "STRING"
+        },
+        "project_id": {
+          "defaultValue": "\tdivg-groovyhoon-pr-d2eab4",
+          "isOptional": true,
+          "parameterType": "STRING"
+        },
+        "region": {
+          "defaultValue": "northamerica-northeast1",
+          "isOptional": true,
+          "parameterType": "STRING"
+        },
+        "resource_bucket": {
+          "defaultValue": "divg-groovyhoon-pr-d2eab4-default",
+          "isOptional": true,
+          "parameterType": "STRING"
+        }
+      }
+    }
+  },
+  "schemaVersion": "2.1.0",
+  "sdkVersion": "kfp-2.0.1"
+}

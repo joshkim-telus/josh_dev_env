@@ -1,0 +1,94 @@
+# PIPELINE DEFINITION
+# Name: bq-create-dataset
+# Inputs:
+#    dataset_id: str
+#    project_id: str
+#    token: str
+components:
+  comp-bq-create-dataset:
+    executorLabel: exec-bq-create-dataset
+    inputDefinitions:
+      parameters:
+        dataset_id:
+          parameterType: STRING
+        project_id:
+          parameterType: STRING
+        token:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-bq-create-dataset:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - bq_create_dataset
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet     --no-warn-script-location 'kfp==2.0.1'\
+          \ && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          python3 -m kfp.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef bq_create_dataset(project_id: str\n                      , dataset_id:\
+          \ str\n                      , token: str\n                      ):\n\n\
+          \    from google.cloud import bigquery\n    import logging \n    from datetime\
+          \ import datetime\n\n    #### For wb\n    import google.oauth2.credentials\n\
+          \    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client\
+          \ = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config\
+          \ = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n\
+          #     job_config = bigquery.QueryJobConfig()\n\n    # Change dataset / table\
+          \ + sp table name to version in bi-layer\n    query =\\\n        f'''  \
+          \      \n            -- Change dataset / sp name to the version in the bi_layer\n\
+          \            CALL nba_offer_targeting.bq_sp_irpc_digital_1p_base();\n\n\
+          \            CALL nba_offer_targeting.bq_sp_irpc_digital_2p_base(); \n\n\
+          \            CALL nba_offer_targeting.bq_sp_irpc_casa_base(); \n\n     \
+          \       SELECT\n                *\n            FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS\n\
+          \            WHERE table_name='bq_irpc_digital_1p_base'\n        '''\n\n\
+          \    df = client.query(query, job_config=job_config).to_dataframe()\n  \
+          \  logging.info(df.to_string())\n\n    logging.info(f\"Loaded {df.total_rows[0]}\
+          \ rows into \\\n             {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]}\
+          \ on \\\n             {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d\
+          \ %H:%M:%S') } !\")\n\n"
+        image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest
+pipelineInfo:
+  name: bq-create-dataset
+root:
+  dag:
+    tasks:
+      bq-create-dataset:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-bq-create-dataset
+        inputs:
+          parameters:
+            dataset_id:
+              componentInputParameter: dataset_id
+            project_id:
+              componentInputParameter: project_id
+            token:
+              componentInputParameter: token
+        taskInfo:
+          name: bq-create-dataset
+  inputDefinitions:
+    parameters:
+      dataset_id:
+        parameterType: STRING
+      project_id:
+        parameterType: STRING
+      token:
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.0.1
