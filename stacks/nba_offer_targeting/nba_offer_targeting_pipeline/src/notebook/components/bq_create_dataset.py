@@ -34,6 +34,8 @@ def bq_create_dataset(project_id: str
     query =\
         f'''        
             -- Change dataset / sp name to the version in the bi_layer
+            CALL nba_offer_targeting.bq_sp_internet_payment(); 
+            
             CALL nba_offer_targeting.bq_sp_irpc_digital_1p_base();
             
             CALL nba_offer_targeting.bq_sp_irpc_digital_2p_base(); 
