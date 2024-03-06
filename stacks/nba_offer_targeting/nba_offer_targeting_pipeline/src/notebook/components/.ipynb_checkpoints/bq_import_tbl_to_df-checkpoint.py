@@ -16,7 +16,7 @@ def bq_import_tbl_to_df(project_id: str
               , table_id: str
               , save_data_path: str
               , token: str 
-              ): 
+              ) -> NamedTuple("output", [("col_list", list)]):
  
     from google.cloud import bigquery
     import logging
