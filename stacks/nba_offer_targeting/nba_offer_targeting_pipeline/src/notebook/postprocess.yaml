@@ -1,0 +1,84 @@
+name: Bq export to bq
+inputs:
+- {name: project_id, type: String}
+- {name: dataset_id, type: String}
+- {name: table_id, type: String}
+- {name: temp_table, type: String}
+- {name: digital_1p_data_path, type: String}
+- {name: digital_2p_data_path, type: String}
+- {name: casa_data_path, type: String}
+- {name: save_data_path, type: String}
+- {name: token, type: String}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef bq_export_to_bq(project_id: str\n              , dataset_id:\
+      \ str\n              , table_id: str\n              , temp_table: str\n    \
+      \          , digital_1p_data_path: str\n              , digital_2p_data_path:\
+      \ str\n              , casa_data_path: str\n              , save_data_path:\
+      \ str\n              , token: str\n              ): \n\n    import pandas as\
+      \ pd \n    import numpy as np \n\n    from google.cloud import bigquery\n  \
+      \  import logging\n    import datetime as dt\n\n    #### For wb\n    import\
+      \ google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\
+      \n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n\
+      \    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client\
+      \ = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\
+      \    \n\n    def if_tbl_exists(client, table_ref):\n        from google.cloud.exceptions\
+      \ import NotFound\n        try:\n            client.get_table(table_ref)\n \
+      \           return True\n        except NotFound:\n            return False\n\
+      \n    # read bq_irpc_digital_1p_base_postprocess.csv\n    digital_1p_base =\
+      \ pd.read_csv(digital_1p_data_path, index_col=None)\n\n    # read bq_irpc_digital_2p_base_postprocess.csv\n\
+      \    digital_2p_base = pd.read_csv(digital_2p_data_path, index_col=None)\n\n\
+      \    # read bq_irpc_casa_base_postprocess.csv\n    casa_base = pd.read_csv(casa_data_path,\
+      \ index_col=None)\n\n    # concatenate all three files -- irpc_offers_assigned\n\
+      \    dfs = [digital_1p_base, digital_2p_base, casa_base]\n\n    # Concatenate\
+      \ the DataFrames\n    irpc_offers_assigned = pd.concat(dfs, ignore_index=True)\n\
+      \    irpc_offers_assigned.reset_index(inplace=False)\n\n    # write the final\
+      \ file to csv irpc_offers_assigned.csv\n    irpc_offers_assigned.to_csv(save_data_path,\
+      \ index=False)\n\n    # insert irpc_offers_assigned again to a bq table -- qua_base_hs\
+      \ \n    table_ref = f'{project_id}.{dataset_id}.{table_id}'\n    client = bigquery.Client(project=project_id,\
+      \ credentials=CREDENTIALS)\n    table = client.get_table(table_ref)\n    schema\
+      \ = table.schema\n\n    ll = []\n    for item in schema:\n        col = item.name\n\
+      \        d_type = item.field_type\n        if 'float' in str(d_type).lower():\n\
+      \            d_type = 'FLOAT64'\n        ll.append((col, d_type))\n\n      \
+      \  if 'integer' in str(d_type).lower():\n            irpc_offers_assigned[col]\
+      \ = irpc_offers_assigned[col].fillna(0).astype(int)\n        elif 'float' in\
+      \ str(d_type).lower():\n            irpc_offers_assigned[col] = irpc_offers_assigned[col].fillna(0.0).astype(float)\n\
+      \        elif 'string' in str(d_type).lower():\n            irpc_offers_assigned[col]\
+      \ = irpc_offers_assigned[col].fillna('').astype(str)\n        elif 'timestamp'\
+      \ in str(d_type).lower(): \n            irpc_offers_assigned[col] = pd.to_datetime(irpc_offers_assigned[col],\
+      \ errors='coerce')\n        elif 'date' in str(d_type).lower():\n          \
+      \  irpc_offers_assigned[col] = pd.to_datetime(irpc_offers_assigned[col], errors='coerce').dt.date\n\
+      \n    table_ref = '{}.{}.{}'.format(project_id, dataset_id, temp_table)\n  \
+      \  client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n \
+      \   if if_tbl_exists(client, table_ref):\n        client.delete_table(table_ref)\n\
+      \n    client.create_table(table_ref)\n    config = bigquery.LoadJobConfig(schema=schema)\n\
+      \    config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE\n \
+      \   bq_table_instance = client.load_table_from_dataframe(irpc_offers_assigned,\
+      \ table_ref, job_config=config)\n\n    # drop_sql = f\"\"\"delete from `{project_id}.{dataset_id}.{table_id}`\
+      \ where true\"\"\"  # .format(project_id, dataset_id, score_date_dash)\n   \
+      \ # client.query(drop_sql)\n\n    load_sql = f\"\"\"insert into `{project_id}.{dataset_id}.{table_id}`\n\
+      \                  select * from `{project_id}.{dataset_id}.{temp_table}`\"\"\
+      \"\n    client.query(load_sql)\n\n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - bq_export_to_bq

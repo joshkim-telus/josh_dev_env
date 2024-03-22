@@ -16,9 +16,7 @@ def reg_offers_base_existing(project_id: str
                             , whsia_eligible_base: str
                             , shs_professional_install: str
                             , prod_cd2remove: str
-                            , qua_base_hs: str
-                            , qua_base_mob: str
-                            , qua_base_cat3: str
+                            , qua_base: str
                             , token: str
                             ):
  
@@ -444,18 +442,20 @@ def reg_offers_base_existing(project_id: str
         ii2 = ii + 1
 
         sql_b1 = (
-            f""", {offer_info['Offer_Number2'][ii]} as (
-            select distinct cust_id, bacct_num, lpds_id
-            , ACCT_START_DT as candate \n
-            , '{offer_info['Category'][ii]}' as Category  \n
-            , '{offer_info['Subcategory'][ii]}' as Subcategory  \n 
-            , '{offer_info['promo_seg'][ii]}' as promo_seg  \n 
-            , '{offer_info['line_of_business'][ii]}' as LOB  \n 
-            , '{offer_info['NCID'][ii]}' as offer_code  \n 
-            , cast('{offer_info['valid_start_dt'][ii]}' AS DATE) as ASSMT_VALID_START_TS  \n
-            , cast('{offer_info['valid_end_dt'][ii]}' AS DATE) as ASSMT_VALID_END_TS  \n 
-            , {str(offer_info['rk'][ii])} as rk  \n
-            from ffh_bas \n where  {offer_info['HS_filters'][ii]} )  \n """
+                f""", {offer_info['Offer_Number2'][ii]} as (
+                select distinct cust_id \n
+                , bacct_num \n
+                , lpds_id \n
+                , ACCT_START_DT as candate \n
+                , '{offer_info['Category'][ii]}' as Category  \n
+                , '{offer_info['Subcategory'][ii]}' as Subcategory  \n 
+                , '' as digital_category
+                , '{offer_info['promo_seg'][ii]}' as promo_seg  \n 
+                , '{offer_info['NCID'][ii]}' as offer_code  \n 
+                , cast('{offer_info['valid_start_dt'][ii]}' AS DATE) as ASSMT_VALID_START_TS  \n
+                , cast('{offer_info['valid_end_dt'][ii]}' AS DATE) as ASSMT_VALID_END_TS  \n 
+                , {str(offer_info['rk'][ii])} as rk  \n
+                from ffh_bas \n where  {offer_info['HS_filters'][ii]} )  \n """
                )
 
         sql_all0 = sql_all + sql_b1
@@ -491,7 +491,7 @@ def reg_offers_base_existing(project_id: str
         cr8bqt_sql_BI(
             clnt = client,
             sql_base = sql_all,
-            opt = qua_base_hs,
+            opt = qua_base,
             est_num = 10_000_000
         )
 

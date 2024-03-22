@@ -202,4 +202,4 @@ def offer_attachment_casa(irpc_base_csv: str
     df_base = df_base[['cust_id', 'bacct_num', 'fms_address_id', 'lpds_id', 'candate', 'OPTIK_TV_IND', 'HSIA_IND', 'hs_max_speed_numeric', 'provisioned_hs_speed_numeric', 
              'rpp_hsia_end_dt', 'rpp_ttv_end_dt', 'total_charges', 'promo_seg1', 'promo_seg2', 'promo_seg3']] 
     
-    df_base.to_csv(save_data_path, index=False)
+    df_base.to_csv(save_data_path)

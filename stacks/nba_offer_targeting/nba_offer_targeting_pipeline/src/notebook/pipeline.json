@@ -17,6 +17,40 @@
           }
         }
       },
+      "comp-bq-export-to-bq": {
+        "executorLabel": "exec-bq-export-to-bq",
+        "inputDefinitions": {
+          "parameters": {
+            "casa_data_path": {
+              "type": "STRING"
+            },
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "digital_1p_data_path": {
+              "type": "STRING"
+            },
+            "digital_2p_data_path": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "save_data_path": {
+              "type": "STRING"
+            },
+            "table_id": {
+              "type": "STRING"
+            },
+            "temp_table": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
       "comp-bq-import-tbl-to-df": {
         "executorLabel": "exec-bq-import-tbl-to-df",
         "inputDefinitions": {
@@ -191,6 +225,22 @@
           }
         }
       },
+      "comp-nba-ffh-offer-ranking": {
+        "executorLabel": "exec-nba-ffh-offer-ranking",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
       "comp-offer-attachment-casa": {
         "executorLabel": "exec-offer-attachment-casa",
         "inputDefinitions": {
@@ -256,6 +306,118 @@
             }
           }
         }
+      },
+      "comp-postprocess": {
+        "executorLabel": "exec-postprocess",
+        "inputDefinitions": {
+          "parameters": {
+            "base_type": {
+              "type": "STRING"
+            },
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "read_data_path": {
+              "type": "STRING"
+            },
+            "save_data_path": {
+              "type": "STRING"
+            },
+            "table_id": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-postprocess-2": {
+        "executorLabel": "exec-postprocess-2",
+        "inputDefinitions": {
+          "parameters": {
+            "base_type": {
+              "type": "STRING"
+            },
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "read_data_path": {
+              "type": "STRING"
+            },
+            "save_data_path": {
+              "type": "STRING"
+            },
+            "table_id": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-postprocess-3": {
+        "executorLabel": "exec-postprocess-3",
+        "inputDefinitions": {
+          "parameters": {
+            "base_type": {
+              "type": "STRING"
+            },
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "read_data_path": {
+              "type": "STRING"
+            },
+            "save_data_path": {
+              "type": "STRING"
+            },
+            "table_id": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-reg-offers-base-existing": {
+        "executorLabel": "exec-reg-offers-base-existing",
+        "inputDefinitions": {
+          "parameters": {
+            "offer_parameter": {
+              "type": "STRING"
+            },
+            "prod_cd2remove": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "qua_base": {
+              "type": "STRING"
+            },
+            "shs_professional_install": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            },
+            "whsia_eligible_base": {
+              "type": "STRING"
+            }
+          }
+        }
       }
     },
     "deploymentSpec": {
@@ -281,6 +443,30 @@
             "resources": {
               "cpuLimit": 8.0,
               "memoryLimit": 16.0
+            }
+          }
+        },
+        "exec-bq-export-to-bq": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "bq_export_to_bq"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef bq_export_to_bq(project_id: str\n              , dataset_id: str\n              , table_id: str\n              , temp_table: str\n              , digital_1p_data_path: str\n              , digital_2p_data_path: str\n              , casa_data_path: str\n              , save_data_path: str\n              , token: str\n              ): \n\n    import pandas as pd \n    import numpy as np \n\n    from google.cloud import bigquery\n    import logging\n    import datetime as dt\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()    \n\n    def if_tbl_exists(client, table_ref):\n        from google.cloud.exceptions import NotFound\n        try:\n            client.get_table(table_ref)\n            return True\n        except NotFound:\n            return False\n\n    # read bq_irpc_digital_1p_base_postprocess.csv\n    digital_1p_base = pd.read_csv(digital_1p_data_path, index_col=None)\n\n    # read bq_irpc_digital_2p_base_postprocess.csv\n    digital_2p_base = pd.read_csv(digital_2p_data_path, index_col=None)\n\n    # read bq_irpc_casa_base_postprocess.csv\n    casa_base = pd.read_csv(casa_data_path, index_col=None)\n\n    # concatenate all three files -- irpc_offers_assigned\n    dfs = [digital_1p_base, digital_2p_base, casa_base]\n\n    # Concatenate the DataFrames\n    irpc_offers_assigned = pd.concat(dfs, ignore_index=True)\n    irpc_offers_assigned.reset_index(inplace=False)\n\n    # write the final file to csv irpc_offers_assigned.csv\n    irpc_offers_assigned.to_csv(save_data_path, index=False)\n\n    # insert irpc_offers_assigned again to a bq table -- qua_base_hs \n    table_ref = f'{project_id}.{dataset_id}.{table_id}'\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    table = client.get_table(table_ref)\n    schema = table.schema\n\n    ll = []\n    for item in schema:\n        col = item.name\n        d_type = item.field_type\n        if 'float' in str(d_type).lower():\n            d_type = 'FLOAT64'\n        ll.append((col, d_type))\n\n        if 'integer' in str(d_type).lower():\n            irpc_offers_assigned[col] = irpc_offers_assigned[col].fillna(0).astype(int)\n        elif 'float' in str(d_type).lower():\n            irpc_offers_assigned[col] = irpc_offers_assigned[col].fillna(0.0).astype(float)\n        elif 'string' in str(d_type).lower():\n            irpc_offers_assigned[col] = irpc_offers_assigned[col].fillna('').astype(str)\n        elif 'timestamp' in str(d_type).lower(): \n            irpc_offers_assigned[col] = pd.to_datetime(irpc_offers_assigned[col], errors='coerce')\n        elif 'date' in str(d_type).lower():\n            irpc_offers_assigned[col] = pd.to_datetime(irpc_offers_assigned[col], errors='coerce').dt.date\n\n    table_ref = '{}.{}.{}'.format(project_id, dataset_id, temp_table)\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    if if_tbl_exists(client, table_ref):\n        client.delete_table(table_ref)\n\n    client.create_table(table_ref)\n    config = bigquery.LoadJobConfig(schema=schema)\n    config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE\n    bq_table_instance = client.load_table_from_dataframe(irpc_offers_assigned, table_ref, job_config=config)\n\n    # drop_sql = f\"\"\"delete from `{project_id}.{dataset_id}.{table_id}` where true\"\"\"  # .format(project_id, dataset_id, score_date_dash)\n    # client.query(drop_sql)\n\n    load_sql = f\"\"\"insert into `{project_id}.{dataset_id}.{table_id}`\n                  select * from `{project_id}.{dataset_id}.{temp_table}`\"\"\"\n    client.query(load_sql)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 16.0,
+              "memoryLimit": 32.0
             }
           }
         },
@@ -428,6 +614,30 @@
             }
           }
         },
+        "exec-nba-ffh-offer-ranking": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "nba_ffh_offer_ranking"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef nba_ffh_offer_ranking(project_id: str\n                      , dataset_id: str\n                      , token: str\n                      ):\n\n    from google.cloud import bigquery\n    import logging \n    from datetime import datetime\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    # Change dataset / table + sp table name to version in bi-layer\n    query =\\\n        f'''        \n            -- Change dataset / sp name to the version in the bi_layer\n\n            CALL nba_offer_targeting.bq_sp_nba_ffh_model_scores_existing(); \n\n            CALL nba_offer_targeting.bq_sp_nba_ffh_offer_ranking_existing(); \n\n            SELECT\n                *\n            FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS\n            WHERE table_name='nba_ffh_offer_ranking_existing'\n        '''\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n    logging.info(df.to_string())\n\n    logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n             {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \\\n             {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S') } !\")\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 16.0,
+              "memoryLimit": 32.0
+            }
+          }
+        },
         "exec-offer-attachment-casa": {
           "container": {
             "args": [
@@ -499,6 +709,102 @@
               "memoryLimit": 32.0
             }
           }
+        },
+        "exec-postprocess": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "postprocess"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef postprocess(project_id: str\n              , dataset_id: str\n              , table_id: str\n              , read_data_path: str\n              , save_data_path: str\n              , base_type: str # digital_1p, digital_2p, casa \n              , token: str\n              ): \n\n    import pandas as pd \n    import numpy as np \n\n    from google.cloud import bigquery\n    import logging\n    import datetime as dt\n\n    df = pd.read_csv(read_data_path, index_col=None)\n\n    date_cols = ['candate', 'rpp_hsia_end_dt', 'rpp_ttv_end_dt']\n    df[date_cols] = df[date_cols].apply(pd.to_datetime)\n\n    if base_type == \"digital_1p\" or base_type == \"casa\": \n        rk = [11, 21, 31]\n    elif base_type == \"digital_2p\":\n        rk = [10, 20, 30]\n    else: \n        print(\"\"\"a parameter 'base type' can only accept 'digital_1p', 'digital_2p', or 'casa' as input values\"\"\")\n\n    def create_dict_from_df(df):\n\n        # Convert DataFrame to a list of dictionaries\n        records = df.to_dict(orient='records')\n\n        # Create the desired dictionary format\n        result_dict = {record[df.columns[0]]: [record[df.columns[1]], record[df.columns[2]]] for record in records}\n\n        return result_dict\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    #     #### For prod \n    #     client = bigquery.Client(project=project_id)\n    #     job_config = bigquery.QueryJobConfig()\n\n    # Change dataset / table + sp table name to version in bi-layer\n    query =\\\n        f'''\n            SELECT * FROM `{project_id}.{dataset_id}.{table_id}`\n        '''\n\n    df_offer_details = client.query(query, job_config=job_config).to_dataframe()\n    dict_offer_details = create_dict_from_df(df_offer_details)\n\n    ### promo_seg1\n    irpc_reco1 = df[df['promo_seg1'].notna() & (df['promo_seg1'] != '')]\n    irpc_reco1.reset_index(drop=True, inplace=True)\n    new_df1 = irpc_reco1['promo_seg1'].apply(lambda x: dict_offer_details.get(x, ['', '']))\n    promo_seg1 = [item[0] for item in new_df1]\n    offer_code1 = [item[1] for item in new_df1]\n    irpc_reco1['promo_seg'] = pd.Series(promo_seg1)\n    irpc_reco1['offer_code'] = pd.Series(offer_code1)\n    irpc_reco1['Category'] = 'Digital Renewal'\n    irpc_reco1['Subcategory'] = 'Internet'\n    irpc_reco1['rpp_hsia_end_dt'] = pd.to_datetime(irpc_reco1['rpp_hsia_end_dt'], errors='coerce')\n    irpc_reco1.loc[irpc_reco1[\"rpp_hsia_end_dt\"].isnull(), \"digital_category\"] = 'Re-contracting'\n    irpc_reco1.loc[irpc_reco1[\"rpp_hsia_end_dt\"].dt.date > dt.date.today(), \"digital_category\"] = 'Renewal'\n    irpc_reco1['ASSMT_VALID_START_TS'] = dt.datetime.now()\n    irpc_reco1['ASSMT_VALID_END_TS'] = dt.datetime.now() + dt.timedelta(days=90)\n    irpc_reco1['rk'] = rk[0]\n\n    ### promo_seg2\n    irpc_reco2 = df[df['promo_seg2'].notna() & (df['promo_seg2'] != '')]\n    irpc_reco2.reset_index(drop=True, inplace=True)\n    new_df2 = irpc_reco2['promo_seg2'].apply(lambda x: dict_offer_details.get(x, ['', '']))\n    promo_seg2 = [item[0] for item in new_df2]\n    offer_code2 = [item[1] for item in new_df2]\n    irpc_reco2['promo_seg'] = pd.Series(promo_seg2)\n    irpc_reco2['offer_code'] = pd.Series(offer_code2)\n    irpc_reco2['Category'] = 'Digital Renewal'\n    irpc_reco2['Subcategory'] = 'Internet'\n    irpc_reco2['rpp_hsia_end_dt'] = pd.to_datetime(irpc_reco2['rpp_hsia_end_dt'], errors='coerce')\n    irpc_reco2.loc[irpc_reco2[\"rpp_hsia_end_dt\"].isnull(), \"digital_category\"] = 'Re-contracting'\n    irpc_reco2.loc[irpc_reco2[\"rpp_hsia_end_dt\"].dt.date > dt.date.today(), \"digital_category\"] = 'Renewal'\n    irpc_reco2['ASSMT_VALID_START_TS'] = dt.datetime.now()\n    irpc_reco2['ASSMT_VALID_END_TS'] = dt.datetime.now() + dt.timedelta(days=90)\n    irpc_reco2['rk'] = rk[1]\n\n    ### promo_seg3\n    irpc_reco3 = df[df['promo_seg3'].notna() & (df['promo_seg3'] != '')]\n    irpc_reco3.reset_index(drop=True, inplace=True)\n    new_df3 = irpc_reco3['promo_seg3'].apply(lambda x: dict_offer_details.get(x, ['', '']))\n    promo_seg3 = [item[0] for item in new_df3]\n    offer_code3 = [item[1] for item in new_df3]\n    irpc_reco3['promo_seg'] = pd.Series(promo_seg3)\n    irpc_reco3['offer_code'] = pd.Series(offer_code3)\n    irpc_reco3['Category'] = 'Digital Renewal'\n    irpc_reco3['Subcategory'] = 'Internet'\n    irpc_reco3['rpp_hsia_end_dt'] = pd.to_datetime(irpc_reco3['rpp_hsia_end_dt'], errors='coerce')\n    irpc_reco3.loc[irpc_reco2[\"rpp_hsia_end_dt\"].isnull(), \"digital_category\"] = 'Re-contracting'\n    irpc_reco3.loc[irpc_reco2[\"rpp_hsia_end_dt\"].dt.date > dt.date.today(), \"digital_category\"] = 'Renewal'\n    irpc_reco3['ASSMT_VALID_START_TS'] = dt.datetime.now()\n    irpc_reco3['ASSMT_VALID_END_TS'] = dt.datetime.now() + dt.timedelta(days=90)\n    irpc_reco3['rk'] = rk[2]\n\n    # concatenate irpc_reco1 + irpc_reco2 + irpc_reco3 \n    # write .csv to gcs\n    irpc_recos = pd.concat([irpc_reco1, irpc_reco2, irpc_reco3], ignore_index=True)\n    irpc_recos.reset_index(inplace=True)\n\n    irpc_recos = irpc_recos[['cust_id', 'bacct_num', 'lpds_id', 'candate', 'Category', 'Subcategory', 'digital_category', 'promo_seg', 'offer_code', 'ASSMT_VALID_START_TS', 'ASSMT_VALID_END_TS', 'rk']]\n\n    irpc_recos.to_csv(save_data_path, index=False)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 16.0,
+              "memoryLimit": 32.0
+            }
+          }
+        },
+        "exec-postprocess-2": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "postprocess"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef postprocess(project_id: str\n              , dataset_id: str\n              , table_id: str\n              , read_data_path: str\n              , save_data_path: str\n              , base_type: str # digital_1p, digital_2p, casa \n              , token: str\n              ): \n\n    import pandas as pd \n    import numpy as np \n\n    from google.cloud import bigquery\n    import logging\n    import datetime as dt\n\n    df = pd.read_csv(read_data_path, index_col=None)\n\n    date_cols = ['candate', 'rpp_hsia_end_dt', 'rpp_ttv_end_dt']\n    df[date_cols] = df[date_cols].apply(pd.to_datetime)\n\n    if base_type == \"digital_1p\" or base_type == \"casa\": \n        rk = [11, 21, 31]\n    elif base_type == \"digital_2p\":\n        rk = [10, 20, 30]\n    else: \n        print(\"\"\"a parameter 'base type' can only accept 'digital_1p', 'digital_2p', or 'casa' as input values\"\"\")\n\n    def create_dict_from_df(df):\n\n        # Convert DataFrame to a list of dictionaries\n        records = df.to_dict(orient='records')\n\n        # Create the desired dictionary format\n        result_dict = {record[df.columns[0]]: [record[df.columns[1]], record[df.columns[2]]] for record in records}\n\n        return result_dict\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    #     #### For prod \n    #     client = bigquery.Client(project=project_id)\n    #     job_config = bigquery.QueryJobConfig()\n\n    # Change dataset / table + sp table name to version in bi-layer\n    query =\\\n        f'''\n            SELECT * FROM `{project_id}.{dataset_id}.{table_id}`\n        '''\n\n    df_offer_details = client.query(query, job_config=job_config).to_dataframe()\n    dict_offer_details = create_dict_from_df(df_offer_details)\n\n    ### promo_seg1\n    irpc_reco1 = df[df['promo_seg1'].notna() & (df['promo_seg1'] != '')]\n    irpc_reco1.reset_index(drop=True, inplace=True)\n    new_df1 = irpc_reco1['promo_seg1'].apply(lambda x: dict_offer_details.get(x, ['', '']))\n    promo_seg1 = [item[0] for item in new_df1]\n    offer_code1 = [item[1] for item in new_df1]\n    irpc_reco1['promo_seg'] = pd.Series(promo_seg1)\n    irpc_reco1['offer_code'] = pd.Series(offer_code1)\n    irpc_reco1['Category'] = 'Digital Renewal'\n    irpc_reco1['Subcategory'] = 'Internet'\n    irpc_reco1['rpp_hsia_end_dt'] = pd.to_datetime(irpc_reco1['rpp_hsia_end_dt'], errors='coerce')\n    irpc_reco1.loc[irpc_reco1[\"rpp_hsia_end_dt\"].isnull(), \"digital_category\"] = 'Re-contracting'\n    irpc_reco1.loc[irpc_reco1[\"rpp_hsia_end_dt\"].dt.date > dt.date.today(), \"digital_category\"] = 'Renewal'\n    irpc_reco1['ASSMT_VALID_START_TS'] = dt.datetime.now()\n    irpc_reco1['ASSMT_VALID_END_TS'] = dt.datetime.now() + dt.timedelta(days=90)\n    irpc_reco1['rk'] = rk[0]\n\n    ### promo_seg2\n    irpc_reco2 = df[df['promo_seg2'].notna() & (df['promo_seg2'] != '')]\n    irpc_reco2.reset_index(drop=True, inplace=True)\n    new_df2 = irpc_reco2['promo_seg2'].apply(lambda x: dict_offer_details.get(x, ['', '']))\n    promo_seg2 = [item[0] for item in new_df2]\n    offer_code2 = [item[1] for item in new_df2]\n    irpc_reco2['promo_seg'] = pd.Series(promo_seg2)\n    irpc_reco2['offer_code'] = pd.Series(offer_code2)\n    irpc_reco2['Category'] = 'Digital Renewal'\n    irpc_reco2['Subcategory'] = 'Internet'\n    irpc_reco2['rpp_hsia_end_dt'] = pd.to_datetime(irpc_reco2['rpp_hsia_end_dt'], errors='coerce')\n    irpc_reco2.loc[irpc_reco2[\"rpp_hsia_end_dt\"].isnull(), \"digital_category\"] = 'Re-contracting'\n    irpc_reco2.loc[irpc_reco2[\"rpp_hsia_end_dt\"].dt.date > dt.date.today(), \"digital_category\"] = 'Renewal'\n    irpc_reco2['ASSMT_VALID_START_TS'] = dt.datetime.now()\n    irpc_reco2['ASSMT_VALID_END_TS'] = dt.datetime.now() + dt.timedelta(days=90)\n    irpc_reco2['rk'] = rk[1]\n\n    ### promo_seg3\n    irpc_reco3 = df[df['promo_seg3'].notna() & (df['promo_seg3'] != '')]\n    irpc_reco3.reset_index(drop=True, inplace=True)\n    new_df3 = irpc_reco3['promo_seg3'].apply(lambda x: dict_offer_details.get(x, ['', '']))\n    promo_seg3 = [item[0] for item in new_df3]\n    offer_code3 = [item[1] for item in new_df3]\n    irpc_reco3['promo_seg'] = pd.Series(promo_seg3)\n    irpc_reco3['offer_code'] = pd.Series(offer_code3)\n    irpc_reco3['Category'] = 'Digital Renewal'\n    irpc_reco3['Subcategory'] = 'Internet'\n    irpc_reco3['rpp_hsia_end_dt'] = pd.to_datetime(irpc_reco3['rpp_hsia_end_dt'], errors='coerce')\n    irpc_reco3.loc[irpc_reco2[\"rpp_hsia_end_dt\"].isnull(), \"digital_category\"] = 'Re-contracting'\n    irpc_reco3.loc[irpc_reco2[\"rpp_hsia_end_dt\"].dt.date > dt.date.today(), \"digital_category\"] = 'Renewal'\n    irpc_reco3['ASSMT_VALID_START_TS'] = dt.datetime.now()\n    irpc_reco3['ASSMT_VALID_END_TS'] = dt.datetime.now() + dt.timedelta(days=90)\n    irpc_reco3['rk'] = rk[2]\n\n    # concatenate irpc_reco1 + irpc_reco2 + irpc_reco3 \n    # write .csv to gcs\n    irpc_recos = pd.concat([irpc_reco1, irpc_reco2, irpc_reco3], ignore_index=True)\n    irpc_recos.reset_index(inplace=True)\n\n    irpc_recos = irpc_recos[['cust_id', 'bacct_num', 'lpds_id', 'candate', 'Category', 'Subcategory', 'digital_category', 'promo_seg', 'offer_code', 'ASSMT_VALID_START_TS', 'ASSMT_VALID_END_TS', 'rk']]\n\n    irpc_recos.to_csv(save_data_path, index=False)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 16.0,
+              "memoryLimit": 32.0
+            }
+          }
+        },
+        "exec-postprocess-3": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "postprocess"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef postprocess(project_id: str\n              , dataset_id: str\n              , table_id: str\n              , read_data_path: str\n              , save_data_path: str\n              , base_type: str # digital_1p, digital_2p, casa \n              , token: str\n              ): \n\n    import pandas as pd \n    import numpy as np \n\n    from google.cloud import bigquery\n    import logging\n    import datetime as dt\n\n    df = pd.read_csv(read_data_path, index_col=None)\n\n    date_cols = ['candate', 'rpp_hsia_end_dt', 'rpp_ttv_end_dt']\n    df[date_cols] = df[date_cols].apply(pd.to_datetime)\n\n    if base_type == \"digital_1p\" or base_type == \"casa\": \n        rk = [11, 21, 31]\n    elif base_type == \"digital_2p\":\n        rk = [10, 20, 30]\n    else: \n        print(\"\"\"a parameter 'base type' can only accept 'digital_1p', 'digital_2p', or 'casa' as input values\"\"\")\n\n    def create_dict_from_df(df):\n\n        # Convert DataFrame to a list of dictionaries\n        records = df.to_dict(orient='records')\n\n        # Create the desired dictionary format\n        result_dict = {record[df.columns[0]]: [record[df.columns[1]], record[df.columns[2]]] for record in records}\n\n        return result_dict\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    #     #### For prod \n    #     client = bigquery.Client(project=project_id)\n    #     job_config = bigquery.QueryJobConfig()\n\n    # Change dataset / table + sp table name to version in bi-layer\n    query =\\\n        f'''\n            SELECT * FROM `{project_id}.{dataset_id}.{table_id}`\n        '''\n\n    df_offer_details = client.query(query, job_config=job_config).to_dataframe()\n    dict_offer_details = create_dict_from_df(df_offer_details)\n\n    ### promo_seg1\n    irpc_reco1 = df[df['promo_seg1'].notna() & (df['promo_seg1'] != '')]\n    irpc_reco1.reset_index(drop=True, inplace=True)\n    new_df1 = irpc_reco1['promo_seg1'].apply(lambda x: dict_offer_details.get(x, ['', '']))\n    promo_seg1 = [item[0] for item in new_df1]\n    offer_code1 = [item[1] for item in new_df1]\n    irpc_reco1['promo_seg'] = pd.Series(promo_seg1)\n    irpc_reco1['offer_code'] = pd.Series(offer_code1)\n    irpc_reco1['Category'] = 'Digital Renewal'\n    irpc_reco1['Subcategory'] = 'Internet'\n    irpc_reco1['rpp_hsia_end_dt'] = pd.to_datetime(irpc_reco1['rpp_hsia_end_dt'], errors='coerce')\n    irpc_reco1.loc[irpc_reco1[\"rpp_hsia_end_dt\"].isnull(), \"digital_category\"] = 'Re-contracting'\n    irpc_reco1.loc[irpc_reco1[\"rpp_hsia_end_dt\"].dt.date > dt.date.today(), \"digital_category\"] = 'Renewal'\n    irpc_reco1['ASSMT_VALID_START_TS'] = dt.datetime.now()\n    irpc_reco1['ASSMT_VALID_END_TS'] = dt.datetime.now() + dt.timedelta(days=90)\n    irpc_reco1['rk'] = rk[0]\n\n    ### promo_seg2\n    irpc_reco2 = df[df['promo_seg2'].notna() & (df['promo_seg2'] != '')]\n    irpc_reco2.reset_index(drop=True, inplace=True)\n    new_df2 = irpc_reco2['promo_seg2'].apply(lambda x: dict_offer_details.get(x, ['', '']))\n    promo_seg2 = [item[0] for item in new_df2]\n    offer_code2 = [item[1] for item in new_df2]\n    irpc_reco2['promo_seg'] = pd.Series(promo_seg2)\n    irpc_reco2['offer_code'] = pd.Series(offer_code2)\n    irpc_reco2['Category'] = 'Digital Renewal'\n    irpc_reco2['Subcategory'] = 'Internet'\n    irpc_reco2['rpp_hsia_end_dt'] = pd.to_datetime(irpc_reco2['rpp_hsia_end_dt'], errors='coerce')\n    irpc_reco2.loc[irpc_reco2[\"rpp_hsia_end_dt\"].isnull(), \"digital_category\"] = 'Re-contracting'\n    irpc_reco2.loc[irpc_reco2[\"rpp_hsia_end_dt\"].dt.date > dt.date.today(), \"digital_category\"] = 'Renewal'\n    irpc_reco2['ASSMT_VALID_START_TS'] = dt.datetime.now()\n    irpc_reco2['ASSMT_VALID_END_TS'] = dt.datetime.now() + dt.timedelta(days=90)\n    irpc_reco2['rk'] = rk[1]\n\n    ### promo_seg3\n    irpc_reco3 = df[df['promo_seg3'].notna() & (df['promo_seg3'] != '')]\n    irpc_reco3.reset_index(drop=True, inplace=True)\n    new_df3 = irpc_reco3['promo_seg3'].apply(lambda x: dict_offer_details.get(x, ['', '']))\n    promo_seg3 = [item[0] for item in new_df3]\n    offer_code3 = [item[1] for item in new_df3]\n    irpc_reco3['promo_seg'] = pd.Series(promo_seg3)\n    irpc_reco3['offer_code'] = pd.Series(offer_code3)\n    irpc_reco3['Category'] = 'Digital Renewal'\n    irpc_reco3['Subcategory'] = 'Internet'\n    irpc_reco3['rpp_hsia_end_dt'] = pd.to_datetime(irpc_reco3['rpp_hsia_end_dt'], errors='coerce')\n    irpc_reco3.loc[irpc_reco2[\"rpp_hsia_end_dt\"].isnull(), \"digital_category\"] = 'Re-contracting'\n    irpc_reco3.loc[irpc_reco2[\"rpp_hsia_end_dt\"].dt.date > dt.date.today(), \"digital_category\"] = 'Renewal'\n    irpc_reco3['ASSMT_VALID_START_TS'] = dt.datetime.now()\n    irpc_reco3['ASSMT_VALID_END_TS'] = dt.datetime.now() + dt.timedelta(days=90)\n    irpc_reco3['rk'] = rk[2]\n\n    # concatenate irpc_reco1 + irpc_reco2 + irpc_reco3 \n    # write .csv to gcs\n    irpc_recos = pd.concat([irpc_reco1, irpc_reco2, irpc_reco3], ignore_index=True)\n    irpc_recos.reset_index(inplace=True)\n\n    irpc_recos = irpc_recos[['cust_id', 'bacct_num', 'lpds_id', 'candate', 'Category', 'Subcategory', 'digital_category', 'promo_seg', 'offer_code', 'ASSMT_VALID_START_TS', 'ASSMT_VALID_END_TS', 'rk']]\n\n    irpc_recos.to_csv(save_data_path, index=False)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 16.0,
+              "memoryLimit": 32.0
+            }
+          }
+        },
+        "exec-reg-offers-base-existing": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "reg_offers_base_existing"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef reg_offers_base_existing(project_id: str\n                            , offer_parameter: str\n                            , whsia_eligible_base: str\n                            , shs_professional_install: str\n                            , prod_cd2remove: str\n                            , qua_base: str\n                            , token: str\n                            ):\n\n    import pandas as pd\n    import sys\n    import os\n    import re\n    import time\n    from pathlib import Path\n    import pdb\n    from yaml import safe_load\n\n    from google.cloud import bigquery\n    import logging \n    from datetime import datetime\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    \"\"\"\n    This program creates eligible bases for three categories of customers\n      - existing home solutions customers\n      - naked mobility customers\n      - cat3\n\n    Initially drafted in Feb 2024\n      - @author: T892899\n\n\n    v0d4 @author: T892899; Feb 29, 2024\n      - update ffh_bas query to welcome 9167815983798937909\n      - double check pending orders\n\n\n    v0d5 @author: T892899; Mar 4th, 2024\n      - update a few tables\n       - bi-srv-hsmdet-pr-7b9def.campaign_data.bq_dly_dbm_customer_profl\n       - bi-srv-hsmdet-pr-7b9def.campaign_data.bq_fda_mob_mobility_base\n       - bi-srv-divgdsa-pr-098bdd.common.bq_mobility_active_data\n\n\n    v0d6 @author: T892899; Mar 6th, 2024\n      - Add SHS Pro-install eligibility flag\n        - this table is still a temp table, which requires more formal solution in the future\n      - Adjust MOB offer filters\n\n\n    v0d7 @author: T892899; Mar 8th, 2024\n      - Update Offer parameter BQ table - formal source / daily update\n      - New function for cr8bqt_sql_BI\n      - Update demostats data source\n\n\n    Notes: Feb 2024\n     - SHS eligibility flag need to be added\n     - prod_cd to be changed to bq table\n     - TOS tier model need to be added\n     - HSIC tier model need to be added\n     - valid start/end date format\n        - details to confirm with Weibo/Francis\n        - 2022-01-01T00:00:00.000Z\n\n    \"\"\"\n\n    # define some functions\n    # please feel free to improve as fit\n    def cr8bqt_sql_BI(\n        clnt,\n        sql_base,\n        opt,\n        est_num\n        ): \n\n        sql_s1 =f\"\"\"\n\n            TRUNCATE TABLE `{opt}_temp`;   \n            INSERT INTO `{opt}_temp`\n            {sql_base}            \n\n            \"\"\" \n\n        crdt_s1 = clnt.query(sql_s1).to_dataframe()\n\n        tableid = opt.split('.')\n\n        sql_s2 =f\"\"\"\n\n                SELECT\n                  row_count\n                FROM `{tableid[0]}.{tableid[1]}`.__TABLES__\n                where table_id = '{tableid[2]}_temp'\n                ;\n\n            \"\"\" \n\n        crdt_s2 = clnt.query(sql_s2).to_dataframe()\n\n        if crdt_s2['row_count'][0] > est_num:\n            sql_s3 =f\"\"\"\n\n                TRUNCATE TABLE `{opt}`;   \n                INSERT INTO `{opt}`\n                select * from `{opt}_temp`\n\n            \"\"\" \n            crdt_s3 = clnt.query(sql_s3).to_dataframe()\n\n        else:\n            raise Exception(f\"{opt}_temp has {crdt_s2['row_count'][0]} rows -- seems low. Update aborted.\")\n\n    def last_dt_check(\n        clnt,\n        ipt,\n        part_dt\n        ): \n\n        sql_s1 =f\"\"\"\n\n            with\n                max_date1 as (\n                    SELECT \n                        0 as a\n                        , {part_dt} \n                        , count({part_dt}) as mxx\n                    FROM `{ipt}`\n                        WHERE {part_dt} >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)\n                    group by a, {part_dt}\n                    order by a, {part_dt} desc\n                    )\n                ,  max_date2 as (\n                    select\n                        0 as a\n                        , avg(mxx) as mxx_avg\n                    from max_date1\n                        group by a\n                    )\n\n                select\n                    cast(max(a.{part_dt}) AS STRING) as part_dt\n                from max_date1 a left join max_date2 b\n                on a.a = b.a\n                where a.mxx >= b.mxx_avg * 0.8\n\n        \"\"\" \n\n        crdt_s1 = clnt.query(sql_s1).to_dataframe()\n\n        return(crdt_s1['part_dt'][0])\n\n    # Beginning of Part 1\n    # Creating eligible base for existing home solutions customers\n    # Pull Offer Info\n\n    sq0l =f\"\"\"\n       with\n            max_dt as (    \n              SELECT \n              max(part_dt) as part_dt\n              FROM `{offer_parameter}` \n            )\n        select\n            Replace(a.Offer_Number, '-', '_') as Offer_Number2\n            , a.* \n            , CAST(a.valid_start_ts AS DATE FORMAT 'MON DD, YYYY') AS valid_start_dt \n            , CAST(a.valid_end_ts AS DATE FORMAT 'MON DD, YYYY') AS valid_end_dt\n        from `{offer_parameter}` a \n        inner join max_dt b\n        on a.part_dt = b.part_dt\n        where a.if_active = 1 and a.HS_filters is not null\n    \"\"\" \n\n    offer_info = client.query(sq0l).to_dataframe()\n\n    # Check latest snapshot date with reasonable counts\n    last_dt_pid = last_dt_check(clnt = client,\n                                ipt = 'bi-srv-divgdsa-pr-098bdd.common.bq_hs_product_instance_details',\n                                part_dt = 'part_load_dt' )\n\n    last_dt_pi = last_dt_check(clnt = client,\n                                ipt = 'bi-srv-divgdsa-pr-098bdd.common.bq_hs_product_instance',\n                                part_dt = 'part_load_dt' )\n\n    last_dt_gateway = last_dt_check(clnt = client,\n                                ipt = 'cio-datahub-enterprise-pr-183a.ent_resrc_config.bq_product_instance_gateway_daily_snpsht',\n                                part_dt = 'snapshot_load_dt' )\n\n    # last_dt_game = last_dt_check(clnt = client,\n    #                             ipt = 'cio-datahub-enterprise-pr-183a.ent_resrc_performance_device_kpi.bq_cloudcheck_game_station',\n    #                             part_dt = 'file_rcvd_dt' )\n\n    # Create Bigquery for HS customer profile - base\n    sq0l =f\"\"\"\n        with std1 as (\n            select distinct cust_id \n             from `bi-srv-divgdsa-pr-098bdd.common.bq_hs_product_instance_details`\n            where part_load_dt = '{last_dt_pid}'\n                and effective_end_dt >= CURRENT_DATE()\n                and (upper(prod_intrnl_nm) like '%TSD%'\n                     or upper(prod_intrnl_nm) like '%CONNECTING FAMILIES%'\n                     or upper(prod_intrnl_nm) like '%REALTOR%'\n                     or upper(prod_intrnl_nm) like '%STRATA%' \n                    )\n        )\n\n        ,std2 as (\n\n            select distinct cust_id \n             from `bi-srv-divgdsa-pr-098bdd.common.bq_hs_product_instance_details` a \n             inner join `{prod_cd2remove}` b\n             on a.prod_cd = b.prod_cd\n            where a.part_load_dt = '{last_dt_pid}'\n                and a.effective_end_dt >= CURRENT_DATE()\n                and b.standard_exclusions = 1\n\n        )\n\n        , std as (\n            select * from std1\n            union all\n            select * from std2\n        )\n\n        , pid as (\n\n                select \n                  cust_id\n                  , bacct_num\n                  , max(case when access_technology = 'COPPER' then 1 else 0 end) as cpf_acctech_copper_ind\n                  , max(case when access_technology = 'FIBRE' then 1 else 0 end) as cpf_acctech_fibre_ind\n                  , max(case when access_technology = 'WIRELESS' then 1 else 0 end) as cpf_acctech_wls_ind\n                  , max(case when access_technology = 'SATELLITE' then 1 else 0 end) as cpf_acctech_satellite_ind\n                  , sum(case when service_instance_type_cd != 'DIIC' then 1 else 0 end) as cpf_prod_cnt\n                  , max(case when service_instance_type_cd = 'DIIC' then 1 else 0 end) as cpf_diic_ind\n                  , max(case when service_instance_type_cd = 'HSIC' then 1 else 0 end) as cpf_hsic_ind\n                  , max(case when service_instance_type_cd = 'HSIC' then provisioned_hs else null end) as cpf_provisioned_hs\n                  , max(case when service_instance_type_cd = 'LWC' then 1 else 0 end) as cpf_lwc_ind\n                  , max(case when service_instance_type_cd = 'PIK' then 1 else 0 end) as cpf_pik_ind\n                  , max(case when service_instance_type_cd = 'SHS' then 1 else 0 end) as cpf_shs_ind\n                  , max(case when prod_intrnl_nm in ('Smart Automation Plus', 'Smart Automation Plus (V2)'\n                          , 'Smart Camera (V2)', 'Secure Business: Smart Camera') then 1 else 0 end) as cpf_shs_ind2\n                  , max(case when service_instance_type_cd = 'SING' then 1 else 0 end) as cpf_sing_ind\n                  , max(case when service_instance_type_cd = 'STV' then 1 else 0 end) as cpf_stv_ind\n                  , max(case when service_instance_type_cd = 'SWS' then 1 else 0 end) as cpf_sws_ind\n                  , max(case when service_instance_type_cd = 'STMP' then 1 else 0 end) as cpf_stmp_ind\n                  , max(case when service_instance_type_cd = 'TOS' then 1 else 0 end) as cpf_tos_ind\n                  , max(case when service_instance_type_cd = 'TOS'\n                          and prod_cd = '40983311' then 1 else 0 end) as cpf_tos_basic_ind\n                  , max(case when service_instance_type_cd = 'TOS'\n                          and prod_cd = '41079641' then 1 else 0 end) as cpf_tos_standard_ind\n                  , max(case when service_instance_type_cd = 'TTV' then 1 else 0 end) as cpf_ttv_ind\n                  , max(case when service_instance_type_cd = 'WFP' then 1 else 0 end) as cpf_wfp_ind\n                  , max(case when service_instance_type_cd = 'WHSIA' then 1 else 0 end) as cpf_whsia_ind  \n                  , max(case when service_instance_type_cd = 'HPRO' then 1 else 0 end) as cpf_HPRO_ind   \n\n                  from `bi-srv-divgdsa-pr-098bdd.common.bq_hs_product_instance`\n                        where part_load_dt = '{last_dt_pi}'\n                      and product_instance_status_cd = 'A' and current_ind = 1\n                    group by cust_id, bacct_num\n\n        )\n\n        , pid4hproplus as (\n\n                select distinct\n                  cust_id\n                  , bacct_num\n\n                  from `bi-srv-divgdsa-pr-098bdd.common.bq_hs_product_instance`\n                        where part_load_dt = '{last_dt_pi}'\n                      and product_instance_status_cd = 'A' and current_ind = 1\n                      and service_instance_type_cd in ('HSIC','WHSIA','TTV','SHS','SWS')\n                        and si_start_dt >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)\n\n        )\n\n        , pid_all as (\n\n                select distinct\n                  cust_id\n                  , bacct_num\n                  , product_instance_id\n                  from `bi-srv-divgdsa-pr-098bdd.common.bq_hs_product_instance`\n                        where part_load_dt = '{last_dt_pi}'\n                      and product_instance_status_cd = 'A' and current_ind = 1\n\n        )\n\n        , gtwy_ser_num as (\n                SELECT distinct\n                    cust_id\n                    , prod_instnc_id\n                    , gtwy_ser_num\n                FROM `cio-datahub-enterprise-pr-183a.ent_resrc_config.bq_product_instance_gateway_daily_snpsht` \n                WHERE snapshot_load_dt >= DATE_SUB('{last_dt_gateway}' , INTERVAL 30 DAY)\n        )\n\n        , pending_orders as (\n\n                select  \n                    cust_id\n                    , lpds_id\n                    , max(case when product_family = 'TOS' then 1 else 0 end) as TOS_IND\n                    , max(case when product_family = 'HSIC' then 1 else 0 end) as HSIA_ind\n                    , max(case when product_family = 'SMHM' then 1 else 0 end) as SHS_ind\n                    , max(case when product_family = 'TTV' then 1 else 0 end) as OPTIK_TV_IND\n                    , max(case when product_family = 'SING' then 1 else 0 end) as HP_IND\n                    , max(case when product_family = 'WIFI' then 1 else 0 end) as WFP_ind\n                    , max(case when product_family = 'WHSIA' then 1 else 0 end) as SMART_HUB_IND\n                    , max(case when product_family = 'LWC' then 1 else 0 end) as LWC_ind\n                    , max(case when product_family = 'SWS' then 1 else 0 end) as SWS_ind\n                    , max(case when product_family = 'SOD' then 1 else 0 end) as SOD_ind\n                    , max(case when product_family = 'HPRO' then 1 else 0 end) as HPRO_ind\n                 from `bi-srv-hsmsd-3c-pr-ca2cd4.hsmsd_3c_rpt_dataset.bq_rpt_chnl_order_ffh_dtl_view`\n                where is_current_order = 1 and current_yield_dt >= DATE_SUB(CURRENT_DATE(), INTERVAL 100 DAY)\n                    and (current_yield_sub_status = 'Pending')\n                    and current_order_status = 'Processing'\n                    and soi_transaction_type = 'Enroll'\n                    group by 1,2\n\n        )\n\n        , ffh_bas as (\n            select \n                a.* except (OPTIK_TV_IND\n                            , HSIA_IND\n                            , HP_IND\n                            , LWC_IND\n                            , SHS_IND\n                            , SWS_IND\n                            , SMART_HUB_IND)\n\n                , case when a.OPTIK_TV_IND > 0 or k.OPTIK_TV_IND > 0 then 1 else 0 end as OPTIK_TV_IND\n                , case when a.HSIA_IND > 0 or k.HSIA_IND > 0 then 1 else 0 end as HSIA_IND\n                , case when a.HP_IND > 0 or k.HP_IND > 0 then 1 else 0 end as HP_IND\n                , case when a.SHS_IND > 0 or k.SHS_IND > 0 then 1 else 0 end as SHS_IND\n                , case when a.LWC_IND > 0 or k.LWC_IND > 0 then 1 else 0 end as LWC_IND\n                , case when a.SWS_IND > 0 or k.SWS_IND > 0 then 1 else 0 end as SWS_IND\n                , case when a.SMART_HUB_IND > 0 or k.SMART_HUB_IND > 0 then 1 else 0 end as SMART_HUB_IND\n\n                , case when b.cust_id is null then 0 else 1 end as std_exclud2\n\n                , c.* except (cust_id, bacct_num, cpf_HPRO_ind, cpf_wfp_ind, cpf_whsia_ind)\n                , case when c.cpf_whsia_ind > 0 or k.SMART_HUB_IND > 0 then 1 else 0 end as cpf_whsia_ind\n                , case when c.cpf_wfp_ind > 0 or k.WFP_ind > 0 then 1 else 0 end as cpf_wfp_ind\n                , case when c.cpf_HPRO_ind > 0 or k.HPRO_ind > 0 then 1 else 0 end as cpf_HPRO_ind\n\n                , case when (( d.HTA1519_pct > 0.25)\n                                or ( d.HTA2024_pct > 0.25)\n                                or ( d.HTA2529_pct > 0.25)\n                                or ( d.HTA3034_pct > 0.25)\n                                or ( d.HTA3539_pct > 0.25)\n                                or ( d.HTA4044_pct > 0.25)\n\n                                or ( d.HMA1519_pct > 0.25)\n                                or ( d.HMA2024_pct > 0.25)\n                                or ( d.HMA2529_pct > 0.25)\n                                or ( d.HMA3034_pct > 0.25)\n                                or ( d.HMA3539_pct > 0.25)\n                                or ( d.HMA4044_pct > 0.25)\n\n                                or ( d.HFA1519_pct > 0.25)\n                                or ( d.HFA2024_pct > 0.25)\n                                or ( d.HFA2529_pct > 0.25)\n                                or ( d.HFA3034_pct > 0.25)\n                                or ( d.HFA3539_pct > 0.25)\n                                or ( d.HFA4044_pct > 0.25)) then 1 else 0 end as demo_hs_189_ind\n\n                , case when d.baskid > 50 then 1 else 0 end as demo_hs_188_ind\n\n                , RAND() as rand_seed1\n\n                , case when e.cust_id is not null then 1 else 0 end as hs_202_ind\n\n                , f.wHSIAQualTypeMarketing\n\n                , case when g1.ACQ_DATE is not null\n                            or g2.ACQ_DATE is not null\n                            or g3.ACQ_DATE is not null\n                            then 1 else 0 end as alarm_full_universe\n\n                --, case when j.cust_id is not null then 1 else 0 end as hs_71_ind\n\n                , 1 as hs_71_ind\n\n                , case when a.serv_prov in ('AB', 'BC') \n                        or h.Coverage_Status like '%Professional%' \n                        then 1 else 0 end as shs_professional_install\n\n            from `bi-srv-hsmdet-pr-7b9def.campaign_data.bq_dly_dbm_customer_profl` a\n            left join std b on a.cust_id = b.cust_id\n            left join pid c on a.cust_id = c.cust_id and a.bacct_num = c.bacct_num \n            left join `bi-srv-divgdsa-pr-098bdd.environics_derived.bq_demostats_2023_features` d\n                on a.SERV_POSTAL_CODE = d.code\n            left join pid4hproplus e on a.cust_id = e.cust_id and a.bacct_num = e.bacct_num \n            left join `{whsia_eligible_base}` f on a.LPDS_ID = f.LPDSId\n            left join `bi-srv-hsmdet-pr-7b9def.hsmdet_public.bq_pub_fda_alarm_full_universe` g1\n                on a.cust_id is not null and a.cust_id = g1.cust_id\n            left join `bi-srv-hsmdet-pr-7b9def.hsmdet_public.bq_pub_fda_alarm_full_universe` g2\n                on a.bacct_num is not null and a.bacct_num = g2.bacct_num\n            left join `bi-srv-hsmdet-pr-7b9def.hsmdet_public.bq_pub_fda_alarm_full_universe` g3\n                on a.FMS_ADDRESS_ID is not null and a.FMS_ADDRESS_ID = g3.FMS_ADDRESS_ID\n            left join `{shs_professional_install}` h on substr(a.SERV_POSTAL_CODE, 1, 3) = h.FSA\n            -- left join custid_gaming j on a.cust_id = j.cust_id and a.bacct_num = j.bacct_num \n            left join pending_orders k on k.cust_id = cast(a.cust_id as STRING)\n                and k.LPDS_ID = cast(a.LPDS_ID as STRING) \n            where a.cust_id > 0\n\n            )\n    \"\"\" \n\n    # Create eligible base for each offer\n    sql_all = sq0l\n    n_offer = offer_info.shape[0]\n    for ii in range(n_offer):\n        ii2 = ii + 1\n\n        sql_b1 = (\n                f\"\"\", {offer_info['Offer_Number2'][ii]} as (\n                select distinct cust_id \\n\n                , bacct_num \\n\n                , lpds_id \\n\n                , ACCT_START_DT as candate \\n\n                , '{offer_info['Category'][ii]}' as Category  \\n\n                , '{offer_info['Subcategory'][ii]}' as Subcategory  \\n \n                , '' as digital_category\n                , '{offer_info['promo_seg'][ii]}' as promo_seg  \\n \n                , '{offer_info['NCID'][ii]}' as offer_code  \\n \n                , cast('{offer_info['valid_start_dt'][ii]}' AS DATE) as ASSMT_VALID_START_TS  \\n\n                , cast('{offer_info['valid_end_dt'][ii]}' AS DATE) as ASSMT_VALID_END_TS  \\n \n                , {str(offer_info['rk'][ii])} as rk  \\n\n                from ffh_bas \\n where  {offer_info['HS_filters'][ii]} )  \\n \"\"\"\n               )\n\n        sql_all0 = sql_all + sql_b1\n\n        sql_all = sql_all0\n\n    # Union eligible bases\n    sql_all0 = sql_all + f\" select * from {offer_info['Offer_Number2'][0]} \\n\"\n    sql_all = sql_all0\n    n_offer = offer_info.shape[0] - 1\n    for ii in range(n_offer):\n        ii2 = ii + 1\n        sql_b2 = f\" union all select * from {offer_info['Offer_Number2'][ii2]}  \\n\"\n        sql_all0 = sql_all + sql_b2\n        sql_all = sql_all0\n\n\n    # check base count before creating multiple eligible base\n    sq0l =\"\"\"\n\n        select\n            count(distinct bacct_num) as cnt\n        from `bi-srv-hsmdet-pr-7b9def.campaign_data.bq_dly_dbm_customer_profl`\n\n    \"\"\" \n\n    df_check = client.query(sq0l).to_dataframe()\n\n    # creating eligible base\n    start_time = time.time()\n\n    if df_check['cnt'][0] > 2_500_000:\n        cr8bqt_sql_BI(\n            clnt = client,\n            sql_base = sql_all,\n            opt = qua_base,\n            est_num = 10_000_000\n        )\n\n    else:\n        raise Exception(f\"FFH base has {df_check['cnt'][0]} rows -- seems low. Update aborted.\")\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 8.0,
+              "memoryLimit": 16.0
+            }
+          }
         }
       }
     },
@@ -515,6 +821,9 @@
             "componentRef": {
               "name": "comp-bq-create-dataset"
             },
+            "dependentTasks": [
+              "reg-offers-base-existing"
+            ],
             "inputs": {
               "parameters": {
                 "dataset_id": {
@@ -534,7 +843,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N38xNTyDMxFJOZbqgdIgILIvOB1oUtI6VyhgmZ81Fh4iqX7DSrLuPyse5IedLdanLF9Kx76WMc9Zo23cEBArZNyqnNTdBNG2J9NHvhNrBJOwtoe4yxpt_SJP2yvDb8NhPF-LVfGwSsagtisxp2Sbalyg48zkdLtODV-oBdsaCgYKAaISARISFQHGX2MizCMa0wdnJk636mkcBHrrFQ0178"
+                      "stringValue": "ya29.a0Ad52N3_pqe0g-HpaZDirllljOUSE7rYvbpxSH6JCDD3_UOx2FN3jLg26tE3U_S-EM1jaZb4ezj9RZ4fcJH_2Bi7wQbY8NRv7FzBvkG9uXDY0ax8nPGzSOhbljbDGnZy9nKxep6erelvTyJ7_9lsV1HPyk7tLXbI_f71mHO2plpYaCgYKAYkSARISFQHGX2Mib99UWwtuCfKXVjlDvYLOhA0178"
                     }
                   }
                 }
@@ -542,6 +851,89 @@
             },
             "taskInfo": {
               "name": "bq-create-dataset"
+            }
+          },
+          "bq-export-to-bq": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-bq-export-to-bq"
+            },
+            "dependentTasks": [
+              "postprocess",
+              "postprocess-2",
+              "postprocess-3"
+            ],
+            "inputs": {
+              "parameters": {
+                "casa_data_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/bq_irpc_casa_base_postprocess.csv"
+                    }
+                  }
+                },
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "nba_offer_targeting"
+                    }
+                  }
+                },
+                "digital_1p_data_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/bq_irpc_digital_1p_base_postprocess.csv"
+                    }
+                  }
+                },
+                "digital_2p_data_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/bq_irpc_digital_2p_base_postprocess.csv"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "save_data_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/irpc_offers_assigned_existing_customers.csv"
+                    }
+                  }
+                },
+                "table_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "qua_base_hs"
+                    }
+                  }
+                },
+                "temp_table": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "qua_base_hs_irpc"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.a0Ad52N3_pqe0g-HpaZDirllljOUSE7rYvbpxSH6JCDD3_UOx2FN3jLg26tE3U_S-EM1jaZb4ezj9RZ4fcJH_2Bi7wQbY8NRv7FzBvkG9uXDY0ax8nPGzSOhbljbDGnZy9nKxep6erelvTyJ7_9lsV1HPyk7tLXbI_f71mHO2plpYaCgYKAYkSARISFQHGX2Mib99UWwtuCfKXVjlDvYLOhA0178"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "bq-export-to-bq"
             }
           },
           "bq-import-tbl-to-df": {
@@ -587,7 +979,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N38xNTyDMxFJOZbqgdIgILIvOB1oUtI6VyhgmZ81Fh4iqX7DSrLuPyse5IedLdanLF9Kx76WMc9Zo23cEBArZNyqnNTdBNG2J9NHvhNrBJOwtoe4yxpt_SJP2yvDb8NhPF-LVfGwSsagtisxp2Sbalyg48zkdLtODV-oBdsaCgYKAaISARISFQHGX2MizCMa0wdnJk636mkcBHrrFQ0178"
+                      "stringValue": "ya29.a0Ad52N3_pqe0g-HpaZDirllljOUSE7rYvbpxSH6JCDD3_UOx2FN3jLg26tE3U_S-EM1jaZb4ezj9RZ4fcJH_2Bi7wQbY8NRv7FzBvkG9uXDY0ax8nPGzSOhbljbDGnZy9nKxep6erelvTyJ7_9lsV1HPyk7tLXbI_f71mHO2plpYaCgYKAYkSARISFQHGX2Mib99UWwtuCfKXVjlDvYLOhA0178"
                     }
                   }
                 }
@@ -640,7 +1032,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N38xNTyDMxFJOZbqgdIgILIvOB1oUtI6VyhgmZ81Fh4iqX7DSrLuPyse5IedLdanLF9Kx76WMc9Zo23cEBArZNyqnNTdBNG2J9NHvhNrBJOwtoe4yxpt_SJP2yvDb8NhPF-LVfGwSsagtisxp2Sbalyg48zkdLtODV-oBdsaCgYKAaISARISFQHGX2MizCMa0wdnJk636mkcBHrrFQ0178"
+                      "stringValue": "ya29.a0Ad52N3_pqe0g-HpaZDirllljOUSE7rYvbpxSH6JCDD3_UOx2FN3jLg26tE3U_S-EM1jaZb4ezj9RZ4fcJH_2Bi7wQbY8NRv7FzBvkG9uXDY0ax8nPGzSOhbljbDGnZy9nKxep6erelvTyJ7_9lsV1HPyk7tLXbI_f71mHO2plpYaCgYKAYkSARISFQHGX2Mib99UWwtuCfKXVjlDvYLOhA0178"
                     }
                   }
                 }
@@ -693,7 +1085,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N38xNTyDMxFJOZbqgdIgILIvOB1oUtI6VyhgmZ81Fh4iqX7DSrLuPyse5IedLdanLF9Kx76WMc9Zo23cEBArZNyqnNTdBNG2J9NHvhNrBJOwtoe4yxpt_SJP2yvDb8NhPF-LVfGwSsagtisxp2Sbalyg48zkdLtODV-oBdsaCgYKAaISARISFQHGX2MizCMa0wdnJk636mkcBHrrFQ0178"
+                      "stringValue": "ya29.a0Ad52N3_pqe0g-HpaZDirllljOUSE7rYvbpxSH6JCDD3_UOx2FN3jLg26tE3U_S-EM1jaZb4ezj9RZ4fcJH_2Bi7wQbY8NRv7FzBvkG9uXDY0ax8nPGzSOhbljbDGnZy9nKxep6erelvTyJ7_9lsV1HPyk7tLXbI_f71mHO2plpYaCgYKAYkSARISFQHGX2Mib99UWwtuCfKXVjlDvYLOhA0178"
                     }
                   }
                 }
@@ -746,7 +1138,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N38xNTyDMxFJOZbqgdIgILIvOB1oUtI6VyhgmZ81Fh4iqX7DSrLuPyse5IedLdanLF9Kx76WMc9Zo23cEBArZNyqnNTdBNG2J9NHvhNrBJOwtoe4yxpt_SJP2yvDb8NhPF-LVfGwSsagtisxp2Sbalyg48zkdLtODV-oBdsaCgYKAaISARISFQHGX2MizCMa0wdnJk636mkcBHrrFQ0178"
+                      "stringValue": "ya29.a0Ad52N3_pqe0g-HpaZDirllljOUSE7rYvbpxSH6JCDD3_UOx2FN3jLg26tE3U_S-EM1jaZb4ezj9RZ4fcJH_2Bi7wQbY8NRv7FzBvkG9uXDY0ax8nPGzSOhbljbDGnZy9nKxep6erelvTyJ7_9lsV1HPyk7tLXbI_f71mHO2plpYaCgYKAYkSARISFQHGX2Mib99UWwtuCfKXVjlDvYLOhA0178"
                     }
                   }
                 }
@@ -799,7 +1191,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N38xNTyDMxFJOZbqgdIgILIvOB1oUtI6VyhgmZ81Fh4iqX7DSrLuPyse5IedLdanLF9Kx76WMc9Zo23cEBArZNyqnNTdBNG2J9NHvhNrBJOwtoe4yxpt_SJP2yvDb8NhPF-LVfGwSsagtisxp2Sbalyg48zkdLtODV-oBdsaCgYKAaISARISFQHGX2MizCMa0wdnJk636mkcBHrrFQ0178"
+                      "stringValue": "ya29.a0Ad52N3_pqe0g-HpaZDirllljOUSE7rYvbpxSH6JCDD3_UOx2FN3jLg26tE3U_S-EM1jaZb4ezj9RZ4fcJH_2Bi7wQbY8NRv7FzBvkG9uXDY0ax8nPGzSOhbljbDGnZy9nKxep6erelvTyJ7_9lsV1HPyk7tLXbI_f71mHO2plpYaCgYKAYkSARISFQHGX2Mib99UWwtuCfKXVjlDvYLOhA0178"
                     }
                   }
                 }
@@ -852,7 +1244,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N38xNTyDMxFJOZbqgdIgILIvOB1oUtI6VyhgmZ81Fh4iqX7DSrLuPyse5IedLdanLF9Kx76WMc9Zo23cEBArZNyqnNTdBNG2J9NHvhNrBJOwtoe4yxpt_SJP2yvDb8NhPF-LVfGwSsagtisxp2Sbalyg48zkdLtODV-oBdsaCgYKAaISARISFQHGX2MizCMa0wdnJk636mkcBHrrFQ0178"
+                      "stringValue": "ya29.a0Ad52N3_pqe0g-HpaZDirllljOUSE7rYvbpxSH6JCDD3_UOx2FN3jLg26tE3U_S-EM1jaZb4ezj9RZ4fcJH_2Bi7wQbY8NRv7FzBvkG9uXDY0ax8nPGzSOhbljbDGnZy9nKxep6erelvTyJ7_9lsV1HPyk7tLXbI_f71mHO2plpYaCgYKAYkSARISFQHGX2Mib99UWwtuCfKXVjlDvYLOhA0178"
                     }
                   }
                 }
@@ -860,6 +1252,45 @@
             },
             "taskInfo": {
               "name": "bq-import-tbl-to-df-6"
+            }
+          },
+          "nba-ffh-offer-ranking": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-nba-ffh-offer-ranking"
+            },
+            "dependentTasks": [
+              "bq-export-to-bq"
+            ],
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "nba_offer_targeting"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.a0Ad52N3_pqe0g-HpaZDirllljOUSE7rYvbpxSH6JCDD3_UOx2FN3jLg26tE3U_S-EM1jaZb4ezj9RZ4fcJH_2Bi7wQbY8NRv7FzBvkG9uXDY0ax8nPGzSOhbljbDGnZy9nKxep6erelvTyJ7_9lsV1HPyk7tLXbI_f71mHO2plpYaCgYKAYkSARISFQHGX2Mib99UWwtuCfKXVjlDvYLOhA0178"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "nba-ffh-offer-ranking"
             }
           },
           "offer-attachment-casa": {
@@ -907,7 +1338,7 @@
                 "save_data_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/irpc_casa_base_with_offers.csv"
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/bq_irpc_casa_base_with_offers.csv"
                     }
                   }
                 }
@@ -960,7 +1391,7 @@
                 "save_data_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/irpc_digital_1p_base_with_offers.csv"
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/bq_irpc_digital_1p_base_with_offers.csv"
                     }
                   }
                 }
@@ -1014,7 +1445,7 @@
                 "save_data_path": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/irpc_digital_2p_base_with_offers.csv"
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/bq_irpc_digital_2p_base_with_offers.csv"
                     }
                   }
                 }
@@ -1022,6 +1453,271 @@
             },
             "taskInfo": {
               "name": "offer-attachment-digital-2"
+            }
+          },
+          "postprocess": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-postprocess"
+            },
+            "dependentTasks": [
+              "offer-attachment-digital"
+            ],
+            "inputs": {
+              "parameters": {
+                "base_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "digital_1p"
+                    }
+                  }
+                },
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "nba_offer_targeting"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "read_data_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/bq_irpc_digital_1p_base_with_offers.csv"
+                    }
+                  }
+                },
+                "save_data_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/bq_irpc_digital_1p_base_postprocess.csv"
+                    }
+                  }
+                },
+                "table_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "nba_digital_offer_details"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.a0Ad52N3_pqe0g-HpaZDirllljOUSE7rYvbpxSH6JCDD3_UOx2FN3jLg26tE3U_S-EM1jaZb4ezj9RZ4fcJH_2Bi7wQbY8NRv7FzBvkG9uXDY0ax8nPGzSOhbljbDGnZy9nKxep6erelvTyJ7_9lsV1HPyk7tLXbI_f71mHO2plpYaCgYKAYkSARISFQHGX2Mib99UWwtuCfKXVjlDvYLOhA0178"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "postprocess"
+            }
+          },
+          "postprocess-2": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-postprocess-2"
+            },
+            "dependentTasks": [
+              "offer-attachment-digital-2"
+            ],
+            "inputs": {
+              "parameters": {
+                "base_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "digital_2p"
+                    }
+                  }
+                },
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "nba_offer_targeting"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "read_data_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/bq_irpc_digital_2p_base_with_offers.csv"
+                    }
+                  }
+                },
+                "save_data_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/bq_irpc_digital_2p_base_postprocess.csv"
+                    }
+                  }
+                },
+                "table_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "nba_digital_offer_details"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.a0Ad52N3_pqe0g-HpaZDirllljOUSE7rYvbpxSH6JCDD3_UOx2FN3jLg26tE3U_S-EM1jaZb4ezj9RZ4fcJH_2Bi7wQbY8NRv7FzBvkG9uXDY0ax8nPGzSOhbljbDGnZy9nKxep6erelvTyJ7_9lsV1HPyk7tLXbI_f71mHO2plpYaCgYKAYkSARISFQHGX2Mib99UWwtuCfKXVjlDvYLOhA0178"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "postprocess-2"
+            }
+          },
+          "postprocess-3": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-postprocess-3"
+            },
+            "dependentTasks": [
+              "offer-attachment-casa"
+            ],
+            "inputs": {
+              "parameters": {
+                "base_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "casa"
+                    }
+                  }
+                },
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "nba_offer_targeting"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "read_data_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/bq_irpc_casa_base_with_offers.csv"
+                    }
+                  }
+                },
+                "save_data_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/bq_irpc_casa_base_postprocess.csv"
+                    }
+                  }
+                },
+                "table_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "nba_casa_offer_details"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.a0Ad52N3_pqe0g-HpaZDirllljOUSE7rYvbpxSH6JCDD3_UOx2FN3jLg26tE3U_S-EM1jaZb4ezj9RZ4fcJH_2Bi7wQbY8NRv7FzBvkG9uXDY0ax8nPGzSOhbljbDGnZy9nKxep6erelvTyJ7_9lsV1HPyk7tLXbI_f71mHO2plpYaCgYKAYkSARISFQHGX2Mib99UWwtuCfKXVjlDvYLOhA0178"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "postprocess-3"
+            }
+          },
+          "reg-offers-base-existing": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-reg-offers-base-existing"
+            },
+            "inputs": {
+              "parameters": {
+                "offer_parameter": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bi-stg-mobilityds-pr-db8ce2.nba_ot.bq_offering_target_params_upd"
+                    }
+                  }
+                },
+                "prod_cd2remove": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4.nba_offer_targeting.prod_cd_exclusions"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "qua_base": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4.nba_offer_targeting.qua_base_hs"
+                    }
+                  }
+                },
+                "shs_professional_install": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-team-v03-pr-de558a.OT.SHS_FSA_List_native"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.a0Ad52N3_pqe0g-HpaZDirllljOUSE7rYvbpxSH6JCDD3_UOx2FN3jLg26tE3U_S-EM1jaZb4ezj9RZ4fcJH_2Bi7wQbY8NRv7FzBvkG9uXDY0ax8nPGzSOhbljbDGnZy9nKxep6erelvTyJ7_9lsV1HPyk7tLXbI_f71mHO2plpYaCgYKAYkSARISFQHGX2Mib99UWwtuCfKXVjlDvYLOhA0178"
+                    }
+                  }
+                },
+                "whsia_eligible_base": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-team-v03-pr-de558a.nba_offer_targeting.bq_whsiagtm4testing"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "reg-offers-base-existing"
             }
           }
         }

@@ -20,6 +20,7 @@ def postprocess(project_id: str
               , read_data_path: str
               , save_data_path: str
               , base_type: str # digital_1p, digital_2p, casa 
+              , token: str
               ): 
 
     import pandas as pd 
@@ -29,7 +30,7 @@ def postprocess(project_id: str
     import logging
     import datetime as dt
 
-    df = pd.read_csv(read_data_path)
+    df = pd.read_csv(read_data_path, index_col=None)
 
     date_cols = ['candate', 'rpp_hsia_end_dt', 'rpp_ttv_end_dt']
     df[date_cols] = df[date_cols].apply(pd.to_datetime)
@@ -51,15 +52,9 @@ def postprocess(project_id: str
 
         return result_dict
 
-    #### this code block is only for a personal workbench 
-
-    import google.oauth2.credentials
-    token = !gcloud auth print-access-token
-    token_str = token[0]
-
     #### For wb
     import google.oauth2.credentials
-    CREDENTIALS = google.oauth2.credentials.Credentials(token_str)
+    CREDENTIALS = google.oauth2.credentials.Credentials(token)
 
     client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
     job_config = bigquery.QueryJobConfig()
@@ -78,14 +73,16 @@ def postprocess(project_id: str
     dict_offer_details = create_dict_from_df(df_offer_details)
 
     ### promo_seg1
-    irpc_reco1 = df[df['promo_seg1'] !='']
+    irpc_reco1 = df[df['promo_seg1'].notna() & (df['promo_seg1'] != '')]
+    irpc_reco1.reset_index(drop=True, inplace=True)
     new_df1 = irpc_reco1['promo_seg1'].apply(lambda x: dict_offer_details.get(x, ['', '']))
-    promo_seg1 = pd.Series([item[0] for item in new_df1])
-    offer_code1 = pd.Series([item[1] for item in new_df1])
-    irpc_reco1['promo_seg'] = promo_seg1
-    irpc_reco1['offer_code'] = offer_code1
+    promo_seg1 = [item[0] for item in new_df1]
+    offer_code1 = [item[1] for item in new_df1]
+    irpc_reco1['promo_seg'] = pd.Series(promo_seg1)
+    irpc_reco1['offer_code'] = pd.Series(offer_code1)
     irpc_reco1['Category'] = 'Digital Renewal'
     irpc_reco1['Subcategory'] = 'Internet'
+    irpc_reco1['rpp_hsia_end_dt'] = pd.to_datetime(irpc_reco1['rpp_hsia_end_dt'], errors='coerce')
     irpc_reco1.loc[irpc_reco1["rpp_hsia_end_dt"].isnull(), "digital_category"] = 'Re-contracting'
     irpc_reco1.loc[irpc_reco1["rpp_hsia_end_dt"].dt.date > dt.date.today(), "digital_category"] = 'Renewal'
     irpc_reco1['ASSMT_VALID_START_TS'] = dt.datetime.now()
@@ -93,14 +90,16 @@ def postprocess(project_id: str
     irpc_reco1['rk'] = rk[0]
 
     ### promo_seg2
-    irpc_reco2 = df[ df['promo_seg2'] !='']
+    irpc_reco2 = df[df['promo_seg2'].notna() & (df['promo_seg2'] != '')]
+    irpc_reco2.reset_index(drop=True, inplace=True)
     new_df2 = irpc_reco2['promo_seg2'].apply(lambda x: dict_offer_details.get(x, ['', '']))
-    promo_seg2 = pd.Series([item[0] for item in new_df2])
-    offer_code2 = pd.Series([item[1] for item in new_df2])
-    irpc_reco1['promo_seg'] = promo_seg2
-    irpc_reco1['offer_code'] = offer_code2
+    promo_seg2 = [item[0] for item in new_df2]
+    offer_code2 = [item[1] for item in new_df2]
+    irpc_reco2['promo_seg'] = pd.Series(promo_seg2)
+    irpc_reco2['offer_code'] = pd.Series(offer_code2)
     irpc_reco2['Category'] = 'Digital Renewal'
     irpc_reco2['Subcategory'] = 'Internet'
+    irpc_reco2['rpp_hsia_end_dt'] = pd.to_datetime(irpc_reco2['rpp_hsia_end_dt'], errors='coerce')
     irpc_reco2.loc[irpc_reco2["rpp_hsia_end_dt"].isnull(), "digital_category"] = 'Re-contracting'
     irpc_reco2.loc[irpc_reco2["rpp_hsia_end_dt"].dt.date > dt.date.today(), "digital_category"] = 'Renewal'
     irpc_reco2['ASSMT_VALID_START_TS'] = dt.datetime.now()
@@ -108,14 +107,16 @@ def postprocess(project_id: str
     irpc_reco2['rk'] = rk[1]
 
     ### promo_seg3
-    irpc_reco3 = df[df['promo_seg3'] !='']
+    irpc_reco3 = df[df['promo_seg3'].notna() & (df['promo_seg3'] != '')]
+    irpc_reco3.reset_index(drop=True, inplace=True)
     new_df3 = irpc_reco3['promo_seg3'].apply(lambda x: dict_offer_details.get(x, ['', '']))
-    promo_seg3 = pd.Series([item[0] for item in new_df3])
-    offer_code3 = pd.Series([item[1] for item in new_df3])
-    irpc_reco1['promo_seg'] = promo_seg3
-    irpc_reco1['offer_code'] = offer_code3
+    promo_seg3 = [item[0] for item in new_df3]
+    offer_code3 = [item[1] for item in new_df3]
+    irpc_reco3['promo_seg'] = pd.Series(promo_seg3)
+    irpc_reco3['offer_code'] = pd.Series(offer_code3)
     irpc_reco3['Category'] = 'Digital Renewal'
     irpc_reco3['Subcategory'] = 'Internet'
+    irpc_reco3['rpp_hsia_end_dt'] = pd.to_datetime(irpc_reco3['rpp_hsia_end_dt'], errors='coerce')
     irpc_reco3.loc[irpc_reco2["rpp_hsia_end_dt"].isnull(), "digital_category"] = 'Re-contracting'
     irpc_reco3.loc[irpc_reco2["rpp_hsia_end_dt"].dt.date > dt.date.today(), "digital_category"] = 'Renewal'
     irpc_reco3['ASSMT_VALID_START_TS'] = dt.datetime.now()
@@ -126,6 +127,8 @@ def postprocess(project_id: str
     # write .csv to gcs
     irpc_recos = pd.concat([irpc_reco1, irpc_reco2, irpc_reco3], ignore_index=True)
     irpc_recos.reset_index(inplace=True)
+    
+    irpc_recos = irpc_recos[['cust_id', 'bacct_num', 'lpds_id', 'candate', 'Category', 'Subcategory', 'digital_category', 'promo_seg', 'offer_code', 'ASSMT_VALID_START_TS', 'ASSMT_VALID_END_TS', 'rk']]
 
     irpc_recos.to_csv(save_data_path, index=False)
     
