@@ -89,6 +89,8 @@ def postprocess(project_id: str
     irpc_reco1['ASSMT_VALID_END_TS'] = dt.datetime.now() + dt.timedelta(days=90)
     irpc_reco1['rk'] = rk[0]
 
+    irpc_reco1.to_csv('gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/irpc_reco1.csv', index=False)
+
     ### promo_seg2
     irpc_reco2 = df[df['promo_seg2'].notna() & (df['promo_seg2'] != '')]
     irpc_reco2.reset_index(drop=True, inplace=True)
@@ -106,6 +108,8 @@ def postprocess(project_id: str
     irpc_reco2['ASSMT_VALID_END_TS'] = dt.datetime.now() + dt.timedelta(days=90)
     irpc_reco2['rk'] = rk[1]
 
+    irpc_reco2.to_csv('gs://divg-groovyhoon-pr-d2eab4-default/nba_offer_targeting/irpc_reco2.csv', index=False)
+
     ### promo_seg3
     irpc_reco3 = df[df['promo_seg3'].notna() & (df['promo_seg3'] != '')]
     irpc_reco3.reset_index(drop=True, inplace=True)
@@ -117,8 +121,8 @@ def postprocess(project_id: str
     irpc_reco3['Category'] = 'Digital Renewal'
     irpc_reco3['Subcategory'] = 'Internet'
     irpc_reco3['rpp_hsia_end_dt'] = pd.to_datetime(irpc_reco3['rpp_hsia_end_dt'], errors='coerce')
-    irpc_reco3.loc[irpc_reco2["rpp_hsia_end_dt"].isnull(), "digital_category"] = 'Re-contracting'
-    irpc_reco3.loc[irpc_reco2["rpp_hsia_end_dt"].dt.date > dt.date.today(), "digital_category"] = 'Renewal'
+    irpc_reco3.loc[irpc_reco3["rpp_hsia_end_dt"].isnull(), "digital_category"] = 'Re-contracting'
+    irpc_reco3.loc[irpc_reco3["rpp_hsia_end_dt"].dt.date > dt.date.today(), "digital_category"] = 'Renewal'
     irpc_reco3['ASSMT_VALID_START_TS'] = dt.datetime.now()
     irpc_reco3['ASSMT_VALID_END_TS'] = dt.datetime.now() + dt.timedelta(days=90)
     irpc_reco3['rk'] = rk[2]
