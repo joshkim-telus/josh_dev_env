@@ -8,9 +8,9 @@ from typing import NamedTuple
 # Create IRPC Digital 1P, Digital 2P, and Casa base tables
 @component(
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
-    output_component_file="nba_ffh_offer_ranking.yaml",
+    output_component_file="nba_ffh_offer_ranking_cat3.yaml",
 )
-def nba_ffh_offer_ranking(project_id: str
+def nba_ffh_offer_ranking_cat3(project_id: str
                       , dataset_id: str
                       , token: str
                       ):
@@ -34,23 +34,13 @@ def nba_ffh_offer_ranking(project_id: str
     query =\
         f'''        
             -- Change dataset / sp name to the version in the bi_layer
-            
-            CALL {dataset_id}.bq_sp_nba_ffh_model_scores_existing(); 
-            
-            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking_existing(); 
-            
-            CALL {dataset_id}.bq_sp_nba_ffh_model_scores_prospects(); 
-            
-            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking_prospects(); 
-            
-            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking_cat3(); 
 
-            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking(); 
+            CALL nba_offer_targeting.bq_sp_nba_ffh_offer_ranking_cat3(); 
             
             SELECT
                 *
             FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS
-            WHERE table_name='nba_ffh_offer_ranking'
+            WHERE table_name='nba_ffh_offer_ranking_cat3'
         '''
     
     df = client.query(query, job_config=job_config).to_dataframe()

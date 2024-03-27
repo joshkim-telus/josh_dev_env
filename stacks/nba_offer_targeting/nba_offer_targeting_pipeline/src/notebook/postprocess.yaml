@@ -33,10 +33,10 @@ implementation:
       \ str\n              , table_id: str\n              , temp_table: str\n    \
       \          , digital_1p_data_path: str\n              , digital_2p_data_path:\
       \ str\n              , casa_data_path: str\n              , save_data_path:\
-      \ str\n              , token: str\n              ): \n\n    import pandas as\
-      \ pd \n    import numpy as np \n\n    from google.cloud import bigquery\n  \
-      \  import logging\n    import datetime as dt\n\n    #### For wb\n    import\
-      \ google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\
+      \ str\n              , token: str\n              ): \n\n    import time\n\n\
+      \    import pandas as pd \n    import numpy as np \n\n    from google.cloud\
+      \ import bigquery\n    import logging\n    import datetime as dt\n\n    ####\
+      \ For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\
       \n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n\
       \    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client\
       \ = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\
@@ -69,14 +69,15 @@ implementation:
       \n    table_ref = '{}.{}.{}'.format(project_id, dataset_id, temp_table)\n  \
       \  client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n \
       \   if if_tbl_exists(client, table_ref):\n        client.delete_table(table_ref)\n\
-      \n    client.create_table(table_ref)\n    config = bigquery.LoadJobConfig(schema=schema)\n\
+      \    time.sleep(10)\n\n    client.create_table(table_ref)\n    config = bigquery.LoadJobConfig(schema=schema)\n\
       \    config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE\n \
       \   bq_table_instance = client.load_table_from_dataframe(irpc_offers_assigned,\
-      \ table_ref, job_config=config)\n\n    # drop_sql = f\"\"\"delete from `{project_id}.{dataset_id}.{table_id}`\
-      \ where true\"\"\"  # .format(project_id, dataset_id, score_date_dash)\n   \
-      \ # client.query(drop_sql)\n\n    load_sql = f\"\"\"insert into `{project_id}.{dataset_id}.{table_id}`\n\
-      \                  select * from `{project_id}.{dataset_id}.{temp_table}`\"\"\
-      \"\n    client.query(load_sql)\n\n"
+      \ table_ref, job_config=config)\n    time.sleep(60)\n\n    # drop_sql = f\"\"\
+      \"delete from `{project_id}.{dataset_id}.{table_id}` where true\"\"\"  # .format(project_id,\
+      \ dataset_id, score_date_dash)\n    # client.query(drop_sql)\n\n    load_sql\
+      \ = f\"\"\"insert into `{project_id}.{dataset_id}.{table_id}`\n            \
+      \      select * from `{project_id}.{dataset_id}.{temp_table}`\"\"\"\n    client.query(load_sql)\n\
+      \    time.sleep(60)\n\n"
     args:
     - --executor_input
     - {executorInput: null}

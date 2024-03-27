@@ -25,6 +25,8 @@ def bq_export_to_bq(project_id: str
               , token: str
               ): 
 
+    import time
+
     import pandas as pd 
     import numpy as np 
 
@@ -99,11 +101,13 @@ def bq_export_to_bq(project_id: str
     client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
     if if_tbl_exists(client, table_ref):
         client.delete_table(table_ref)
+    time.sleep(10)
 
     client.create_table(table_ref)
     config = bigquery.LoadJobConfig(schema=schema)
     config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE
     bq_table_instance = client.load_table_from_dataframe(irpc_offers_assigned, table_ref, job_config=config)
+    time.sleep(60)
     
     # drop_sql = f"""delete from `{project_id}.{dataset_id}.{table_id}` where true"""  # .format(project_id, dataset_id, score_date_dash)
     # client.query(drop_sql)
@@ -111,4 +115,4 @@ def bq_export_to_bq(project_id: str
     load_sql = f"""insert into `{project_id}.{dataset_id}.{table_id}`
                   select * from `{project_id}.{dataset_id}.{temp_table}`"""
     client.query(load_sql)
-    
+    time.sleep(60)

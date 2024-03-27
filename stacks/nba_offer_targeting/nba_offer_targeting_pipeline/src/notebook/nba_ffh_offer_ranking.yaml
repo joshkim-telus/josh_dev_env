@@ -33,11 +33,15 @@ implementation:
       #     job_config = bigquery.QueryJobConfig()\n\n    # Change dataset / table\
       \ + sp table name to version in bi-layer\n    query =\\\n        f'''      \
       \  \n            -- Change dataset / sp name to the version in the bi_layer\n\
-      \n            CALL nba_offer_targeting.bq_sp_nba_ffh_model_scores_existing();\
-      \ \n\n            CALL nba_offer_targeting.bq_sp_nba_ffh_offer_ranking_existing();\
-      \ \n\n            SELECT\n                *\n            FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS\n\
-      \            WHERE table_name='nba_ffh_offer_ranking_existing'\n        '''\n\
-      \n    df = client.query(query, job_config=job_config).to_dataframe()\n    logging.info(df.to_string())\n\
+      \n            CALL {dataset_id}.bq_sp_nba_ffh_model_scores_existing(); \n\n\
+      \            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking_existing(); \n\n\
+      \            CALL {dataset_id}.bq_sp_nba_ffh_model_scores_prospects(); \n\n\
+      \            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking_prospects(); \n\n\
+      \            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking_cat3(); \n\n    \
+      \        CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking(); \n\n            SELECT\n\
+      \                *\n            FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS\n\
+      \            WHERE table_name='nba_ffh_offer_ranking'\n        '''\n\n    df\
+      \ = client.query(query, job_config=job_config).to_dataframe()\n    logging.info(df.to_string())\n\
       \n    logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n             {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]}\
       \ on \\\n             {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d\
       \ %H:%M:%S') } !\")\n\n"

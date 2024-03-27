@@ -34,8 +34,8 @@ implementation:
       \ + sp table name to version in bi-layer\n    query =\\\n        f'''      \
       \  \n            -- Change dataset / sp name to the version in the bi_layer\n\
       \            CALL nba_offer_targeting.bq_sp_internet_payment(); \n\n       \
-      \     CALL nba_offer_targeting.bq_sp_irpc_digital_1p_base();\n\n           \
-      \ CALL nba_offer_targeting.bq_sp_irpc_digital_2p_base(); \n\n            CALL\
+      \     CALL nba_offer_targeting.bq_sp_irpc_digital_2p_base(); \n\n          \
+      \  CALL nba_offer_targeting.bq_sp_irpc_digital_1p_base();\n\n            CALL\
       \ nba_offer_targeting.bq_sp_irpc_casa_base(); \n\n            SELECT\n     \
       \           *\n            FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS\n\
       \            WHERE table_name='bq_irpc_digital_1p_base'\n        '''\n\n   \

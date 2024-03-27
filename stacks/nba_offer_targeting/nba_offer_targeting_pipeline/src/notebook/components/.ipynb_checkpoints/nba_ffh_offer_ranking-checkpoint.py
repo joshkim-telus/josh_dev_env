@@ -35,14 +35,22 @@ def nba_ffh_offer_ranking(project_id: str
         f'''        
             -- Change dataset / sp name to the version in the bi_layer
             
-            CALL nba_offer_targeting.bq_sp_nba_ffh_model_scores_existing(); 
+            CALL {dataset_id}.bq_sp_nba_ffh_model_scores_existing(); 
             
-            CALL nba_offer_targeting.bq_sp_nba_ffh_offer_ranking_existing(); 
+            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking_existing(); 
+            
+            CALL {dataset_id}.bq_sp_nba_ffh_model_scores_prospects(); 
+            
+            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking_prospects(); 
+            
+            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking_cat3(); 
+
+            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking(); 
             
             SELECT
                 *
             FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS
-            WHERE table_name='nba_ffh_offer_ranking_existing'
+            WHERE table_name='nba_ffh_offer_ranking'
         '''
     
     df = client.query(query, job_config=job_config).to_dataframe()

@@ -78,6 +78,16 @@ def reg_offers_base_existing(project_id: str
       - Update demostats data source
 
 
+    v0d8 @author: T892899; Mar 13th, 2024
+      - Update SHS Pro-install eligibility BQ table - BI layer
+      - Rename NCID to offer_code
+      - Modify function last_dt_check
+
+
+    v0d9 @author: T892899; Mar 22th, 2024
+      - Update some project names to be a variable, for easy stg to srv update 
+      - Add dwelling type to existing customers
+      
     Notes: Feb 2024
      - SHS eligibility flag need to be added
      - prod_cd to be changed to bq table
@@ -138,7 +148,8 @@ def reg_offers_base_existing(project_id: str
     def last_dt_check(
         clnt,
         ipt,
-        part_dt
+        part_dt,
+        wd
         ): 
 
         sql_s1 =f"""
@@ -150,7 +161,7 @@ def reg_offers_base_existing(project_id: str
                         , {part_dt} 
                         , count({part_dt}) as mxx
                     FROM `{ipt}`
-                        WHERE {part_dt} >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+                        WHERE {part_dt} >= DATE_SUB(CURRENT_DATE(), INTERVAL {wd} DAY)
                     group by a, {part_dt}
                     order by a, {part_dt} desc
                     )
@@ -199,17 +210,26 @@ def reg_offers_base_existing(project_id: str
     offer_info = client.query(sq0l).to_dataframe()
 
     # Check latest snapshot date with reasonable counts
+
+    last_dt_spd = last_dt_check(clnt = client,
+                                ipt = 'bi-srv-divgdsa-pr-098bdd.common.bq_premise_universe',
+                                part_dt = 'part_dt',
+                                wd = 14 )
+
     last_dt_pid = last_dt_check(clnt = client,
                                 ipt = 'bi-srv-divgdsa-pr-098bdd.common.bq_hs_product_instance_details',
-                                part_dt = 'part_load_dt' )
+                                part_dt = 'part_load_dt',
+                                wd = 14 )
 
     last_dt_pi = last_dt_check(clnt = client,
                                 ipt = 'bi-srv-divgdsa-pr-098bdd.common.bq_hs_product_instance',
-                                part_dt = 'part_load_dt' )
+                                part_dt = 'part_load_dt',
+                                wd = 14 )
 
     last_dt_gateway = last_dt_check(clnt = client,
                                 ipt = 'cio-datahub-enterprise-pr-183a.ent_resrc_config.bq_product_instance_gateway_daily_snpsht',
-                                part_dt = 'snapshot_load_dt' )
+                                part_dt = 'snapshot_load_dt',
+                                wd = 60 )
 
     # last_dt_game = last_dt_check(clnt = client,
     #                             ipt = 'cio-datahub-enterprise-pr-183a.ent_resrc_performance_device_kpi.bq_cloudcheck_game_station',
@@ -229,7 +249,7 @@ def reg_offers_base_existing(project_id: str
                     )
         )
 
-        ,std2 as (
+        , std2 as (
 
             select distinct cust_id 
              from `bi-srv-divgdsa-pr-098bdd.common.bq_hs_product_instance_details` a 
@@ -245,6 +265,16 @@ def reg_offers_base_existing(project_id: str
             select * from std1
             union all
             select * from std2
+        )
+        
+        , spd as (
+
+            select distinct
+                lpds_id
+                , coid 
+                , snet_premise_type_cd
+            from `bi-srv-divgdsa-pr-098bdd.common.bq_premise_universe` 
+            WHERE part_dt = '{last_dt_spd}'
         )
 
         , pid as (
@@ -412,6 +442,8 @@ def reg_offers_base_existing(project_id: str
                 , case when a.serv_prov in ('AB', 'BC') 
                         or h.Coverage_Status like '%Professional%' 
                         then 1 else 0 end as shs_professional_install
+                        
+                , m.snet_premise_type_cd
 
             from `bi-srv-hsmdet-pr-7b9def.campaign_data.bq_dly_dbm_customer_profl` a
             left join std b on a.cust_id = b.cust_id
@@ -430,6 +462,7 @@ def reg_offers_base_existing(project_id: str
             -- left join custid_gaming j on a.cust_id = j.cust_id and a.bacct_num = j.bacct_num 
             left join pending_orders k on k.cust_id = cast(a.cust_id as STRING)
                 and k.LPDS_ID = cast(a.LPDS_ID as STRING) 
+            left join spd m on a.LPDS_ID = m.LPDS_Id
             where a.cust_id > 0
 
             )
