@@ -86,6 +86,18 @@ BEGIN
 		OR a.HSIA_CONTRACT_END_DT IS NULL)
 		AND NOT (OPTIK_TV_IND > 0 AND OPTIK_PACKAGE_NUM = 1)
 		),
+		
+	digital_base1_final AS (
+		SELECT a.* 
+		FROM digital_base1 a 
+		LEFT JOIN nba_offer_targeting.bq_irpc_digital_2p_base b 
+		ON a.cust_id = b.cust_id
+		AND a.bacct_num = b.bacct_num 
+		AND a.lpds_id = b.lpds_id 
+		WHERE b.cust_id IS NULL
+		AND b.bacct_num IS NULL 
+		AND b.lpds_id IS NULL
+		), 
 
 	digital_exclusion AS 
 		(
@@ -248,7 +260,7 @@ BEGIN
 				ELSE hsic_avg_charges 
 				END AS total_charges
 				
-		FROM digital_base1
+		FROM digital_base1_final
 		WHERE cust_id NOT IN (SELECT cust_id FROM digital_exclusion)
 		AND cust_id NOT IN (SELECT cust_id FROM digital_exclusion2)
 		)
