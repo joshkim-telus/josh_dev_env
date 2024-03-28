@@ -12,6 +12,9 @@ from typing import NamedTuple
 )
 def nba_ffh_offer_ranking(project_id: str
                       , dataset_id: str
+                      , table_id: str
+                      , file_bucket: str
+                      , stack_name: str
                       , token: str
                       ):
  
@@ -60,3 +63,11 @@ def nba_ffh_offer_ranking(project_id: str
              {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \
              {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S') } !")
 
+    query2 =\
+        f''' 
+            SELECT * FROM {dataset_id}.nba_ffh_offer_ranking
+        '''
+    
+    df2 = client.query(query2, job_config=job_config).to_dataframe() 
+    
+    df2.to_csv(f'gs://{file_bucket}/{stack_name}/{table_id}.csv')
