@@ -232,7 +232,16 @@
             "dataset_id": {
               "type": "STRING"
             },
+            "file_bucket": {
+              "type": "STRING"
+            },
             "project_id": {
+              "type": "STRING"
+            },
+            "stack_name": {
+              "type": "STRING"
+            },
+            "table_id": {
               "type": "STRING"
             },
             "token": {
@@ -679,7 +688,7 @@
               "sh",
               "-ec",
               "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
-              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef nba_ffh_offer_ranking(project_id: str\n                      , dataset_id: str\n                      , token: str\n                      ):\n\n    from google.cloud import bigquery\n    import logging \n    from datetime import datetime\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    # Change dataset / table + sp table name to version in bi-layer\n    query =\\\n        f'''        \n            -- Change dataset / sp name to the version in the bi_layer\n\n            CALL {dataset_id}.bq_sp_nba_ffh_model_scores_existing(); \n\n            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking_existing(); \n\n            CALL {dataset_id}.bq_sp_nba_ffh_model_scores_prospects(); \n\n            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking_prospects(); \n\n            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking_cat3(); \n\n            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking(); \n\n            SELECT\n                *\n            FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS\n            WHERE table_name='nba_ffh_offer_ranking'\n        '''\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n    logging.info(df.to_string())\n\n    logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n             {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \\\n             {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S') } !\")\n\n"
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef nba_ffh_offer_ranking(project_id: str\n                      , dataset_id: str\n                      , table_id: str\n                      , file_bucket: str\n                      , stack_name: str\n                      , token: str\n                      ):\n\n    from google.cloud import bigquery\n    import logging \n    from datetime import datetime\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    # Change dataset / table + sp table name to version in bi-layer\n    query =\\\n        f'''        \n            -- Change dataset / sp name to the version in the bi_layer\n\n            CALL {dataset_id}.bq_sp_nba_ffh_model_scores_existing(); \n\n            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking_existing(); \n\n            CALL {dataset_id}.bq_sp_nba_ffh_model_scores_prospects(); \n\n            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking_prospects(); \n\n            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking_cat3(); \n\n            CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking(); \n\n            SELECT\n                *\n            FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS\n            WHERE table_name='nba_ffh_offer_ranking'\n        '''\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n    logging.info(df.to_string())\n\n    logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n             {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \\\n             {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S') } !\")\n\n    query2 =\\\n        f''' \n            SELECT * FROM {dataset_id}.nba_ffh_offer_ranking\n        '''\n\n    df2 = client.query(query2, job_config=job_config).to_dataframe() \n\n    df2.to_csv(f'gs://{file_bucket}/{stack_name}/{table_id}.csv')\n\n"
             ],
             "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
             "resources": {
@@ -941,7 +950,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N3-_JEn8o-5STK8c-w6Uy60oc6JeqGD0zUjANzDB_owBN17XgyfG4yzU-Z32KiiUNtTpXHsaitYcGjkt9EzD5oTC9I0xfsKUiz0l3Z_lbcQt4YtYlGkYj3DA-N6vsSvF5_uGf7G2LoLOQK3AoQ9KaA230jqts1umwa4jYMoaCgYKAc4SARISFQHGX2Minp0iAJwYDNaadotIEWokJQ0178"
+                      "stringValue": "ya29.a0Ad52N3-guYD54C9NsqMz7Lct6xbZSjcJ--q_qkzcBwTewUVCrHtqJwF_EpdRJ_od4rd5CjFWya9X157elwnFqNxivdrHO6haID9Vy_CT4WQBaL0s2OdF4YDfktqRp_KDnXxMTaFoWjg0RDe94DmAO_mLVsKWa7KQ4W37GBEQ9s8aCgYKAR0SARISFQHGX2Mi-JGPLwADZnaUyqi46SvHqw0178"
                     }
                   }
                 }
@@ -1024,7 +1033,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N3-_JEn8o-5STK8c-w6Uy60oc6JeqGD0zUjANzDB_owBN17XgyfG4yzU-Z32KiiUNtTpXHsaitYcGjkt9EzD5oTC9I0xfsKUiz0l3Z_lbcQt4YtYlGkYj3DA-N6vsSvF5_uGf7G2LoLOQK3AoQ9KaA230jqts1umwa4jYMoaCgYKAc4SARISFQHGX2Minp0iAJwYDNaadotIEWokJQ0178"
+                      "stringValue": "ya29.a0Ad52N3-guYD54C9NsqMz7Lct6xbZSjcJ--q_qkzcBwTewUVCrHtqJwF_EpdRJ_od4rd5CjFWya9X157elwnFqNxivdrHO6haID9Vy_CT4WQBaL0s2OdF4YDfktqRp_KDnXxMTaFoWjg0RDe94DmAO_mLVsKWa7KQ4W37GBEQ9s8aCgYKAR0SARISFQHGX2Mi-JGPLwADZnaUyqi46SvHqw0178"
                     }
                   }
                 }
@@ -1077,7 +1086,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N3-_JEn8o-5STK8c-w6Uy60oc6JeqGD0zUjANzDB_owBN17XgyfG4yzU-Z32KiiUNtTpXHsaitYcGjkt9EzD5oTC9I0xfsKUiz0l3Z_lbcQt4YtYlGkYj3DA-N6vsSvF5_uGf7G2LoLOQK3AoQ9KaA230jqts1umwa4jYMoaCgYKAc4SARISFQHGX2Minp0iAJwYDNaadotIEWokJQ0178"
+                      "stringValue": "ya29.a0Ad52N3-guYD54C9NsqMz7Lct6xbZSjcJ--q_qkzcBwTewUVCrHtqJwF_EpdRJ_od4rd5CjFWya9X157elwnFqNxivdrHO6haID9Vy_CT4WQBaL0s2OdF4YDfktqRp_KDnXxMTaFoWjg0RDe94DmAO_mLVsKWa7KQ4W37GBEQ9s8aCgYKAR0SARISFQHGX2Mi-JGPLwADZnaUyqi46SvHqw0178"
                     }
                   }
                 }
@@ -1130,7 +1139,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N3-_JEn8o-5STK8c-w6Uy60oc6JeqGD0zUjANzDB_owBN17XgyfG4yzU-Z32KiiUNtTpXHsaitYcGjkt9EzD5oTC9I0xfsKUiz0l3Z_lbcQt4YtYlGkYj3DA-N6vsSvF5_uGf7G2LoLOQK3AoQ9KaA230jqts1umwa4jYMoaCgYKAc4SARISFQHGX2Minp0iAJwYDNaadotIEWokJQ0178"
+                      "stringValue": "ya29.a0Ad52N3-guYD54C9NsqMz7Lct6xbZSjcJ--q_qkzcBwTewUVCrHtqJwF_EpdRJ_od4rd5CjFWya9X157elwnFqNxivdrHO6haID9Vy_CT4WQBaL0s2OdF4YDfktqRp_KDnXxMTaFoWjg0RDe94DmAO_mLVsKWa7KQ4W37GBEQ9s8aCgYKAR0SARISFQHGX2Mi-JGPLwADZnaUyqi46SvHqw0178"
                     }
                   }
                 }
@@ -1183,7 +1192,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N3-_JEn8o-5STK8c-w6Uy60oc6JeqGD0zUjANzDB_owBN17XgyfG4yzU-Z32KiiUNtTpXHsaitYcGjkt9EzD5oTC9I0xfsKUiz0l3Z_lbcQt4YtYlGkYj3DA-N6vsSvF5_uGf7G2LoLOQK3AoQ9KaA230jqts1umwa4jYMoaCgYKAc4SARISFQHGX2Minp0iAJwYDNaadotIEWokJQ0178"
+                      "stringValue": "ya29.a0Ad52N3-guYD54C9NsqMz7Lct6xbZSjcJ--q_qkzcBwTewUVCrHtqJwF_EpdRJ_od4rd5CjFWya9X157elwnFqNxivdrHO6haID9Vy_CT4WQBaL0s2OdF4YDfktqRp_KDnXxMTaFoWjg0RDe94DmAO_mLVsKWa7KQ4W37GBEQ9s8aCgYKAR0SARISFQHGX2Mi-JGPLwADZnaUyqi46SvHqw0178"
                     }
                   }
                 }
@@ -1236,7 +1245,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N3-_JEn8o-5STK8c-w6Uy60oc6JeqGD0zUjANzDB_owBN17XgyfG4yzU-Z32KiiUNtTpXHsaitYcGjkt9EzD5oTC9I0xfsKUiz0l3Z_lbcQt4YtYlGkYj3DA-N6vsSvF5_uGf7G2LoLOQK3AoQ9KaA230jqts1umwa4jYMoaCgYKAc4SARISFQHGX2Minp0iAJwYDNaadotIEWokJQ0178"
+                      "stringValue": "ya29.a0Ad52N3-guYD54C9NsqMz7Lct6xbZSjcJ--q_qkzcBwTewUVCrHtqJwF_EpdRJ_od4rd5CjFWya9X157elwnFqNxivdrHO6haID9Vy_CT4WQBaL0s2OdF4YDfktqRp_KDnXxMTaFoWjg0RDe94DmAO_mLVsKWa7KQ4W37GBEQ9s8aCgYKAR0SARISFQHGX2Mi-JGPLwADZnaUyqi46SvHqw0178"
                     }
                   }
                 }
@@ -1289,7 +1298,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N3-_JEn8o-5STK8c-w6Uy60oc6JeqGD0zUjANzDB_owBN17XgyfG4yzU-Z32KiiUNtTpXHsaitYcGjkt9EzD5oTC9I0xfsKUiz0l3Z_lbcQt4YtYlGkYj3DA-N6vsSvF5_uGf7G2LoLOQK3AoQ9KaA230jqts1umwa4jYMoaCgYKAc4SARISFQHGX2Minp0iAJwYDNaadotIEWokJQ0178"
+                      "stringValue": "ya29.a0Ad52N3-guYD54C9NsqMz7Lct6xbZSjcJ--q_qkzcBwTewUVCrHtqJwF_EpdRJ_od4rd5CjFWya9X157elwnFqNxivdrHO6haID9Vy_CT4WQBaL0s2OdF4YDfktqRp_KDnXxMTaFoWjg0RDe94DmAO_mLVsKWa7KQ4W37GBEQ9s8aCgYKAR0SARISFQHGX2Mi-JGPLwADZnaUyqi46SvHqw0178"
                     }
                   }
                 }
@@ -1342,7 +1351,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N3-_JEn8o-5STK8c-w6Uy60oc6JeqGD0zUjANzDB_owBN17XgyfG4yzU-Z32KiiUNtTpXHsaitYcGjkt9EzD5oTC9I0xfsKUiz0l3Z_lbcQt4YtYlGkYj3DA-N6vsSvF5_uGf7G2LoLOQK3AoQ9KaA230jqts1umwa4jYMoaCgYKAc4SARISFQHGX2Minp0iAJwYDNaadotIEWokJQ0178"
+                      "stringValue": "ya29.a0Ad52N3-guYD54C9NsqMz7Lct6xbZSjcJ--q_qkzcBwTewUVCrHtqJwF_EpdRJ_od4rd5CjFWya9X157elwnFqNxivdrHO6haID9Vy_CT4WQBaL0s2OdF4YDfktqRp_KDnXxMTaFoWjg0RDe94DmAO_mLVsKWa7KQ4W37GBEQ9s8aCgYKAR0SARISFQHGX2Mi-JGPLwADZnaUyqi46SvHqw0178"
                     }
                   }
                 }
@@ -1373,6 +1382,13 @@
                     }
                   }
                 },
+                "file_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default"
+                    }
+                  }
+                },
                 "project_id": {
                   "runtimeValue": {
                     "constantValue": {
@@ -1380,10 +1396,24 @@
                     }
                   }
                 },
+                "stack_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "nba_offer_targeting"
+                    }
+                  }
+                },
+                "table_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "nba_ffh_offer_ranking"
+                    }
+                  }
+                },
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N3-_JEn8o-5STK8c-w6Uy60oc6JeqGD0zUjANzDB_owBN17XgyfG4yzU-Z32KiiUNtTpXHsaitYcGjkt9EzD5oTC9I0xfsKUiz0l3Z_lbcQt4YtYlGkYj3DA-N6vsSvF5_uGf7G2LoLOQK3AoQ9KaA230jqts1umwa4jYMoaCgYKAc4SARISFQHGX2Minp0iAJwYDNaadotIEWokJQ0178"
+                      "stringValue": "ya29.a0Ad52N3-guYD54C9NsqMz7Lct6xbZSjcJ--q_qkzcBwTewUVCrHtqJwF_EpdRJ_od4rd5CjFWya9X157elwnFqNxivdrHO6haID9Vy_CT4WQBaL0s2OdF4YDfktqRp_KDnXxMTaFoWjg0RDe94DmAO_mLVsKWa7KQ4W37GBEQ9s8aCgYKAR0SARISFQHGX2Mi-JGPLwADZnaUyqi46SvHqw0178"
                     }
                   }
                 }
@@ -1612,7 +1642,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N3-_JEn8o-5STK8c-w6Uy60oc6JeqGD0zUjANzDB_owBN17XgyfG4yzU-Z32KiiUNtTpXHsaitYcGjkt9EzD5oTC9I0xfsKUiz0l3Z_lbcQt4YtYlGkYj3DA-N6vsSvF5_uGf7G2LoLOQK3AoQ9KaA230jqts1umwa4jYMoaCgYKAc4SARISFQHGX2Minp0iAJwYDNaadotIEWokJQ0178"
+                      "stringValue": "ya29.a0Ad52N3-guYD54C9NsqMz7Lct6xbZSjcJ--q_qkzcBwTewUVCrHtqJwF_EpdRJ_od4rd5CjFWya9X157elwnFqNxivdrHO6haID9Vy_CT4WQBaL0s2OdF4YDfktqRp_KDnXxMTaFoWjg0RDe94DmAO_mLVsKWa7KQ4W37GBEQ9s8aCgYKAR0SARISFQHGX2Mi-JGPLwADZnaUyqi46SvHqw0178"
                     }
                   }
                 }
@@ -1679,7 +1709,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N3-_JEn8o-5STK8c-w6Uy60oc6JeqGD0zUjANzDB_owBN17XgyfG4yzU-Z32KiiUNtTpXHsaitYcGjkt9EzD5oTC9I0xfsKUiz0l3Z_lbcQt4YtYlGkYj3DA-N6vsSvF5_uGf7G2LoLOQK3AoQ9KaA230jqts1umwa4jYMoaCgYKAc4SARISFQHGX2Minp0iAJwYDNaadotIEWokJQ0178"
+                      "stringValue": "ya29.a0Ad52N3-guYD54C9NsqMz7Lct6xbZSjcJ--q_qkzcBwTewUVCrHtqJwF_EpdRJ_od4rd5CjFWya9X157elwnFqNxivdrHO6haID9Vy_CT4WQBaL0s2OdF4YDfktqRp_KDnXxMTaFoWjg0RDe94DmAO_mLVsKWa7KQ4W37GBEQ9s8aCgYKAR0SARISFQHGX2Mi-JGPLwADZnaUyqi46SvHqw0178"
                     }
                   }
                 }
@@ -1746,7 +1776,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N3-_JEn8o-5STK8c-w6Uy60oc6JeqGD0zUjANzDB_owBN17XgyfG4yzU-Z32KiiUNtTpXHsaitYcGjkt9EzD5oTC9I0xfsKUiz0l3Z_lbcQt4YtYlGkYj3DA-N6vsSvF5_uGf7G2LoLOQK3AoQ9KaA230jqts1umwa4jYMoaCgYKAc4SARISFQHGX2Minp0iAJwYDNaadotIEWokJQ0178"
+                      "stringValue": "ya29.a0Ad52N3-guYD54C9NsqMz7Lct6xbZSjcJ--q_qkzcBwTewUVCrHtqJwF_EpdRJ_od4rd5CjFWya9X157elwnFqNxivdrHO6haID9Vy_CT4WQBaL0s2OdF4YDfktqRp_KDnXxMTaFoWjg0RDe94DmAO_mLVsKWa7KQ4W37GBEQ9s8aCgYKAR0SARISFQHGX2Mi-JGPLwADZnaUyqi46SvHqw0178"
                     }
                   }
                 }
@@ -1768,7 +1798,7 @@
                 "offer_parameter": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "bi-stg-mobilityds-pr-db8ce2.nba_ot.bq_offering_target_params_upd"
+                      "stringValue": "bi-stg-mobilityds-pr-db8ce2.nba_offer_targeting.bq_offer_targeting_params_upd"
                     }
                   }
                 },
@@ -1789,7 +1819,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N3-_JEn8o-5STK8c-w6Uy60oc6JeqGD0zUjANzDB_owBN17XgyfG4yzU-Z32KiiUNtTpXHsaitYcGjkt9EzD5oTC9I0xfsKUiz0l3Z_lbcQt4YtYlGkYj3DA-N6vsSvF5_uGf7G2LoLOQK3AoQ9KaA230jqts1umwa4jYMoaCgYKAc4SARISFQHGX2Minp0iAJwYDNaadotIEWokJQ0178"
+                      "stringValue": "ya29.a0Ad52N3-guYD54C9NsqMz7Lct6xbZSjcJ--q_qkzcBwTewUVCrHtqJwF_EpdRJ_od4rd5CjFWya9X157elwnFqNxivdrHO6haID9Vy_CT4WQBaL0s2OdF4YDfktqRp_KDnXxMTaFoWjg0RDe94DmAO_mLVsKWa7KQ4W37GBEQ9s8aCgYKAR0SARISFQHGX2Mi-JGPLwADZnaUyqi46SvHqw0178"
                     }
                   }
                 },
@@ -1818,7 +1848,7 @@
                 "offer_parameter": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "bi-stg-mobilityds-pr-db8ce2.nba_ot.bq_offering_target_params_upd"
+                      "stringValue": "bi-stg-mobilityds-pr-db8ce2.nba_offer_targeting.bq_offer_targeting_params_upd"
                     }
                   }
                 },
@@ -1853,7 +1883,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N3-_JEn8o-5STK8c-w6Uy60oc6JeqGD0zUjANzDB_owBN17XgyfG4yzU-Z32KiiUNtTpXHsaitYcGjkt9EzD5oTC9I0xfsKUiz0l3Z_lbcQt4YtYlGkYj3DA-N6vsSvF5_uGf7G2LoLOQK3AoQ9KaA230jqts1umwa4jYMoaCgYKAc4SARISFQHGX2Minp0iAJwYDNaadotIEWokJQ0178"
+                      "stringValue": "ya29.a0Ad52N3-guYD54C9NsqMz7Lct6xbZSjcJ--q_qkzcBwTewUVCrHtqJwF_EpdRJ_od4rd5CjFWya9X157elwnFqNxivdrHO6haID9Vy_CT4WQBaL0s2OdF4YDfktqRp_KDnXxMTaFoWjg0RDe94DmAO_mLVsKWa7KQ4W37GBEQ9s8aCgYKAR0SARISFQHGX2Mi-JGPLwADZnaUyqi46SvHqw0178"
                     }
                   }
                 },
@@ -1882,7 +1912,7 @@
                 "offer_parameter": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "bi-stg-mobilityds-pr-db8ce2.nba_ot.bq_offering_target_params_upd"
+                      "stringValue": "bi-stg-mobilityds-pr-db8ce2.nba_offer_targeting.bq_offer_targeting_params_upd"
                     }
                   }
                 },
@@ -1917,7 +1947,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0Ad52N3-_JEn8o-5STK8c-w6Uy60oc6JeqGD0zUjANzDB_owBN17XgyfG4yzU-Z32KiiUNtTpXHsaitYcGjkt9EzD5oTC9I0xfsKUiz0l3Z_lbcQt4YtYlGkYj3DA-N6vsSvF5_uGf7G2LoLOQK3AoQ9KaA230jqts1umwa4jYMoaCgYKAc4SARISFQHGX2Minp0iAJwYDNaadotIEWokJQ0178"
+                      "stringValue": "ya29.a0Ad52N3-guYD54C9NsqMz7Lct6xbZSjcJ--q_qkzcBwTewUVCrHtqJwF_EpdRJ_od4rd5CjFWya9X157elwnFqNxivdrHO6haID9Vy_CT4WQBaL0s2OdF4YDfktqRp_KDnXxMTaFoWjg0RDe94DmAO_mLVsKWa7KQ4W37GBEQ9s8aCgYKAR0SARISFQHGX2Mi-JGPLwADZnaUyqi46SvHqw0178"
                     }
                   }
                 },
