@@ -238,7 +238,7 @@ def reg_offers_base_cat3(project_id: str
 
     sq0l =f"""
 
-        with cat3_bas as (
+        CREATE OR REPLACE TEMPORARY TABLE cat3_bas AS 
 
                 select  
                     cust_id
@@ -262,10 +262,9 @@ def reg_offers_base_cat3(project_id: str
                     and soi_transaction_type = 'Enroll'
                     and is_existing_customer = 0
                     group by 1,2,3
+        ;
 
-        )
-
-        , spd as (
+        CREATE OR REPLACE TEMPORARY TABLE spd AS 
 
             select distinct
                 lpds_id
@@ -279,10 +278,10 @@ def reg_offers_base_cat3(project_id: str
                 , gpon_sellable_ind as TECH_GPON
             from `bi-srv-divgdsa-pr-098bdd.common.bq_premise_universe` 
             WHERE part_dt = '{last_dt_spd}'
-        )
+        ;
 
 
-        , pid as (
+        CREATE OR REPLACE TEMPORARY TABLE pid AS 
 
                 select 
                   cust_id
@@ -317,10 +316,9 @@ def reg_offers_base_cat3(project_id: str
                         where part_load_dt = '{last_dt_pi}'
                       and product_instance_status_cd = 'A' and current_ind = 1
                     group by cust_id
+        ;
 
-        )    
-
-        , ffh_bas as (
+        CREATE OR REPLACE TEMPORARY TABLE ffh_bas AS
             select 
                 a.*
                 , b.* except (lpds_id)
@@ -382,8 +380,13 @@ def reg_offers_base_cat3(project_id: str
             left join `bi-srv-hsmdet-pr-7b9def.hsmdet_public.bq_pub_fda_alarm_full_universe` g3
                 on b.FMS_ADDRESS_ID is not null and b.FMS_ADDRESS_ID = g3.FMS_ADDRESS_ID        
 
-            )
+        ;
 
+    INSERT INTO `{qua_base}_temp`  
+
+    WITH dummy_cte AS (
+        select 1 as dummy_col
+    )
 
     """ 
 

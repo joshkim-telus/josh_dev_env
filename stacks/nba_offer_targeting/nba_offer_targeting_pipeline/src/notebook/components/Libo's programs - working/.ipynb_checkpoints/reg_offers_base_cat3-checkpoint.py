@@ -11,11 +11,9 @@ from typing import NamedTuple
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
     output_component_file="reg_offers_base_existing.yaml",
 )
-def reg_offers_base_prospects(project_id: str
+def reg_offers_base_cat3(project_id: str
                             , offer_parameter: str
                             , whsia_eligible_base: str
-                            , shs_professional_install: str
-                            , prod_cd2remove: str
                             , qua_base: str
                             , token: str
                             ):
@@ -39,11 +37,11 @@ def reg_offers_base_prospects(project_id: str
     
     client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
     job_config = bigquery.QueryJobConfig()
-    
+
 #     #### For prod 
 #     client = bigquery.Client(project=project_id)
 #     job_config = bigquery.QueryJobConfig()
-    
+
     """
     This program creates eligible bases for three categories of customers
       - existing home solutions customers
@@ -185,9 +183,10 @@ def reg_offers_base_prospects(project_id: str
 
         return(crdt_s1['part_dt'][0])
 
-    # Beginning of Part 2
+    # Beginning of Part 3
 
-    # Creating eligible base for Naked mobility customers
+    # Creating eligible base for CSD channel technicians
+    # for brand new customers with pending orders 
 
 
     # Pull Offer Info
@@ -208,17 +207,19 @@ def reg_offers_base_prospects(project_id: str
         from `{offer_parameter}` a 
         inner join max_dt b
         on a.part_dt = b.part_dt
-        where a.if_active = 1 and a.MOB_filters is not null
+        where a.if_active = 1 and a.HS_filters is not null and if_cat3 = 1
 
     """ 
 
     offer_info = client.query(sq0l).to_dataframe()
 
+
     # Check latest snapshot date with reasonable counts
 
-    last_dt_spd = last_dt_check(clnt = client,
-                                ipt = 'bi-srv-divgdsa-pr-098bdd.common.bq_premise_universe',
-                                part_dt = 'part_dt',
+
+    last_dt_pid = last_dt_check(clnt = client,
+                                ipt = 'bi-srv-divgdsa-pr-098bdd.common.bq_hs_product_instance_details',
+                                part_dt = 'part_load_dt',
                                 wd = 14 )
 
     last_dt_pi = last_dt_check(clnt = client,
@@ -226,64 +227,65 @@ def reg_offers_base_prospects(project_id: str
                                 part_dt = 'part_load_dt',
                                 wd = 14 )
 
-    last_dt_mlpds = last_dt_check(clnt = client,
-                                ipt = 'bi-srv-divgdsa-pr-098bdd.common.bq_mobility_active_data',
-                                part_dt = 'part_dt',
-                                wd = 14 )
+    last_dt_spd = last_dt_check(clnt = client,
+                                ipt = 'bi-srv-divgdsa-pr-098bdd.common.bq_premise_universe',
+                                part_dt = 'part_dt' ,
+                                wd = 14)
 
-    # Create Naked Mobility customer profile - base
+
+
+    # Create cat3 customer profile - base
 
     sq0l =f"""
 
-        CREATE OR REPLACE TEMPORARY TABLE mob_lpds_id AS 
-            select *
-            from `bi-srv-divgdsa-pr-098bdd.common.bq_mobility_active_data` 
-            WHERE part_dt = '{last_dt_mlpds}'
-        ; 
+        with cat3_bas as (
 
-        CREATE OR REPLACE TEMPORARY TABLE mob AS 
-            SELECT distinct 
-                fmbase.BAN, 
-                fmbase.INIT_ACTIVATION_DATE as mobdate,
-                fmbase.PROVINCE,  
-                fmbase.POSTCODE, 
-                fmbase.DEVICE_NAME,
-                fmbase.MNH_FFH_BAN,
-                fmbase.LANG_PREF,
-                CASE WHEN fmbase.LPDS_ID>0 then fmbase.LPDS_ID ELSE mad.LPDS_ID end as LPDS_ID
+                select  
+                    cust_id
+                    , bill_account_number as bacct_num
+                    , lpds_id
+                    , max(case when product_family = 'TOS' then 1 else 0 end) as TOS_IND
+                    , max(case when product_family = 'HSIC' then 1 else 0 end) as HSIA_ind
+                    , max(case when product_family = 'SMHM' then 1 else 0 end) as SHS_ind
+                    , max(case when product_family = 'TTV' then 1 else 0 end) as OPTIK_TV_IND
+                    , max(case when product_family = 'SING' then 1 else 0 end) as HP_IND
+                    , max(case when product_family = 'WIFI' then 1 else 0 end) as WFP_ind
+                    , max(case when product_family = 'WHSIA' then 1 else 0 end) as SMART_HUB_IND
+                    , max(case when product_family = 'LWC' then 1 else 0 end) as LWC_ind
+                    , max(case when product_family = 'SWS' then 1 else 0 end) as SWS_ind
+                    , max(case when product_family = 'SOD' then 1 else 0 end) as SOD_ind
+                    , max(case when product_family = 'HPRO' then 1 else 0 end) as HPRO_ind
+                 from `bi-srv-hsmsd-3c-pr-ca2cd4.hsmsd_3c_rpt_dataset.bq_rpt_chnl_order_ffh_dtl_view`
+                where is_current_order = 1 and current_yield_dt >= DATE_SUB(CURRENT_DATE(), INTERVAL 100 DAY)
+                    and (current_yield_sub_status = 'Pending')
+                    and current_order_status = 'Processing'
+                    and soi_transaction_type = 'Enroll'
+                    and is_existing_customer = 0
+                    group by 1,2,3
 
-            FROM `bi-srv-hsmdet-pr-7b9def.campaign_data.bq_fda_mob_mobility_base`  fmbase
-                left join mob_lpds_id mad
-                on fmbase.ban = cast(mad.ban as int)
-            WHERE fmbase.BRAND_ID =1
-                and fmbase.product_type  in   ('C','I')
-                and fmbase.account_type  in    ('I','C') 
-                and fmbase.ACCOUNT_SUB_TYPE in ('I','R','E')
-                and (fmbase.MNH_FFH_BAN = 0 or fmbase.MNH_FFH_BAN is null)
-                and fmbase.PRIMARY_SUB = 1
-                and fmbase.SUB_STATUS = 'A'
-                and fmbase.STANDARD_EXCLUSIONS = 0 
-                and fmbase.STOP_SELL = 0
-        ;
+        )
 
-        CREATE OR REPLACE TEMPORARY TABLE spd AS 
+        , spd as (
 
-            select 
+            select distinct
                 lpds_id
-                , hs_max_speed 
-                , hs_max_speed_bonded
-                , obd_eligible_ind 
-                , coid 
+                , fms_address_id
+                , postal_cd as SERV_POSTAL_CODE
+                , hs_max_speed_bonded as HSIA_MAX_SPD
+                , SYSTEM_PROVINCE_CD as SERV_PROV
                 , snet_premise_type_cd
+                , ttv_eligible_ind as OPTIK_ELIGIBLE
                 , ttv_port_availability 
+                , gpon_sellable_ind as TECH_GPON
             from `bi-srv-divgdsa-pr-098bdd.common.bq_premise_universe` 
             WHERE part_dt = '{last_dt_spd}'
-        ;
+        )
 
-        CREATE OR REPLACE TEMPORARY TABLE pid AS
+
+        , pid as (
 
                 select 
-                  lpds_id 
+                  cust_id
                   , max(case when access_technology = 'COPPER' then 1 else 0 end) as cpf_acctech_copper_ind
                   , max(case when access_technology = 'FIBRE' then 1 else 0 end) as cpf_acctech_fibre_ind
                   , max(case when access_technology = 'WIRELESS' then 1 else 0 end) as cpf_acctech_wls_ind
@@ -302,67 +304,39 @@ def reg_offers_base_prospects(project_id: str
                   , max(case when service_instance_type_cd = 'SWS' then 1 else 0 end) as cpf_sws_ind
                   , max(case when service_instance_type_cd = 'STMP' then 1 else 0 end) as cpf_stmp_ind
                   , max(case when service_instance_type_cd = 'TOS' then 1 else 0 end) as cpf_tos_ind
+                  , max(case when service_instance_type_cd = 'TOS'
+                          and prod_cd = '40983311' then 1 else 0 end) as cpf_tos_basic_ind
+                  , max(case when service_instance_type_cd = 'TOS'
+                          and prod_cd = '41079641' then 1 else 0 end) as cpf_tos_standard_ind
                   , max(case when service_instance_type_cd = 'TTV' then 1 else 0 end) as cpf_ttv_ind
                   , max(case when service_instance_type_cd = 'WFP' then 1 else 0 end) as cpf_wfp_ind
                   , max(case when service_instance_type_cd = 'WHSIA' then 1 else 0 end) as cpf_whsia_ind  
-                  , max(case when service_instance_type_cd = 'HPRO' then 1 else 0 end) as cpf_HPRO_ind  
+                  , max(case when service_instance_type_cd = 'HPRO' then 1 else 0 end) as cpf_HPRO_ind   
 
                   from `bi-srv-divgdsa-pr-098bdd.common.bq_hs_product_instance`
                         where part_load_dt = '{last_dt_pi}'
                       and product_instance_status_cd = 'A' and current_ind = 1
-                    group by lpds_id
-        ;
+                    group by cust_id
 
-        CREATE OR REPLACE TEMPORARY TABLE pending_orders AS 
+        )    
 
-                select  
-                    lpds_id
-                    , max(case when product_family = 'TOS' then 1 else 0 end) as TOS_IND
-                    , max(case when product_family = 'HSIC' then 1 else 0 end) as HSIA_ind
-                    , max(case when product_family = 'SMHM' then 1 else 0 end) as SHS_ind
-                    , max(case when product_family = 'TTV' then 1 else 0 end) as OPTIK_TV_IND
-                    , max(case when product_family = 'SING' then 1 else 0 end) as HP_IND
-                    , max(case when product_family = 'WIFI' then 1 else 0 end) as WFP_ind
-                    , max(case when product_family = 'WHSIA' then 1 else 0 end) as SMART_HUB_IND
-                    , max(case when product_family = 'LWC' then 1 else 0 end) as LWC_ind
-                    , max(case when product_family = 'SWS' then 1 else 0 end) as SWS_ind
-                    , max(case when product_family = 'SOD' then 1 else 0 end) as SOD_ind
-                    , max(case when product_family = 'HPRO' then 1 else 0 end) as HPRO_ind
-                 from `bi-srv-hsmsd-3c-pr-ca2cd4.hsmsd_3c_rpt_dataset.bq_rpt_chnl_order_ffh_dtl_view`
-                where is_current_order = 1 and current_yield_dt >= DATE_SUB(CURRENT_DATE(), INTERVAL 100 DAY)
-                    and (current_yield_sub_status = 'Pending')
-                    and current_order_status = 'Processing'
-                    and soi_transaction_type = 'Enroll'
-                    group by 1
-        ;
-
-        CREATE OR REPLACE TEMPORARY TABLE  pid_pending AS
-
-                select distinct
-                  case when a.lpds_id is not null then a.lpds_id else b.lpds_id end as lpds_id  
-                  , case when a.cpf_hsic_ind > 0 or b.HSIA_IND > 0 then 1 else 0 end as cpf_hsic_ind
-                  , case when a.cpf_lwc_ind > 0 or b.LWC_ind > 0 then 1 else 0 end as cpf_lwc_ind
-                  , a.cpf_pik_ind
-                  , case when a.cpf_shs_ind > 0 or b.SHS_ind > 0 then 1 else 0 end as cpf_shs_ind
-                  , case when a.cpf_sing_ind > 0 or b.HP_IND > 0 then 1 else 0 end as cpf_sing_ind
-                  , case when a.cpf_sws_ind > 0 or b.SWS_ind > 0 then 1 else 0 end as cpf_sws_ind
-                  , case when a.cpf_ttv_ind > 0 or b.OPTIK_TV_IND > 0 then 1 else 0 end as cpf_ttv_ind
-                  , a.cpf_stv_ind
-                  , case when a.cpf_tos_ind > 0 or b.TOS_IND > 0 then 1 else 0 end as cpf_tos_ind
-                  , case when a.cpf_wfp_ind > 0 or b.WFP_ind > 0 then 1 else 0 end as cpf_wfp_ind
-                  , case when a.cpf_whsia_ind > 0 or b.SMART_HUB_IND > 0 then 1 else 0 end as cpf_whsia_ind
-                  , case when a.cpf_HPRO_ind > 0 or b.HPRO_ind > 0 then 1 else 0 end as cpf_HPRO_ind
-
-                  from pid a full join pending_orders b 
-                      on b.LPDS_ID = a.LPDS_ID
-        ;
-
-        CREATE OR REPLACE TEMPORARY TABLE  mob_base AS
-
-            select distinct 
+        , ffh_bas as (
+            select 
                 a.*
-                , p.* except (LPDS_ID)
-                , c.* except (LPDS_ID)
+                , b.* except (lpds_id)
+                , c.* except (cust_id)
+
+                , 0 as EX_STANDARD_EX
+                , 0 as std_exclud2
+                , 'FIFA' as PROVISIONING_SYSTEM
+                , 0 as MNH_MOB_BAN
+                , '' as SHS_CONTRACT_END_DT
+                , 0 as REWARDS_POINT_BALANCE
+                , CAST(NULL AS TIMESTAMP) as ACCT_START_DT
+                , 0 as OPTIK_PACKAGE_NUM
+                , 0 as STV_IND
+                , 0 as PIK_TV_IND
+
                 , case when (( d.HTA1519_pct > 0.25)
                                 or ( d.HTA2024_pct > 0.25)
                                 or ( d.HTA2529_pct > 0.25)
@@ -384,35 +358,32 @@ def reg_offers_base_prospects(project_id: str
                                 or ( d.HFA3539_pct > 0.25)
                                 or ( d.HFA4044_pct > 0.25)) then 1 else 0 end as demo_hs_189_ind
 
-                , case when d.baskid > 50 
-                            or upper(a.DEVICE_NAME) like '%APPLE%'
-                            or upper(a.DEVICE_NAME) like '%IPAD%'
-                            or upper(a.DEVICE_NAME) like '%IPHONE%'
-                            then 1 else 0 end as demo_hs_188_ind
+                , case when d.baskid > 50 then 1 else 0 end as demo_hs_188_ind
+
                 , RAND() as rand_seed1
-                , case when e.ban > 0 then 1 else 0 end as mob_shs
+
+                , 0 as hs_202_ind
+
                 , f.wHSIAQualTypeMarketing
-                , case when a.PROVINCE in ('AB', 'BC') 
-                        or b.Coverage_Status like '%Professional%' 
-                    then 1 else 0 end as shs_professional_install
 
-            from mob a 
-                left join spd p on a.lpds_id = p.lpds_id  
-                left join `{shs_professional_install}` b on substr(a.POSTCODE, 1, 3) = b.FSA
-                left join pid_pending c on cast(a.lpds_id as STRING) = c.LPDS_ID 
-                left join `bi-srv-divgdsa-pr-098bdd.environics_derived.bq_demostats_2023_features` d
-                on a.postcode = d.code
-                left join `bi-srv-hsmdet-pr-7b9def.hsmdet_public.bq_pub_fda_alarm_full_universe` e 
-                on (a.ban is not null and a.ban = e.ban)
-                left join `{whsia_eligible_base}` f on a.LPDS_ID = f.LPDSId
-            where a.ban > 0
-        ;
+                , case when g1.ACQ_DATE is not null
+                            or g3.ACQ_DATE is not null
+                            then 1 else 0 end as alarm_full_universe
 
-    INSERT INTO `{qua_base}_temp`  
+                , 0 as hs_71_ind
 
-    WITH dummy_cte AS (
-        select 1 as dummy_col
-    )
+            from cat3_bas a            
+            left join spd b on a.lpds_id = cast(b.lpds_id as STRING)
+            left join pid c on a.cust_id = cast(c.cust_id as STRING) 
+            left join `bi-srv-divgdsa-pr-098bdd.environics_derived.bq_demostats_2023_features` d on b.SERV_POSTAL_CODE = d.code
+            left join `{whsia_eligible_base}` f on a.LPDS_ID = cast(f.LPDSId as STRING)
+            left join `bi-srv-hsmdet-pr-7b9def.hsmdet_public.bq_pub_fda_alarm_full_universe` g1
+                on a.cust_id is not null and a.cust_id = cast(g1.cust_id as STRING)
+            left join `bi-srv-hsmdet-pr-7b9def.hsmdet_public.bq_pub_fda_alarm_full_universe` g3
+                on b.FMS_ADDRESS_ID is not null and b.FMS_ADDRESS_ID = g3.FMS_ADDRESS_ID        
+
+            )
+
 
     """ 
 
@@ -425,9 +396,10 @@ def reg_offers_base_prospects(project_id: str
 
         sql_b1 = (
                 f""", {offer_info['Offer_Number2'][ii]} as (
-                select distinct ban \n
-                , lpds_id \n
-                , mobdate as candate \n
+                select distinct cast(cust_id as int64) as cust_id \n
+                , cast(bacct_num as int64) as bacct_num \n
+                , cast(lpds_id as int64) as lpds_id \n
+                , cast(ACCT_START_DT as timestamp) as candate \n
                 , '{offer_info['Category'][ii]}' as Category  \n
                 , '{offer_info['Subcategory'][ii]}' as Subcategory  \n 
                 , '' as digital_category
@@ -436,13 +408,12 @@ def reg_offers_base_prospects(project_id: str
                 , cast('{offer_info['valid_start_dt'][ii]}' AS DATE) as ASSMT_VALID_START_TS  \n
                 , cast('{offer_info['valid_end_dt'][ii]}' AS DATE) as ASSMT_VALID_END_TS  \n 
                 , {str(offer_info['rk'][ii])} as rk  \n
-                from mob_base \n where  {offer_info['MOB_filters'][ii]} )  \n """
+                from ffh_bas \n where  {offer_info['HS_filters'][ii]} )  \n """
                )
 
         sql_all0 = sql_all + sql_b1
 
         sql_all = sql_all0
-
 
 
     # Union eligible bases
@@ -457,47 +428,42 @@ def reg_offers_base_prospects(project_id: str
         sql_all = sql_all0
 
 
-
     # check base count before creating multiple eligible base
     # 
 
     sq0l ="""
 
-        select
-            count(distinct fmbase.BAN) as cnt
-
-        FROM `bi-srv-hsmdet-pr-7b9def.campaign_data.bq_fda_mob_mobility_base`  fmbase
-        WHERE fmbase.BRAND_ID =1
-            and fmbase.product_type  in   ('C','I')
-            and fmbase.account_type  in    ('I','C') 
-            and fmbase.ACCOUNT_SUB_TYPE in ('I','R','E')
-            and (fmbase.MNH_FFH_BAN = 0 or fmbase.MNH_FFH_BAN is null)
-            and fmbase.PRIMARY_SUB = 1
-            and fmbase.SUB_STATUS = 'A'
-            and fmbase.STANDARD_EXCLUSIONS = 0 
-            and fmbase.STOP_SELL = 0
+            select count(distinct cust_id) as cnt 
+             from `bi-srv-hsmsd-3c-pr-ca2cd4.hsmsd_3c_rpt_dataset.bq_rpt_chnl_order_ffh_dtl_view`
+            where is_current_order = 1 
+                and current_yield_dt >= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
+                and (current_yield_sub_status = 'Pending')
+                and current_order_status = 'Processing'
+                and soi_transaction_type = 'Enroll'
+                and is_existing_customer = 0
 
     """ 
 
     df_check = client.query(sq0l).to_dataframe()
 
-    # print(sql_all)
 
-    # creating eligible base
 
     start_time = time.time()
 
-    if df_check['cnt'][0] > 800_000:
+    if df_check['cnt'][0] > 500:
         cr8bqt_sql_BI(
             clnt = client,
             sql_base = sql_all,
             opt = qua_base,
-            est_num = 4_000_000
+            est_num = 1500
         )
 
     else:
-        raise Exception(f"Naked Mobility base has {df_check['cnt'][0]} rows -- seems low. Update aborted.")
+        raise Exception(f"Cat3 base has {df_check['cnt'][0]} rows -- seems low. Update aborted.")
 
     # print("This step took --- %s seconds ---" % (time.time() - start_time))
 
-    # End of Part 2
+
+    # End of Part 3
+
+    # End of this program

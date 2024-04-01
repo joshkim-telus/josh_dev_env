@@ -235,13 +235,16 @@ def reg_offers_base_prospects(project_id: str
 
     sq0l =f"""
 
-        CREATE OR REPLACE TEMPORARY TABLE mob_lpds_id AS 
+        with
+
+        mob_lpds_id as (
+
             select *
             from `bi-srv-divgdsa-pr-098bdd.common.bq_mobility_active_data` 
             WHERE part_dt = '{last_dt_mlpds}'
-        ; 
+        )
 
-        CREATE OR REPLACE TEMPORARY TABLE mob AS 
+        , mob as (
             SELECT distinct 
                 fmbase.BAN, 
                 fmbase.INIT_ACTIVATION_DATE as mobdate,
@@ -264,9 +267,9 @@ def reg_offers_base_prospects(project_id: str
                 and fmbase.SUB_STATUS = 'A'
                 and fmbase.STANDARD_EXCLUSIONS = 0 
                 and fmbase.STOP_SELL = 0
-        ;
+        ),
 
-        CREATE OR REPLACE TEMPORARY TABLE spd AS 
+        spd as (
 
             select 
                 lpds_id
@@ -278,9 +281,9 @@ def reg_offers_base_prospects(project_id: str
                 , ttv_port_availability 
             from `bi-srv-divgdsa-pr-098bdd.common.bq_premise_universe` 
             WHERE part_dt = '{last_dt_spd}'
-        ;
+        ),
 
-        CREATE OR REPLACE TEMPORARY TABLE pid AS
+        pid as (
 
                 select 
                   lpds_id 
@@ -311,9 +314,10 @@ def reg_offers_base_prospects(project_id: str
                         where part_load_dt = '{last_dt_pi}'
                       and product_instance_status_cd = 'A' and current_ind = 1
                     group by lpds_id
-        ;
 
-        CREATE OR REPLACE TEMPORARY TABLE pending_orders AS 
+        )
+
+        , pending_orders as (
 
                 select  
                     lpds_id
@@ -334,9 +338,11 @@ def reg_offers_base_prospects(project_id: str
                     and current_order_status = 'Processing'
                     and soi_transaction_type = 'Enroll'
                     group by 1
-        ;
 
-        CREATE OR REPLACE TEMPORARY TABLE  pid_pending AS
+        )
+
+
+        , pid_pending as (
 
                 select distinct
                   case when a.lpds_id is not null then a.lpds_id else b.lpds_id end as lpds_id  
@@ -355,9 +361,10 @@ def reg_offers_base_prospects(project_id: str
 
                   from pid a full join pending_orders b 
                       on b.LPDS_ID = a.LPDS_ID
-        ;
 
-        CREATE OR REPLACE TEMPORARY TABLE  mob_base AS
+        )
+
+        , mob_base as (
 
             select distinct 
                 a.*
@@ -406,13 +413,7 @@ def reg_offers_base_prospects(project_id: str
                 on (a.ban is not null and a.ban = e.ban)
                 left join `{whsia_eligible_base}` f on a.LPDS_ID = f.LPDSId
             where a.ban > 0
-        ;
-
-    INSERT INTO `{qua_base}_temp`  
-
-    WITH dummy_cte AS (
-        select 1 as dummy_col
-    )
+       )
 
     """ 
 
