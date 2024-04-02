@@ -109,7 +109,7 @@ def reg_offers_base_cat3(project_id: str
         sql_s1 =f"""
 
             TRUNCATE TABLE `{opt}_temp`;   
-            INSERT INTO `{opt}_temp`
+            --INSERT INTO `{opt}_temp`
             {sql_base}            
 
             """ 
@@ -382,7 +382,7 @@ def reg_offers_base_cat3(project_id: str
 
         ;
 
-    INSERT INTO `{qua_base}_temp`  
+    INSERT INTO `{qua_base}_temp`
 
     WITH dummy_cte AS (
         select 1 as dummy_col
@@ -399,9 +399,9 @@ def reg_offers_base_cat3(project_id: str
 
         sql_b1 = (
                 f""", {offer_info['Offer_Number2'][ii]} as (
-                select distinct cast(cust_id as int64) as cust_id \n
-                , cast(bacct_num as int64) as bacct_num \n
-                , cast(lpds_id as int64) as lpds_id \n
+                select distinct safe_cast(cust_id as int64) as cust_id \n
+                , safe_cast(bacct_num as int64) as bacct_num  \n
+                , safe_cast(lpds_id as int64) as lpds_id \n
                 , cast(ACCT_START_DT as timestamp) as candate \n
                 , '{offer_info['Category'][ii]}' as Category  \n
                 , '{offer_info['Subcategory'][ii]}' as Subcategory  \n 

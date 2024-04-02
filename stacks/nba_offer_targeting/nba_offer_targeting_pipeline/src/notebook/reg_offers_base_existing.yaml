@@ -62,7 +62,7 @@ implementation:
       \n    \"\"\"\n\n    # define some functions\n    # please feel free to improve\
       \ as fit\n    def cr8bqt_sql_BI(\n        clnt,\n        sql_base,\n       \
       \ opt,\n        est_num\n        ): \n\n        sql_s1 =f\"\"\"\n\n        \
-      \    TRUNCATE TABLE `{opt}_temp`;   \n            INSERT INTO `{opt}_temp`\n\
+      \    TRUNCATE TABLE `{opt}_temp`;   \n            --INSERT INTO `{opt}_temp`\n\
       \            {sql_base}            \n\n            \"\"\" \n\n        crdt_s1\
       \ = clnt.query(sql_s1).to_dataframe()\n\n        tableid = opt.split('.')\n\n\
       \        sql_s2 =f\"\"\"\n\n                SELECT\n                  row_count\n\
@@ -214,14 +214,15 @@ implementation:
       \ g1\n                on a.cust_id is not null and a.cust_id = cast(g1.cust_id\
       \ as STRING)\n            left join `bi-srv-hsmdet-pr-7b9def.hsmdet_public.bq_pub_fda_alarm_full_universe`\
       \ g3\n                on b.FMS_ADDRESS_ID is not null and b.FMS_ADDRESS_ID =\
-      \ g3.FMS_ADDRESS_ID        \n\n        ;\n\n        WITH\n\n    \"\"\" \n\n\
-      \    # Create eligible base for each offer\n\n    sql_all = sq0l\n    n_offer\
+      \ g3.FMS_ADDRESS_ID        \n\n        ;\n\n    INSERT INTO `{qua_base}_temp`\n\
+      \n    WITH dummy_cte AS (\n        select 1 as dummy_col\n    )\n\n    \"\"\"\
+      \ \n\n    # Create eligible base for each offer\n\n    sql_all = sq0l\n    n_offer\
       \ = offer_info.shape[0]\n    for ii in range(n_offer):\n        ii2 = ii + 1\n\
       \n        sql_b1 = (\n                f\"\"\", {offer_info['Offer_Number2'][ii]}\
-      \ as (\n                select distinct cast(cust_id as int64) as cust_id \\\
-      n\n                , cast(bacct_num as int64) as bacct_num \\n\n           \
-      \     , cast(lpds_id as int64) as lpds_id \\n\n                , cast(ACCT_START_DT\
-      \ as timestamp) as candate \\n\n                , '{offer_info['Category'][ii]}'\
+      \ as (\n                select distinct safe_cast(cust_id as int64) as cust_id\
+      \ \\n\n                , safe_cast(bacct_num as int64) as bacct_num  \\n\n \
+      \               , safe_cast(lpds_id as int64) as lpds_id \\n\n             \
+      \   , cast(ACCT_START_DT as timestamp) as candate \\n\n                , '{offer_info['Category'][ii]}'\
       \ as Category  \\n\n                , '{offer_info['Subcategory'][ii]}' as Subcategory\
       \  \\n \n                , '' as digital_category\n                , '{offer_info['promo_seg'][ii]}'\
       \ as promo_seg  \\n \n                , '{offer_info['NCID'][ii]}' as offer_code\
