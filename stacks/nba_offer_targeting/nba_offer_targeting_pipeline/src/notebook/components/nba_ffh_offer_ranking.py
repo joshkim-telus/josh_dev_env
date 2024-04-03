@@ -50,6 +50,8 @@ def nba_ffh_offer_ranking(project_id: str
 
             CALL {dataset_id}.bq_sp_nba_ffh_offer_ranking(); 
             
+            CALL {dataset_id}.bq_sp_nba_offer_targeting_dashboard()
+            
             SELECT
                 *
             FROM {dataset_id}.INFORMATION_SCHEMA.PARTITIONS
