@@ -416,7 +416,7 @@ BEGIN
 		select lpds_id
 		, cust_id
 		, 'mob' as reco
-		, score_num
+		, score_num / 0.5 * 0.04 as score_num
 		from `bi-srv-mobilityds-pr-80a48d.ucar_ingestion.bq_product_instance_model_score` a 
 		inner join 
 		(
@@ -441,7 +441,7 @@ BEGIN
 		select lpds_id
 		, cust_id
 		, 'up_tv' as reco
-		, score_num
+		, score_num / 0.4 * 0.05 as score_num
 		from `bi-srv-mobilityds-pr-80a48d.ucar_ingestion.bq_product_instance_model_score` a 
 		inner join 
 		(
