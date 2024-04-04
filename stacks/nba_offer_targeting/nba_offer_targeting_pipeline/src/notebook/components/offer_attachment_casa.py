@@ -199,7 +199,7 @@ def offer_attachment_casa(irpc_base_csv: str
     df_base[['hsia_speed2', 'hs_max_speed_numeric2', 'hsia_price2', 'promo_seg2']]  = df_base.apply(lambda row: pd.Series(find_casa_irpc_offers(list_hsia_speed, dict_hsia_plans_details, dict_hsia_prices_details, row, 2)), axis=1)
     df_base[['hsia_speed3', 'hs_max_speed_numeric3', 'hsia_price3', 'promo_seg3']]  = df_base.apply(lambda row: pd.Series(find_casa_irpc_offers(list_hsia_speed, dict_hsia_plans_details, dict_hsia_prices_details, row, 3)), axis=1)
     
-    df_base = df_base[['cust_id', 'bacct_num', 'fms_address_id', 'lpds_id', 'candate', 'OPTIK_TV_IND', 'HSIA_IND', 'hs_max_speed_numeric', 'provisioned_hs_speed_numeric', 
-             'rpp_hsia_end_dt', 'rpp_ttv_end_dt', 'total_charges', 'promo_seg1', 'promo_seg2', 'promo_seg3']] 
+    # df_base = df_base[['cust_id', 'bacct_num', 'fms_address_id', 'lpds_id', 'candate', 'OPTIK_TV_IND', 'HSIA_IND', 'hs_max_speed_numeric', 'provisioned_hs_speed_numeric', 
+    #          'rpp_hsia_end_dt', 'rpp_ttv_end_dt', 'total_charges', 'promo_seg1', 'promo_seg2', 'promo_seg3']] 
     
     df_base.to_csv(save_data_path)
