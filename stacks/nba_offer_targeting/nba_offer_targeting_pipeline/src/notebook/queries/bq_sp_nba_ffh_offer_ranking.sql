@@ -12,6 +12,8 @@ BEGIN
 	(SELECT * FROM nba_offer_targeting.nba_ffh_offer_ranking_existing) 
 	UNION ALL
 	(SELECT * FROM nba_offer_targeting.nba_ffh_offer_ranking_prospects) 
+	UNION ALL 
+	(SELECT * FROM nba_offer_targeting.nba_ffh_offer_ranking_cat3) 
 	)
 	; 
 
