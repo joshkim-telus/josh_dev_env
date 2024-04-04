@@ -417,7 +417,7 @@ def reg_offers_base_existing(project_id: str
             , case when e.cust_id is not null then 1 else 0 end as hs_202_ind
 
             --, f.wHSIAQualTypeMarketing
-            , null as wHSIAQualTypeMarketing
+            , 'default' as wHSIAQualTypeMarketing
 
             , case when g1.ACQ_DATE is not null
                         or g2.ACQ_DATE is not null
