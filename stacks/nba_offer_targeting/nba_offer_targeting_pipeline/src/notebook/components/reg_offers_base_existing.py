@@ -437,7 +437,7 @@ def reg_offers_base_existing(project_id: str
         left join `bi-srv-divgdsa-pr-098bdd.environics_derived.bq_demostats_2023_features` d
             on a.SERV_POSTAL_CODE = d.code
         left join pid4hproplus e on a.cust_id = e.cust_id and a.bacct_num = e.bacct_num 
-        left join `{whsia_eligible_base}` f on a.LPDS_ID = f.LPDSId
+        left join `{whsia_eligible_base}` f on cast(a.LPDS_ID as string) = cast(f.LPDSId as string)
         left join `bi-srv-hsmdet-pr-7b9def.hsmdet_public.bq_pub_fda_alarm_full_universe` g1
             on a.cust_id is not null and a.cust_id = g1.cust_id
         left join `bi-srv-hsmdet-pr-7b9def.hsmdet_public.bq_pub_fda_alarm_full_universe` g2

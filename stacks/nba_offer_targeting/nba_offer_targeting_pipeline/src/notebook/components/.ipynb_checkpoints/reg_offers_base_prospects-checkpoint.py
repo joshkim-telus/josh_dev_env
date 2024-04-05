@@ -404,7 +404,7 @@ def reg_offers_base_prospects(project_id: str
                 on a.postcode = d.code
                 left join `bi-srv-hsmdet-pr-7b9def.hsmdet_public.bq_pub_fda_alarm_full_universe` e 
                 on (a.ban is not null and a.ban = e.ban)
-                left join `{whsia_eligible_base}` f on a.LPDS_ID = f.LPDSId
+                left join `{whsia_eligible_base}` f on cast(a.LPDS_ID as string) = cast(f.LPDSId as string)
             where a.ban > 0
         ;
 

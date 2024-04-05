@@ -129,7 +129,7 @@ def offer_attachment_casa(irpc_base_csv: str
             hsia_speed = np.min([spd for spd in list_hsia_speed if spd > provisioned_hs_speed_numeric and spd <= hs_max_speed_numeric and not pd.isna(spd)])
             max_offer_price = np.max([spd for spd in dict_hsia_prices_details[f'internet_{hsia_speed}'] if not pd.isna(spd)])
             
-            while max_offer_price < total_charges: 
+            while max_offer_price <= total_charges: 
                 hsia_speed_idx = list_hsia_speed.index(hsia_speed)
                 hsia_speed = list_hsia_speed[hsia_speed_idx + 1]
                 max_offer_price = np.max([spd for spd in dict_hsia_prices_details[f'internet_{hsia_speed}'] if not pd.isna(spd)])
@@ -158,10 +158,10 @@ def offer_attachment_casa(irpc_base_csv: str
                     hsia_speed = next_hsia_speed 
 
             except IndexError: 
-                return [None, None, None, None]
+                print(f"The hsia_speed {hsia_speed} is the fastest internet speed available.")
 
             except UnboundLocalError: 
-                return [None, None, None, None]
+                print(f"The hsia_speed {hsia_speed} is the fastest internet speed available.")
 
             except ValueError: 
                 return [None, None, None, None]

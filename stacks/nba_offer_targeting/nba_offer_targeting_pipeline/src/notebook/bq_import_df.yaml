@@ -100,7 +100,7 @@ implementation:
       \ = np.min([spd for spd in list_hsia_speed if spd > provisioned_hs_speed_numeric\
       \ and spd <= hs_max_speed_numeric and not pd.isna(spd)])\n            max_offer_price\
       \ = np.max([spd for spd in dict_hsia_prices_details[f'internet_{hsia_speed}']\
-      \ if not pd.isna(spd)])\n\n            while max_offer_price < total_charges:\
+      \ if not pd.isna(spd)])\n\n            while max_offer_price <= total_charges:\
       \ \n                hsia_speed_idx = list_hsia_speed.index(hsia_speed)\n   \
       \             hsia_speed = list_hsia_speed[hsia_speed_idx + 1]\n           \
       \     max_offer_price = np.max([spd for spd in dict_hsia_prices_details[f'internet_{hsia_speed}']\
@@ -118,13 +118,15 @@ implementation:
       \ and hsia_speed == provisioned_hs_speed_numeric: \n                    list_hsia_price\
       \ = dict_hsia_prices_details[f'internet_{next_hsia_speed}']\n              \
       \      hsia_speed = next_hsia_speed \n\n            except IndexError: \n  \
-      \              return [None, None, None, None]\n\n            except UnboundLocalError:\
-      \ \n                return [None, None, None, None]\n\n            except ValueError:\
-      \ \n                return [None, None, None, None]\n\n            # scenario\
-      \ when the same price DOES NOT EXIST in the next speed offer (e.g. if internet_1000,\
-      \ check internet_1500 for $95 offer ==> NO): \n\n            if hsia_price in\
-      \ list_hsia_price:\n                plan_idx = list_hsia_price.index(hsia_price)\
-      \    \n\n            ### 4. Call the plan name by hsia_plans[provisioned_hs_speed_numeric]==250][plan_idx==4]\
+      \              print(f\"The hsia_speed {hsia_speed} is the fastest internet\
+      \ speed available.\")\n\n            except UnboundLocalError: \n          \
+      \      print(f\"The hsia_speed {hsia_speed} is the fastest internet speed available.\"\
+      )\n\n            except ValueError: \n                return [None, None, None,\
+      \ None]\n\n            # scenario when the same price DOES NOT EXIST in the\
+      \ next speed offer (e.g. if internet_1000, check internet_1500 for $95 offer\
+      \ ==> NO): \n\n            if hsia_price in list_hsia_price:\n             \
+      \   plan_idx = list_hsia_price.index(hsia_price)    \n\n            ### 4. Call\
+      \ the plan name by hsia_plans[provisioned_hs_speed_numeric]==250][plan_idx==4]\
       \ --> \"1P: Tier 3 (Internet 250)\"\n\n            hsia_plan_name = dict_hsia_plans_details[f'internet_{hsia_speed}'][plan_idx]\n\
       \n            return [hsia_speed, hs_max_speed_numeric, hsia_price, hsia_plan_name]\
       \ \n\n        else: \n\n            return [None, None, None, None]\n\n    #\
