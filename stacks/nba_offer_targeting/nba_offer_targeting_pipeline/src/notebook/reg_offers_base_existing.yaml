@@ -210,7 +210,8 @@ implementation:
       \            left join pid c on a.cust_id = cast(c.cust_id as STRING) \n   \
       \         left join `bi-srv-divgdsa-pr-098bdd.environics_derived.bq_demostats_2023_features`\
       \ d on b.SERV_POSTAL_CODE = d.code\n            left join `{whsia_eligible_base}`\
-      \ f on a.LPDS_ID = cast(f.LPDSId as STRING)\n            left join `bi-srv-hsmdet-pr-7b9def.hsmdet_public.bq_pub_fda_alarm_full_universe`\
+      \ f on cast(a.LPDS_ID as string) = cast(f.LPDSId as STRING)\n            left\
+      \ join `bi-srv-hsmdet-pr-7b9def.hsmdet_public.bq_pub_fda_alarm_full_universe`\
       \ g1\n                on a.cust_id is not null and a.cust_id = cast(g1.cust_id\
       \ as STRING)\n            left join `bi-srv-hsmdet-pr-7b9def.hsmdet_public.bq_pub_fda_alarm_full_universe`\
       \ g3\n                on b.FMS_ADDRESS_ID is not null and b.FMS_ADDRESS_ID =\
