@@ -17,6 +17,7 @@ def reg_offers_base_existing(project_id: str
                             , shs_professional_install: str
                             , prod_cd2remove: str
                             , qua_base: str
+                            , text_file_path: str
                             , token: str
                             ):
  
@@ -290,8 +291,11 @@ def reg_offers_base_existing(project_id: str
           , max(case when service_instance_type_cd = 'LWC' then 1 else 0 end) as cpf_lwc_ind
           , max(case when service_instance_type_cd = 'PIK' then 1 else 0 end) as cpf_pik_ind
           , max(case when service_instance_type_cd = 'SHS' then 1 else 0 end) as cpf_shs_ind
-          , max(case when prod_intrnl_nm in ('Smart Automation Plus', 'Smart Automation Plus (V2)'
-                  , 'Smart Camera (V2)', 'Secure Business: Smart Camera') then 1 else 0 end) as cpf_shs_ind2
+          , max(case when prod_intrnl_nm in ('Smart Automation Plus', 'Smart Automation Plus (V2)', 'Smart Camera (V2)', 'Secure Business: Smart Camera') then 1 else 0 end) as cpf_shs_ind2
+          , max(case when service_instance_type_cd = 'SHS' 
+                    AND (upper(prod_intrnl_nm) like '%SECURE%' or 
+                         upper(prod_intrnl_nm) like '%CONTROL%' or 
+                         upper(prod_intrnl_nm) like '%VIDEO%') then 1 else 0 end) as cpf_shs_ind3
           , max(case when service_instance_type_cd = 'SING' then 1 else 0 end) as cpf_sing_ind
           , max(case when service_instance_type_cd = 'STV' then 1 else 0 end) as cpf_stv_ind
           , max(case when service_instance_type_cd = 'SWS' then 1 else 0 end) as cpf_sws_ind
@@ -512,6 +516,10 @@ def reg_offers_base_existing(project_id: str
     # creating eligible base
     start_time = time.time()
 
+#     # Open the file in write mode and write the text
+#     with open(text_file_path, 'w') as file:
+#         file.write(sql_all)
+        
     if df_check['cnt'][0] > 2_500_000:
         cr8bqt_sql_BI(
             clnt = client,

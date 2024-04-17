@@ -296,8 +296,11 @@ def reg_offers_base_cat3(project_id: str
                   , max(case when service_instance_type_cd = 'LWC' then 1 else 0 end) as cpf_lwc_ind
                   , max(case when service_instance_type_cd = 'PIK' then 1 else 0 end) as cpf_pik_ind
                   , max(case when service_instance_type_cd = 'SHS' then 1 else 0 end) as cpf_shs_ind
-                  , max(case when prod_intrnl_nm in ('Smart Automation Plus', 'Smart Automation Plus (V2)'
-                          , 'Smart Camera (V2)', 'Secure Business: Smart Camera') then 1 else 0 end) as cpf_shs_ind2
+                  , max(case when prod_intrnl_nm in ('Smart Automation Plus', 'Smart Automation Plus (V2)', 'Smart Camera (V2)', 'Secure Business: Smart Camera') then 1 else 0 end) as cpf_shs_ind2
+                  , max(case when service_instance_type_cd = 'SHS' 
+                            AND (upper(prod_intrnl_nm) like '%SECURE%' or 
+                                 upper(prod_intrnl_nm) like '%CONTROL%' or 
+                                 upper(prod_intrnl_nm) like '%VIDEO%') then 1 else 0 end) as cpf_shs_ind3
                   , max(case when service_instance_type_cd = 'SING' then 1 else 0 end) as cpf_sing_ind
                   , max(case when service_instance_type_cd = 'STV' then 1 else 0 end) as cpf_stv_ind
                   , max(case when service_instance_type_cd = 'SWS' then 1 else 0 end) as cpf_sws_ind

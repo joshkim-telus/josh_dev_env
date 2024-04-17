@@ -156,9 +156,13 @@ implementation:
       \ service_instance_type_cd = 'PIK' then 1 else 0 end) as cpf_pik_ind\n     \
       \             , max(case when service_instance_type_cd = 'SHS' then 1 else 0\
       \ end) as cpf_shs_ind\n                  , max(case when prod_intrnl_nm in ('Smart\
-      \ Automation Plus', 'Smart Automation Plus (V2)'\n                         \
-      \ , 'Smart Camera (V2)', 'Secure Business: Smart Camera') then 1 else 0 end)\
-      \ as cpf_shs_ind2\n                  , max(case when service_instance_type_cd\
+      \ Automation Plus', 'Smart Automation Plus (V2)', 'Smart Camera (V2)', 'Secure\
+      \ Business: Smart Camera') then 1 else 0 end) as cpf_shs_ind2\n            \
+      \      , max(case when service_instance_type_cd = 'SHS' \n                 \
+      \           AND (upper(prod_intrnl_nm) like '%SECURE%' or \n               \
+      \                  upper(prod_intrnl_nm) like '%CONTROL%' or \n            \
+      \                     upper(prod_intrnl_nm) like '%VIDEO%') then 1 else 0 end)\
+      \ as cpf_shs_ind3\n                  , max(case when service_instance_type_cd\
       \ = 'SING' then 1 else 0 end) as cpf_sing_ind\n                  , max(case\
       \ when service_instance_type_cd = 'STV' then 1 else 0 end) as cpf_stv_ind\n\
       \                  , max(case when service_instance_type_cd = 'SWS' then 1 else\
