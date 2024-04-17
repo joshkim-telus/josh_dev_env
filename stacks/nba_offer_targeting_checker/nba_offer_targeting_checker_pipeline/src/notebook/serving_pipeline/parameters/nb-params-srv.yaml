@@ -1,0 +1,9 @@
+PROJECT_ID: "bi-srv-mobilityds-pr-80a48d"
+DATASET_ID: "nba_offer_targeting"
+REGION: "northamerica-northeast1"
+FILE_BUCKET: "bi-srv-mobilityds-pr-80a48d_bkt_nba_offer_targeting"
+RESOURCE_BUCKET: "notebook-scripts-2ba8"
+UCAR_SCORE_TABLE: "bi-srv-mobilityds-pr-80a48d.ucar_ingestion.bq_product_instance_model_score"
+MODEL_ID: ""
+MODEL_TYPE: 'NBA offer targeting model'
+MDOEL_NAME: 'nba_offer_targeting'

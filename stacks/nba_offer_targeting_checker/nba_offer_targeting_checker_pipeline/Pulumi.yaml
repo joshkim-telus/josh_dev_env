@@ -1,0 +1,86 @@
+name: nba_offer_targeting_checker
+runtime: yaml
+description: NBA Offer Targeting Checker Google Cloud Pulumi YAML program
+
+config:
+  builder:
+    type: string
+  project:
+    type: string
+  staging_expiry:
+    value: 2049-12-31
+    type: string
+
+# Section for user defined input
+variables:
+  worker_custom_image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest
+  notebook_scripts_bucket: notebook-scripts-${project_sha}
+  stack_name: nba_offer_targeting_checker
+  timeZone: EST # timezone of the schedule
+
+  # serving pipeline variables
+  serving_name: nba-offer-targeting-checker-serving-pipeline # Name of the job
+  serving_pipe_description: "nba-offer-targeting-checker-serving-pipeline" # Description for the pipeline
+  serving_pipe_name: "nba-offer-targeting-checker-serving-pipeline"  # Name for the pipeline
+  serving_pipeline_params_path: parameters
+  serving_pipeline_path: nba_offer_targeting_checker_pipeline/serving_pipeline # For path
+  serving_pipeline_ipynb: nba_offer_targeting_checker_serving_pipeline.ipynb
+  serving_pipeline_params_file: {% if PROJECT_TYPE == "bi-stg" -%} "parameters/nb-params-stg.yaml" {%- elif PROJECT_TYPE == "bi-srv" -%} "parameters/nb-params-srv.yaml" {%- endif %}
+  serving_schedule: "45 23 * * *" # Schedule of the job -> 1st and 15th of month
+  
+resources:
+  nba-offer-targeting-checker-serving-exec:
+    type: gcp:workflows:Workflow
+    properties:
+      region: northamerica-northeast1
+      name: ${serving_name}
+      description: Test Workflow For Notebook - serving
+      serviceAccount: ${builder}
+      sourceContents: |
+        - init:
+            assign:
+              - project: $${sys.get_env("GOOGLE_CLOUD_PROJECT_NUMBER")}
+              - location: "northamerica-northeast1"
+              - uuid: $${sys.get_env("GOOGLE_CLOUD_WORKFLOW_EXECUTION_ID")}
+        - notebook_execution:
+            call: http.post
+            args:
+              url: $${"https://notebooks.googleapis.com/v1/projects/${project}/locations/northamerica-northeast1/executions?executionId=${serving_name}-"+uuid}
+              body:
+                description: ${serving_pipe_description}
+                displayName: ${serving_pipe_name}
+                executionTemplate:
+                  scaleTier: "CUSTOM"
+                  masterType: "n1-standard-4"
+                  serviceAccount: ${builder}
+                  inputNotebookFile: "gs://${notebook_scripts_bucket}/${stack_name}/${serving_pipeline_path}/${serving_pipeline_ipynb}"
+                  containerImageUri: ${worker_custom_image}
+                  outputNotebookFolder: "gs://${notebook_scripts_bucket}/${stack_name}/${serving_pipeline_path}/out"
+                  jobType: "VERTEX_AI"
+                  paramsYamlFile: "gs://${notebook_scripts_bucket}/${stack_name}/${serving_pipeline_path}/${serving_pipeline_params_file}"
+              auth:
+                type: OAuth2
+            result: notebook_result
+        - return_output:
+            return: $${notebook_result}
+
+  nba-offer-targeting-checker-serving-sched:
+    type: gcp:cloudscheduler:Job
+    properties:
+      description: nb-scheduled-exec-serving
+      schedule: ${serving_schedule}
+      region: northamerica-northeast1
+      timeZone: ${timeZone}
+      httpTarget:
+        uri: https://workflowexecutions.googleapis.com/v1/${nba-offer-targeting-checker-serving-exec.id}/executions
+        oauthToken:
+          serviceAccountEmail: ${builder}
+          scope: https://www.googleapis.com/auth/cloud-platform
+
+outputs:
+  nba-offer-targeting-checker-serving-workflow-id: ${nba-offer-targeting-checker-serving-exec.id}
+  
+
+
+  
+  
