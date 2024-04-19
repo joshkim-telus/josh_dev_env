@@ -1,4 +1,4 @@
-10) checks for validity of offer parameter sheet np 
+--10) checks for validity of offer parameter sheet np 
 
 with max_dt as (
     SELECT 
