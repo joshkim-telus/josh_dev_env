@@ -1,4 +1,4 @@
-9) checks for validity of offer parameter sheet
+--9) checks for validity of offer parameter sheet
 with max_dt as (
     SELECT 
     max(part_dt) as part_dt

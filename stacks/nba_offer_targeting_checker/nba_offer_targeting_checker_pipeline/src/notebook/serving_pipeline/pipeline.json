@@ -1,0 +1,311 @@
+{
+  "pipelineSpec": {
+    "components": {
+      "comp-output-validation": {
+        "executorLabel": "exec-output-validation",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "query": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-output-validation-2": {
+        "executorLabel": "exec-output-validation-2",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "query": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-output-validation-3": {
+        "executorLabel": "exec-output-validation-3",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "query": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            }
+          }
+        }
+      }
+    },
+    "deploymentSpec": {
+      "executors": {
+        "exec-output-validation": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "output_validation"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef output_validation(\n        project_id: str\n      , dataset_id: str\n      , query: str\n       , token: str\n      ):\n    print('1')\n    from google.cloud import bigquery\n    import logging\n    from datetime import datetime\n\n     #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    #### For prod\n    #    client = bigquery.Client(project=project_id)\n    #    job_config = bigquery.QueryJobConfig()\n\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n\n    if df.shape[0] < 1:\n        validation = 'pass'\n    else:\n        validation = 'fail'\n\n    print(validation)\n\n    logging.info(df.to_string())\n\n    logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n             {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \\\n             {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S')} !\")\n\n    return validation\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:1.0.6",
+            "resources": {
+              "cpuLimit": 4.0,
+              "memoryLimit": 16.0
+            }
+          }
+        },
+        "exec-output-validation-2": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "output_validation"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef output_validation(\n        project_id: str\n      , dataset_id: str\n      , query: str\n       , token: str\n      ):\n    print('1')\n    from google.cloud import bigquery\n    import logging\n    from datetime import datetime\n\n     #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    #### For prod\n    #    client = bigquery.Client(project=project_id)\n    #    job_config = bigquery.QueryJobConfig()\n\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n\n    if df.shape[0] < 1:\n        validation = 'pass'\n    else:\n        validation = 'fail'\n\n    print(validation)\n\n    logging.info(df.to_string())\n\n    logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n             {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \\\n             {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S')} !\")\n\n    return validation\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:1.0.6",
+            "resources": {
+              "cpuLimit": 4.0,
+              "memoryLimit": 16.0
+            }
+          }
+        },
+        "exec-output-validation-3": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "output_validation"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef output_validation(\n        project_id: str\n      , dataset_id: str\n      , query: str\n       , token: str\n      ):\n    print('1')\n    from google.cloud import bigquery\n    import logging\n    from datetime import datetime\n\n     #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    #### For prod\n    #    client = bigquery.Client(project=project_id)\n    #    job_config = bigquery.QueryJobConfig()\n\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n\n    if df.shape[0] < 1:\n        validation = 'pass'\n    else:\n        validation = 'fail'\n\n    print(validation)\n\n    logging.info(df.to_string())\n\n    logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n             {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \\\n             {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S')} !\")\n\n    return validation\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:1.0.6",
+            "resources": {
+              "cpuLimit": 4.0,
+              "memoryLimit": 16.0
+            }
+          }
+        }
+      }
+    },
+    "pipelineInfo": {
+      "name": "nba-offer-targeting-checker-serving-pipeline"
+    },
+    "root": {
+      "dag": {
+        "tasks": {
+          "output-validation": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-output-validation"
+            },
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "nba_offer_targeting"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bi-stg-mobilityds-pr-db8ce2"
+                    }
+                  }
+                },
+                "query": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "-- No overlap between the tables\nWITH CTE AS (\nSELECT coalesce(safe_cast(a.cust_id as int64), 0) as cust_id\n,coalesce(safe_cast(a.mobility_ban as int64), 0) as mobility_ban\n,coalesce(safe_cast(a.lpds_id as int64), 0) as lpds_id\n, 1 AS _count \nFROM nba_offer_targeting_np.nba_ffh_offer_ranking_cat3 a\nGROUP BY cust_id\n,mobility_ban\n,lpds_id\n\nUNION ALL\n\nSELECT coalesce(safe_cast(a.cust_id as int64), 0) as cust_id\n,coalesce(safe_cast(a.mobility_ban as int64), 0) as mobility_ban\n,coalesce(safe_cast(a.lpds_id as int64), 0) as lpds_id\n, 1 AS _count \nFROM nba_offer_targeting_np.nba_ffh_offer_ranking_prospects a\nGROUP BY cust_id\n,mobility_ban\n,lpds_id\n\nUNION ALL\n\nSELECT coalesce(safe_cast(a.cust_id as int64), 0) as cust_id\n,coalesce(safe_cast(a.mobility_ban as int64), 0) as mobility_ban\n,coalesce(safe_cast(a.lpds_id as int64), 0) as lpds_id\n, 1 AS _count \nFROM nba_offer_targeting_np.nba_ffh_offer_ranking_existing a\nGROUP BY cust_id\n,mobility_ban\n,lpds_id\n)\n\nSELECT cust_id\n,mobility_ban\n,lpds_id\n, SUM(_count) as _count \nFROM CTE \nGROUP BY cust_id\n,mobility_ban\n,lpds_id \nHAVING _count > 1 \nORDER BY _count DESC\n\n\n\n\n\n"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.c.c0AY_VpZgSq5EThR9qwD38DOOJqLYeSM6iQ2aOzFI2fGzgRRK4fkooTVpU9YckqA45QaNG3Wra_lTYZ4QciaI9pSDIDiNuuNvQM2pnt2AyAr8zsTEhecFrO92vwDq0OdFSIZVZjf_eRRAM2nU8fjk8t-ZlpagCiklA3tTdSMQBPEAbJ0XtrscYchAIZRwewI0_wTTrTjsTjKi_Uw2CuYqir7nvw66jAOTnRqV2zvw7_CAI12YFM0LLzMmZsJUOUfljClbqhayB5NRjEYx9e2pw5Cq2E7yUzoPzYD_dsj4y5BMX21C4i33LTZlTU3MjPy2KmYErqyuBI3jLP3OLF7IzUR31z5gzuTqRhx3enL0SWOjzzwgiPorSZ2J1C_xjlQS1riZbmwG399Dn_vBRlw5R-XarttX52J6iVisi_rxjmiSpi725q2wRpX8bY9e24Zj6Ygc7o47gO1m93SVapUIR1MIYZgwBc7SrmFFXk51_oJqoMglhOnc5V5oYZr66hs0vutw5z7aIdrz2SbaMwYmZbz1x98h8xp99grxarqJ7zbep1bs3m23lssQc-c-axWi07MM4bb1Btej7V3JQknS-48oVJ_yx2u298yl5v0j_949Ydfbww5n5O5J10ha8tlf36tJtVOv0Q7V91wd5hFQS4i3-jtynn1IgrkBh7bOo8_dSmvfcooSI973xXUX_055XpfUtQhaWsOYzh1oz7ZzFt8J3nZMVIRrxtBXgjVIQZQfVuJdp0rlwjpFXqjvcisYkrWXy6Ir1-0Qh_jy2-Sa9JyxhklMFjX2Ic9_3F9W0z3kqtkcrgQ-ju3RJdv2Ro1iappYfX_df17eaQifsysu15M4n4ZdplMVvBRoyidUnpvf9VZJqmew62dpYYh5_sehWXU0Us6l28x5a79S-YuX3F58gympnwd09-saWBXJQRwz2IISgJSyixJBryxnnp1OZ61fkYVeVJU93oaVz-Q3p5RcgQhY5nMthOFF6-zjju2w16IXegqyg1Z2"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "output-validation"
+            }
+          },
+          "output-validation-2": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-output-validation-2"
+            },
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "nba_offer_targeting"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bi-stg-mobilityds-pr-db8ce2"
+                    }
+                  }
+                },
+                "query": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "--7) checks whether there's any empty string in digital_category field \nWITH base AS (\nSELECT \n    digital_category\n    , count(cust_id) as cnt1\n    , count(distinct cust_id) as cnt2\n  FROM `nba_offer_targeting_np.nba_ffh_offer_ranking`\n    group by digital_category\n    order by cnt1 desc\n) \n\nselect * \nfrom base \nwhere trim(digital_category) = \"\""
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.c.c0AY_VpZgSq5EThR9qwD38DOOJqLYeSM6iQ2aOzFI2fGzgRRK4fkooTVpU9YckqA45QaNG3Wra_lTYZ4QciaI9pSDIDiNuuNvQM2pnt2AyAr8zsTEhecFrO92vwDq0OdFSIZVZjf_eRRAM2nU8fjk8t-ZlpagCiklA3tTdSMQBPEAbJ0XtrscYchAIZRwewI0_wTTrTjsTjKi_Uw2CuYqir7nvw66jAOTnRqV2zvw7_CAI12YFM0LLzMmZsJUOUfljClbqhayB5NRjEYx9e2pw5Cq2E7yUzoPzYD_dsj4y5BMX21C4i33LTZlTU3MjPy2KmYErqyuBI3jLP3OLF7IzUR31z5gzuTqRhx3enL0SWOjzzwgiPorSZ2J1C_xjlQS1riZbmwG399Dn_vBRlw5R-XarttX52J6iVisi_rxjmiSpi725q2wRpX8bY9e24Zj6Ygc7o47gO1m93SVapUIR1MIYZgwBc7SrmFFXk51_oJqoMglhOnc5V5oYZr66hs0vutw5z7aIdrz2SbaMwYmZbz1x98h8xp99grxarqJ7zbep1bs3m23lssQc-c-axWi07MM4bb1Btej7V3JQknS-48oVJ_yx2u298yl5v0j_949Ydfbww5n5O5J10ha8tlf36tJtVOv0Q7V91wd5hFQS4i3-jtynn1IgrkBh7bOo8_dSmvfcooSI973xXUX_055XpfUtQhaWsOYzh1oz7ZzFt8J3nZMVIRrxtBXgjVIQZQfVuJdp0rlwjpFXqjvcisYkrWXy6Ir1-0Qh_jy2-Sa9JyxhklMFjX2Ic9_3F9W0z3kqtkcrgQ-ju3RJdv2Ro1iappYfX_df17eaQifsysu15M4n4ZdplMVvBRoyidUnpvf9VZJqmew62dpYYh5_sehWXU0Us6l28x5a79S-YuX3F58gympnwd09-saWBXJQRwz2IISgJSyixJBryxnnp1OZ61fkYVeVJU93oaVz-Q3p5RcgQhY5nMthOFF6-zjju2w16IXegqyg1Z2"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "output-validation-2"
+            }
+          },
+          "output-validation-3": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-output-validation-3"
+            },
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "nba_offer_targeting"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bi-stg-mobilityds-pr-db8ce2"
+                    }
+                  }
+                },
+                "query": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "-- promo_seg field cannot be empty in any row\nSELECT \n  * \nFROM \n  nba_offer_targeting_np.nba_ffh_offer_ranking\nWHERE\n  CHAR_LENGTH(promo_seg) < 6 or promo_seg is null\n\n"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.c.c0AY_VpZgSq5EThR9qwD38DOOJqLYeSM6iQ2aOzFI2fGzgRRK4fkooTVpU9YckqA45QaNG3Wra_lTYZ4QciaI9pSDIDiNuuNvQM2pnt2AyAr8zsTEhecFrO92vwDq0OdFSIZVZjf_eRRAM2nU8fjk8t-ZlpagCiklA3tTdSMQBPEAbJ0XtrscYchAIZRwewI0_wTTrTjsTjKi_Uw2CuYqir7nvw66jAOTnRqV2zvw7_CAI12YFM0LLzMmZsJUOUfljClbqhayB5NRjEYx9e2pw5Cq2E7yUzoPzYD_dsj4y5BMX21C4i33LTZlTU3MjPy2KmYErqyuBI3jLP3OLF7IzUR31z5gzuTqRhx3enL0SWOjzzwgiPorSZ2J1C_xjlQS1riZbmwG399Dn_vBRlw5R-XarttX52J6iVisi_rxjmiSpi725q2wRpX8bY9e24Zj6Ygc7o47gO1m93SVapUIR1MIYZgwBc7SrmFFXk51_oJqoMglhOnc5V5oYZr66hs0vutw5z7aIdrz2SbaMwYmZbz1x98h8xp99grxarqJ7zbep1bs3m23lssQc-c-axWi07MM4bb1Btej7V3JQknS-48oVJ_yx2u298yl5v0j_949Ydfbww5n5O5J10ha8tlf36tJtVOv0Q7V91wd5hFQS4i3-jtynn1IgrkBh7bOo8_dSmvfcooSI973xXUX_055XpfUtQhaWsOYzh1oz7ZzFt8J3nZMVIRrxtBXgjVIQZQfVuJdp0rlwjpFXqjvcisYkrWXy6Ir1-0Qh_jy2-Sa9JyxhklMFjX2Ic9_3F9W0z3kqtkcrgQ-ju3RJdv2Ro1iappYfX_df17eaQifsysu15M4n4ZdplMVvBRoyidUnpvf9VZJqmew62dpYYh5_sehWXU0Us6l28x5a79S-YuX3F58gympnwd09-saWBXJQRwz2IISgJSyixJBryxnnp1OZ61fkYVeVJU93oaVz-Q3p5RcgQhY5nMthOFF6-zjju2w16IXegqyg1Z2"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "output-validation-3"
+            }
+          }
+        }
+      },
+      "inputDefinitions": {
+        "parameters": {
+          "file_bucket": {
+            "type": "STRING"
+          },
+          "project_id": {
+            "type": "STRING"
+          },
+          "region": {
+            "type": "STRING"
+          },
+          "resource_bucket": {
+            "type": "STRING"
+          }
+        }
+      }
+    },
+    "schemaVersion": "2.0.0",
+    "sdkVersion": "kfp-1.8.11"
+  },
+  "runtimeConfig": {
+    "parameters": {
+      "file_bucket": {
+        "stringValue": "personalspace-pr-857c85-default"
+      },
+      "project_id": {
+        "stringValue": "bi-stg-mobilityds-pr-db8ce2"
+      },
+      "region": {
+        "stringValue": "northamerica-northeast1"
+      },
+      "resource_bucket": {
+        "stringValue": ""
+      }
+    }
+  }
+}
