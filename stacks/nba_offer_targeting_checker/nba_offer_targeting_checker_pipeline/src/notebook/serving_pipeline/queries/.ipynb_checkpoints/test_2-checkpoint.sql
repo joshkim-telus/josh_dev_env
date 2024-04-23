@@ -1,4 +1,4 @@
--- each customer should have only one ranking number assigned for each offer. please advise if you find any case where a customer has 2 same rankings (e.g. ranking == 2) for two different offers
+--2) each customer should have only one ranking number assigned for each offer. please advise if you find any case where a customer has 2 same rankings (e.g. ranking == 2) for two different offers
 SELECT 
   cust_id,
   mobility_ban,

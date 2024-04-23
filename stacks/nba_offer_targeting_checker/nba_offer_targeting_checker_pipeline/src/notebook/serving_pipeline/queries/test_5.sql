@@ -1,4 +1,4 @@
--- No overlap between the tables
+--5) No overlap between the tables
 WITH CTE AS (
 SELECT coalesce(safe_cast(a.cust_id as int64), 0) as cust_id
 ,coalesce(safe_cast(a.mobility_ban as int64), 0) as mobility_ban

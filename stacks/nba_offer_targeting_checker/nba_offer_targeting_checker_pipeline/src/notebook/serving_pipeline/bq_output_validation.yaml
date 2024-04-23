@@ -6,7 +6,7 @@ inputs:
 - {name: token, type: String}
 implementation:
   container:
-    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:1.0.6
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest
     command:
     - sh
     - -c
@@ -16,7 +16,7 @@ implementation:
           python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
       fi
 
-      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && "$0" "$@"
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && "$0" "$@"
     - sh
     - -ec
     - |
@@ -30,12 +30,12 @@ implementation:
       from kfp.v2.dsl import *
       from typing import *
 
-      def output_validation(
-              project_id: str
-            , dataset_id: str
-            , query: str
+      def output_validation(project_id: str
+             , dataset_id: str
+             , query: str
              , token: str
             ):
+
           print('1')
           from google.cloud import bigquery
           import logging
@@ -52,7 +52,6 @@ implementation:
           #    client = bigquery.Client(project=project_id)
           #    job_config = bigquery.QueryJobConfig()
 
-
           df = client.query(query, job_config=job_config).to_dataframe()
 
           if df.shape[0] < 1:
@@ -64,9 +63,9 @@ implementation:
 
           logging.info(df.to_string())
 
-          logging.info(f"Loaded {df.total_rows[0]} rows into \
-                   {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \
-                   {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S')} !")
+      #     logging.info(f"Loaded {df.total_rows[0]} rows into \
+      #              {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \
+      #              {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S')} !")
 
           return validation
 

@@ -1,4 +1,4 @@
--- promo_seg field cannot be empty in any row
+-- 4) promo_seg field cannot be empty in any row
 SELECT 
   * 
 FROM 

@@ -72,13 +72,13 @@
             "command": [
               "sh",
               "-c",
-              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && \"$0\" \"$@\"\n",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
               "sh",
               "-ec",
               "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
-              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef output_validation(\n        project_id: str\n      , dataset_id: str\n      , query: str\n       , token: str\n      ):\n    print('1')\n    from google.cloud import bigquery\n    import logging\n    from datetime import datetime\n\n     #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    #### For prod\n    #    client = bigquery.Client(project=project_id)\n    #    job_config = bigquery.QueryJobConfig()\n\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n\n    if df.shape[0] < 1:\n        validation = 'pass'\n    else:\n        validation = 'fail'\n\n    print(validation)\n\n    logging.info(df.to_string())\n\n    logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n             {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \\\n             {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S')} !\")\n\n    return validation\n\n"
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef output_validation(project_id: str\n       , dataset_id: str\n       , query: str\n       , token: str\n      ):\n\n    print('1')\n    from google.cloud import bigquery\n    import logging\n    from datetime import datetime\n\n     #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    #### For prod\n    #    client = bigquery.Client(project=project_id)\n    #    job_config = bigquery.QueryJobConfig()\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n\n    if df.shape[0] < 1:\n        validation = 'pass'\n    else:\n        validation = 'fail'\n\n    print(validation)\n\n    logging.info(df.to_string())\n\n#     logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n#              {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \\\n#              {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S')} !\")\n\n    return validation\n\n"
             ],
-            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:1.0.6",
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
             "resources": {
               "cpuLimit": 4.0,
               "memoryLimit": 16.0
@@ -96,13 +96,13 @@
             "command": [
               "sh",
               "-c",
-              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && \"$0\" \"$@\"\n",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
               "sh",
               "-ec",
               "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
-              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef output_validation(\n        project_id: str\n      , dataset_id: str\n      , query: str\n       , token: str\n      ):\n    print('1')\n    from google.cloud import bigquery\n    import logging\n    from datetime import datetime\n\n     #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    #### For prod\n    #    client = bigquery.Client(project=project_id)\n    #    job_config = bigquery.QueryJobConfig()\n\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n\n    if df.shape[0] < 1:\n        validation = 'pass'\n    else:\n        validation = 'fail'\n\n    print(validation)\n\n    logging.info(df.to_string())\n\n    logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n             {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \\\n             {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S')} !\")\n\n    return validation\n\n"
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef output_validation(project_id: str\n       , dataset_id: str\n       , query: str\n       , token: str\n      ):\n\n    print('1')\n    from google.cloud import bigquery\n    import logging\n    from datetime import datetime\n\n     #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    #### For prod\n    #    client = bigquery.Client(project=project_id)\n    #    job_config = bigquery.QueryJobConfig()\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n\n    if df.shape[0] < 1:\n        validation = 'pass'\n    else:\n        validation = 'fail'\n\n    print(validation)\n\n    logging.info(df.to_string())\n\n#     logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n#              {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \\\n#              {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S')} !\")\n\n    return validation\n\n"
             ],
-            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:1.0.6",
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
             "resources": {
               "cpuLimit": 4.0,
               "memoryLimit": 16.0
@@ -120,13 +120,13 @@
             "command": [
               "sh",
               "-c",
-              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.11' && \"$0\" \"$@\"\n",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
               "sh",
               "-ec",
               "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
-              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef output_validation(\n        project_id: str\n      , dataset_id: str\n      , query: str\n       , token: str\n      ):\n    print('1')\n    from google.cloud import bigquery\n    import logging\n    from datetime import datetime\n\n     #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    #### For prod\n    #    client = bigquery.Client(project=project_id)\n    #    job_config = bigquery.QueryJobConfig()\n\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n\n    if df.shape[0] < 1:\n        validation = 'pass'\n    else:\n        validation = 'fail'\n\n    print(validation)\n\n    logging.info(df.to_string())\n\n    logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n             {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \\\n             {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S')} !\")\n\n    return validation\n\n"
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef output_validation(project_id: str\n       , dataset_id: str\n       , query: str\n       , token: str\n      ):\n\n    print('1')\n    from google.cloud import bigquery\n    import logging\n    from datetime import datetime\n\n     #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    #### For prod\n    #    client = bigquery.Client(project=project_id)\n    #    job_config = bigquery.QueryJobConfig()\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n\n    if df.shape[0] < 1:\n        validation = 'pass'\n    else:\n        validation = 'fail'\n\n    print(validation)\n\n    logging.info(df.to_string())\n\n#     logging.info(f\"Loaded {df.total_rows[0]} rows into \\\n#              {df.table_catalog[0]}.{df.table_schema[0]}.{df.table_name[0]} on \\\n#              {datetime.strftime((df.last_modified_time[0]), '%Y-%m-%d %H:%M:%S')} !\")\n\n    return validation\n\n"
             ],
-            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:1.0.6",
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
             "resources": {
               "cpuLimit": 4.0,
               "memoryLimit": 16.0
@@ -160,21 +160,21 @@
                 "project_id": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "bi-stg-mobilityds-pr-db8ce2"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
                     }
                   }
                 },
                 "query": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "-- No overlap between the tables\nWITH CTE AS (\nSELECT coalesce(safe_cast(a.cust_id as int64), 0) as cust_id\n,coalesce(safe_cast(a.mobility_ban as int64), 0) as mobility_ban\n,coalesce(safe_cast(a.lpds_id as int64), 0) as lpds_id\n, 1 AS _count \nFROM nba_offer_targeting_np.nba_ffh_offer_ranking_cat3 a\nGROUP BY cust_id\n,mobility_ban\n,lpds_id\n\nUNION ALL\n\nSELECT coalesce(safe_cast(a.cust_id as int64), 0) as cust_id\n,coalesce(safe_cast(a.mobility_ban as int64), 0) as mobility_ban\n,coalesce(safe_cast(a.lpds_id as int64), 0) as lpds_id\n, 1 AS _count \nFROM nba_offer_targeting_np.nba_ffh_offer_ranking_prospects a\nGROUP BY cust_id\n,mobility_ban\n,lpds_id\n\nUNION ALL\n\nSELECT coalesce(safe_cast(a.cust_id as int64), 0) as cust_id\n,coalesce(safe_cast(a.mobility_ban as int64), 0) as mobility_ban\n,coalesce(safe_cast(a.lpds_id as int64), 0) as lpds_id\n, 1 AS _count \nFROM nba_offer_targeting_np.nba_ffh_offer_ranking_existing a\nGROUP BY cust_id\n,mobility_ban\n,lpds_id\n)\n\nSELECT cust_id\n,mobility_ban\n,lpds_id\n, SUM(_count) as _count \nFROM CTE \nGROUP BY cust_id\n,mobility_ban\n,lpds_id \nHAVING _count > 1 \nORDER BY _count DESC\n\n\n\n\n\n"
+                      "stringValue": "\n-- No offer #2 if there's no offer #1. Etc...\nWITH CTE AS (\n  SELECT \n    cust_id,\n    mobility_ban,\n    lpds_id,\n    COUNT(CASE WHEN ranking = 1 THEN ranking ELSE NULL END) as ranking_1,\n    COUNT(CASE WHEN ranking = 2 THEN ranking ELSE NULL END) as ranking_2,\n    COUNT(CASE WHEN ranking = 3 THEN ranking ELSE NULL END) as ranking_3,\n    COUNT(CASE WHEN ranking = 4 THEN ranking ELSE NULL END) as ranking_4,\n    COUNT(CASE WHEN ranking = 5 THEN ranking ELSE NULL END) as ranking_5,\n    COUNT(CASE WHEN ranking = 6 THEN ranking ELSE NULL END) as ranking_6,\n    COUNT(CASE WHEN ranking = 7 THEN ranking ELSE NULL END) as ranking_7,\n    COUNT(CASE WHEN ranking = 8 THEN ranking ELSE NULL END) as ranking_8,\n    COUNT(CASE WHEN ranking = 9 THEN ranking ELSE NULL END) as ranking_9,\n    COUNT(CASE WHEN ranking = 10 THEN ranking ELSE NULL END) as ranking_10,\n    SUM(ranking) AS ranking_sum\n  FROM \n    nba_offer_targeting_np.nba_ffh_offer_ranking\n  GROUP BY\n    cust_id,\n    mobility_ban,\n    lpds_id\n),\nODD_ONES AS (\n  SELECT \n    *\n  FROM \n    CTE\n  WHERE\n    ranking_sum NOT IN (1,3,6,10,15,21,28,36,45,55,66,78,91,105,120,136,153,171,190,210,231,253,276,300,325,351,378,406,435,465,496,528,561,595,630,666,703,741,780,820,861,903,946,990,1035,1081,1128,1176,1225,1275)\n),\nvalid_t1 AS (\n  SELECT *,\n  'valid_t1' as table_1 FROM nba_offer_targeting_np.nba_ffh_offer_ranking_cat3\n),\nvalid_t2 AS (\n  SELECT *,\n  'valid_t2' as table_2 FROM nba_offer_targeting_np.nba_ffh_offer_ranking_existing\n),\nvalid_t3 AS (\n  SELECT *,\n  'valid_t3' as table_3 FROM nba_offer_targeting_np.nba_ffh_offer_ranking_prospects\n)\nSELECT \n  OO.cust_id,\n  OO.mobility_ban,\n  OO.lpds_id,\n  OO.ranking_1,\n  OO.ranking_2,\n  OO.ranking_3,\n  OO.ranking_4,\n  OO.ranking_5,\n  OO.ranking_6,\n  OO.ranking_7,\n  OO.ranking_8,\n  OO.ranking_9,\n  OO.ranking_10,\n  OO.ranking_sum,\n  CASE WHEN (table_1 IS NOT NULL) AND (table_2 IS NOT NULL) AND (table_3 IS NOT NULL) THEN 1 ELSE 0 END as validation_ind\nFROM \n  ODD_ONES OO\nLEFT JOIN valid_t1 as t1\n  on OO.cust_id = t1.cust_id\nLEFT JOIN valid_t2 as t2\n  on OO.cust_id = t2.cust_id\nLEFT JOIN valid_t3 as t3\n  on OO.cust_id = t3.cust_id\nGROUP BY\n  OO.cust_id,\n  OO.mobility_ban,\n  OO.lpds_id,\n  OO.ranking_1,\n  OO.ranking_2,\n  OO.ranking_3,\n  OO.ranking_4,\n  OO.ranking_5,\n  OO.ranking_6,\n  OO.ranking_7,\n  OO.ranking_8,\n  OO.ranking_9,\n  OO.ranking_10,\n  OO.ranking_sum,\n  validation_ind\nHAVING\n  validation_ind = 0\n\n\n"
                     }
                   }
                 },
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.c.c0AY_VpZgSq5EThR9qwD38DOOJqLYeSM6iQ2aOzFI2fGzgRRK4fkooTVpU9YckqA45QaNG3Wra_lTYZ4QciaI9pSDIDiNuuNvQM2pnt2AyAr8zsTEhecFrO92vwDq0OdFSIZVZjf_eRRAM2nU8fjk8t-ZlpagCiklA3tTdSMQBPEAbJ0XtrscYchAIZRwewI0_wTTrTjsTjKi_Uw2CuYqir7nvw66jAOTnRqV2zvw7_CAI12YFM0LLzMmZsJUOUfljClbqhayB5NRjEYx9e2pw5Cq2E7yUzoPzYD_dsj4y5BMX21C4i33LTZlTU3MjPy2KmYErqyuBI3jLP3OLF7IzUR31z5gzuTqRhx3enL0SWOjzzwgiPorSZ2J1C_xjlQS1riZbmwG399Dn_vBRlw5R-XarttX52J6iVisi_rxjmiSpi725q2wRpX8bY9e24Zj6Ygc7o47gO1m93SVapUIR1MIYZgwBc7SrmFFXk51_oJqoMglhOnc5V5oYZr66hs0vutw5z7aIdrz2SbaMwYmZbz1x98h8xp99grxarqJ7zbep1bs3m23lssQc-c-axWi07MM4bb1Btej7V3JQknS-48oVJ_yx2u298yl5v0j_949Ydfbww5n5O5J10ha8tlf36tJtVOv0Q7V91wd5hFQS4i3-jtynn1IgrkBh7bOo8_dSmvfcooSI973xXUX_055XpfUtQhaWsOYzh1oz7ZzFt8J3nZMVIRrxtBXgjVIQZQfVuJdp0rlwjpFXqjvcisYkrWXy6Ir1-0Qh_jy2-Sa9JyxhklMFjX2Ic9_3F9W0z3kqtkcrgQ-ju3RJdv2Ro1iappYfX_df17eaQifsysu15M4n4ZdplMVvBRoyidUnpvf9VZJqmew62dpYYh5_sehWXU0Us6l28x5a79S-YuX3F58gympnwd09-saWBXJQRwz2IISgJSyixJBryxnnp1OZ61fkYVeVJU93oaVz-Q3p5RcgQhY5nMthOFF6-zjju2w16IXegqyg1Z2"
+                      "stringValue": "ya29.a0Ad52N38fic8cxcF2TxfqRRCBb41JmL8lUkChDFf42gcf3AFMsrBOi_bAb7AmUOZsjjjWlpYj8vhIfcaWHHyxa8TTf4kCSBfyHAXCGrJkMCDgBQ_48UMYbXj-ZqjQscq_Z5GG-sUgNc57ZOLKqBmmid0cbfkIc3zmTuSZSBRXUCjsaCgYKAZASARISFQHGX2MiDnrOoe_VfUP3Jm3CvbCjXw0179"
                     }
                   }
                 }
@@ -191,6 +191,9 @@
             "componentRef": {
               "name": "comp-output-validation-2"
             },
+            "dependentTasks": [
+              "output-validation"
+            ],
             "inputs": {
               "parameters": {
                 "dataset_id": {
@@ -203,21 +206,21 @@
                 "project_id": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "bi-stg-mobilityds-pr-db8ce2"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
                     }
                   }
                 },
                 "query": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "--7) checks whether there's any empty string in digital_category field \nWITH base AS (\nSELECT \n    digital_category\n    , count(cust_id) as cnt1\n    , count(distinct cust_id) as cnt2\n  FROM `nba_offer_targeting_np.nba_ffh_offer_ranking`\n    group by digital_category\n    order by cnt1 desc\n) \n\nselect * \nfrom base \nwhere trim(digital_category) = \"\""
+                      "stringValue": "-- 4) promo_seg field cannot be empty in any row\nSELECT \n  * \nFROM \n  nba_offer_targeting_np.nba_ffh_offer_ranking\nWHERE\n  CHAR_LENGTH(promo_seg) < 6 or promo_seg is null\n\n"
                     }
                   }
                 },
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.c.c0AY_VpZgSq5EThR9qwD38DOOJqLYeSM6iQ2aOzFI2fGzgRRK4fkooTVpU9YckqA45QaNG3Wra_lTYZ4QciaI9pSDIDiNuuNvQM2pnt2AyAr8zsTEhecFrO92vwDq0OdFSIZVZjf_eRRAM2nU8fjk8t-ZlpagCiklA3tTdSMQBPEAbJ0XtrscYchAIZRwewI0_wTTrTjsTjKi_Uw2CuYqir7nvw66jAOTnRqV2zvw7_CAI12YFM0LLzMmZsJUOUfljClbqhayB5NRjEYx9e2pw5Cq2E7yUzoPzYD_dsj4y5BMX21C4i33LTZlTU3MjPy2KmYErqyuBI3jLP3OLF7IzUR31z5gzuTqRhx3enL0SWOjzzwgiPorSZ2J1C_xjlQS1riZbmwG399Dn_vBRlw5R-XarttX52J6iVisi_rxjmiSpi725q2wRpX8bY9e24Zj6Ygc7o47gO1m93SVapUIR1MIYZgwBc7SrmFFXk51_oJqoMglhOnc5V5oYZr66hs0vutw5z7aIdrz2SbaMwYmZbz1x98h8xp99grxarqJ7zbep1bs3m23lssQc-c-axWi07MM4bb1Btej7V3JQknS-48oVJ_yx2u298yl5v0j_949Ydfbww5n5O5J10ha8tlf36tJtVOv0Q7V91wd5hFQS4i3-jtynn1IgrkBh7bOo8_dSmvfcooSI973xXUX_055XpfUtQhaWsOYzh1oz7ZzFt8J3nZMVIRrxtBXgjVIQZQfVuJdp0rlwjpFXqjvcisYkrWXy6Ir1-0Qh_jy2-Sa9JyxhklMFjX2Ic9_3F9W0z3kqtkcrgQ-ju3RJdv2Ro1iappYfX_df17eaQifsysu15M4n4ZdplMVvBRoyidUnpvf9VZJqmew62dpYYh5_sehWXU0Us6l28x5a79S-YuX3F58gympnwd09-saWBXJQRwz2IISgJSyixJBryxnnp1OZ61fkYVeVJU93oaVz-Q3p5RcgQhY5nMthOFF6-zjju2w16IXegqyg1Z2"
+                      "stringValue": "ya29.a0Ad52N38fic8cxcF2TxfqRRCBb41JmL8lUkChDFf42gcf3AFMsrBOi_bAb7AmUOZsjjjWlpYj8vhIfcaWHHyxa8TTf4kCSBfyHAXCGrJkMCDgBQ_48UMYbXj-ZqjQscq_Z5GG-sUgNc57ZOLKqBmmid0cbfkIc3zmTuSZSBRXUCjsaCgYKAZASARISFQHGX2MiDnrOoe_VfUP3Jm3CvbCjXw0179"
                     }
                   }
                 }
@@ -234,6 +237,9 @@
             "componentRef": {
               "name": "comp-output-validation-3"
             },
+            "dependentTasks": [
+              "output-validation-2"
+            ],
             "inputs": {
               "parameters": {
                 "dataset_id": {
@@ -246,21 +252,21 @@
                 "project_id": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "bi-stg-mobilityds-pr-db8ce2"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
                     }
                   }
                 },
                 "query": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "-- promo_seg field cannot be empty in any row\nSELECT \n  * \nFROM \n  nba_offer_targeting_np.nba_ffh_offer_ranking\nWHERE\n  CHAR_LENGTH(promo_seg) < 6 or promo_seg is null\n\n"
+                      "stringValue": "--9) checks for validity of offer parameter sheet\nwith max_dt as (\n    SELECT \n    max(part_dt) as part_dt\n    FROM `nba_offer_targeting_np.bq_offer_targeting_params_upd` \n)\n\n, tdy as (\n    select a.* \n    from `nba_offer_targeting_np.bq_offer_targeting_params_upd` a \n    inner join max_dt b\n    on a.part_dt = b.part_dt\n    where a.if_active = 1 and a.HS_filters is not null\n)\n\n, checks as (\nselect \ncount(*) as col1\n, count(distinct ncid) as col2\n, count(distinct promo_seg) as col3\nfrom tdy\n) \n\nselect *\nfrom checks \nwhere col1 != col2 \nor col1 != col3\nor col2 != col3\n"
                     }
                   }
                 },
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.c.c0AY_VpZgSq5EThR9qwD38DOOJqLYeSM6iQ2aOzFI2fGzgRRK4fkooTVpU9YckqA45QaNG3Wra_lTYZ4QciaI9pSDIDiNuuNvQM2pnt2AyAr8zsTEhecFrO92vwDq0OdFSIZVZjf_eRRAM2nU8fjk8t-ZlpagCiklA3tTdSMQBPEAbJ0XtrscYchAIZRwewI0_wTTrTjsTjKi_Uw2CuYqir7nvw66jAOTnRqV2zvw7_CAI12YFM0LLzMmZsJUOUfljClbqhayB5NRjEYx9e2pw5Cq2E7yUzoPzYD_dsj4y5BMX21C4i33LTZlTU3MjPy2KmYErqyuBI3jLP3OLF7IzUR31z5gzuTqRhx3enL0SWOjzzwgiPorSZ2J1C_xjlQS1riZbmwG399Dn_vBRlw5R-XarttX52J6iVisi_rxjmiSpi725q2wRpX8bY9e24Zj6Ygc7o47gO1m93SVapUIR1MIYZgwBc7SrmFFXk51_oJqoMglhOnc5V5oYZr66hs0vutw5z7aIdrz2SbaMwYmZbz1x98h8xp99grxarqJ7zbep1bs3m23lssQc-c-axWi07MM4bb1Btej7V3JQknS-48oVJ_yx2u298yl5v0j_949Ydfbww5n5O5J10ha8tlf36tJtVOv0Q7V91wd5hFQS4i3-jtynn1IgrkBh7bOo8_dSmvfcooSI973xXUX_055XpfUtQhaWsOYzh1oz7ZzFt8J3nZMVIRrxtBXgjVIQZQfVuJdp0rlwjpFXqjvcisYkrWXy6Ir1-0Qh_jy2-Sa9JyxhklMFjX2Ic9_3F9W0z3kqtkcrgQ-ju3RJdv2Ro1iappYfX_df17eaQifsysu15M4n4ZdplMVvBRoyidUnpvf9VZJqmew62dpYYh5_sehWXU0Us6l28x5a79S-YuX3F58gympnwd09-saWBXJQRwz2IISgJSyixJBryxnnp1OZ61fkYVeVJU93oaVz-Q3p5RcgQhY5nMthOFF6-zjju2w16IXegqyg1Z2"
+                      "stringValue": "ya29.a0Ad52N38fic8cxcF2TxfqRRCBb41JmL8lUkChDFf42gcf3AFMsrBOi_bAb7AmUOZsjjjWlpYj8vhIfcaWHHyxa8TTf4kCSBfyHAXCGrJkMCDgBQ_48UMYbXj-ZqjQscq_Z5GG-sUgNc57ZOLKqBmmid0cbfkIc3zmTuSZSBRXUCjsaCgYKAZASARISFQHGX2MiDnrOoe_VfUP3Jm3CvbCjXw0179"
                     }
                   }
                 }
@@ -290,15 +296,15 @@
       }
     },
     "schemaVersion": "2.0.0",
-    "sdkVersion": "kfp-1.8.11"
+    "sdkVersion": "kfp-1.8.18"
   },
   "runtimeConfig": {
     "parameters": {
       "file_bucket": {
-        "stringValue": "personalspace-pr-857c85-default"
+        "stringValue": "divg-groovyhoon-pr-d2eab4-default"
       },
       "project_id": {
-        "stringValue": "bi-stg-mobilityds-pr-db8ce2"
+        "stringValue": "divg-groovyhoon-pr-d2eab4"
       },
       "region": {
         "stringValue": "northamerica-northeast1"

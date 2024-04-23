@@ -1,4 +1,4 @@
--- each row should contain either {cust_id ONLY, cust_id+lpds_id, mobility_ban ONLY, or mobility_ban+lpds_id). please let me know if you find any cases other than these 4 scenarios
+--3) each row should contain either {cust_id ONLY, cust_id+lpds_id, mobility_ban ONLY, or mobility_ban+lpds_id). please let me know if you find any cases other than these 4 scenarios
 WITH CTE AS (
   SELECT  
     cust_id,
