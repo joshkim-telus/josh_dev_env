@@ -1,0 +1,102 @@
+name: Preprocess
+description: Preprocess data for a machine learning training pipeline.
+inputs:
+- {name: project_id, type: String}
+- {name: dataset_id, type: String}
+- {name: table_id, type: String}
+- {name: file_bucket, type: String}
+- {name: resource_bucket, type: String}
+- {name: stack_name, type: String}
+- {name: pipeline_path, type: String}
+- {name: hs_nba_utils_path, type: String}
+- {name: cwd, type: String}
+- {name: model_type, type: String}
+- {name: token, type: String}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef preprocess(\n    project_id: str,\n    dataset_id: str,\n\
+      \    table_id: str,\n    file_bucket: str,\n    resource_bucket: str,\n    stack_name:\
+      \ str,\n    pipeline_path: str,\n    hs_nba_utils_path: str, \n    cwd:str,\n\
+      \    model_type:str,\n    token:str\n):\n    \"\"\"\n    Preprocess data for\
+      \ a machine learning training pipeline.\n    \"\"\"\n\n    # import global modules\n\
+      \    from google.cloud import storage\n    from google.cloud import bigquery\n\
+      \    from pathlib import Path\n    from yaml import safe_load\n    import sys\n\
+      \    import os\n\n    # set global vars\n\n    # # for wb \n    # pth_project\
+      \ = Path(cwd)\n\n    # for prod\n    pth_project = Path(os.getcwd())\n\n   \
+      \ print(f'pth_project: {pth_project}')\n\n    pth_model_config = pth_project\
+      \ / 'model_config.yaml'\n    pth_queries = pth_project / 'queries'\n    sys.path.insert(0,\
+      \ pth_project.as_posix())\n\n    # storage client gcp clients\n    storage_client\
+      \ = storage.Client()\n\n    #### For wb\n    import google.oauth2.credentials\n\
+      \    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client\
+      \ = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config\
+      \ = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n\
+      #     job_config = bigquery.QueryJobConfig()\n\n    def extract_dir_from_bucket(\n\
+      \        bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline'\
+      \ \n    ):\n        \"\"\"\n        Download files from a specified bucket to\
+      \ a local path, excluding a specified prefix.\n\n        Parameters:\n     \
+      \   - bucket: The bucket object from which to download files.\n        - local_path:\
+      \ The local path where the files will be downloaded to.\n        - prefix: The\
+      \ prefix to filter the files in the bucket. Only files with this prefix will\
+      \ be downloaded.\n        - split_prefix: The prefix to exclude from the downloaded\
+      \ file paths. Default is 'serving_pipeline'.\n        \"\"\"\n        for blob\
+      \ in bucket.list_blobs(prefix=prefix):\n            if not blob.name.endswith(\"\
+      /\"):\n                path = local_path / blob.name.split(f'{split_prefix}/')[-1]\n\
+      \                str_path = path.as_posix()\n                Path(str_path[:str_path.rindex('/')]).mkdir(parents=True,\
+      \ exist_ok=True)\n                blob.download_to_filename(str_path)\n\n  \
+      \  # download utils and model config locally\n    bucket = storage_client.bucket(resource_bucket)\n\
+      \    # extract_dir_from_bucket(\n    #     bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}',\
+      \ split_prefix='notebook'\n    # ) \n    # extract_dir_from_bucket(\n    # \
+      \    bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix='training_pipeline'\n\
+      \    # )\n\n    extract_dir_from_bucket(\n        bucket, pth_project, f'{hs_nba_utils_path}',\
+      \ split_prefix='notebook'\n    ) \n    extract_dir_from_bucket(\n        bucket,\
+      \ pth_project, f'{pipeline_path}/queries', split_prefix='training_pipeline'\n\
+      \    )\n\n    blob = bucket.blob(f'{pipeline_path}/model_config.yaml')\n   \
+      \ blob.download_to_filename(pth_model_config)\n\n    # import local modules\n\
+      \    from hs_nba_utils.etl.extract import extract_bq_data\n    from hs_nba_utils.modeling.prospects_features_preprocessing\
+      \ import process_prospects_features\n\n    print('modules loaded successfully')\n\
+      \n    # load model config\n    d_model_config = safe_load(pth_model_config.open())\n\
+      \n    print(f'pth_model_config: {pth_model_config}')\n\n    # select columns\
+      \ to query\n    target_column = d_model_config['target_column']\n    str_feature_names\
+      \ = ','.join([f\"cast({f['name']} as {f['type']}) as {f['name']}\" for f in\
+      \ d_model_config['features']])\n    str_customer_ids = ','.join([f\"cast({f['name']}\
+      \ as {f['type']}) as {f['name']}\" for f in d_model_config['customer_ids']])\n\
+      \    str_target_labels = ','.join([f\"\\\"{f['name']}\\\"\" for f in d_model_config['target_variables']['acquisition']])\n\
+      \n    # extract training data\n    sql = (pth_queries / 'load_train_data.sql').read_text().format(\n\
+      \        project_id=project_id\n        , dataset_id=dataset_id\n        , table_id=table_id\n\
+      \        , target_column=target_column\n        , customer_ids=str_customer_ids\n\
+      \        , feature_names=str_feature_names\n        , target_labels=str_target_labels\n\
+      \    )\n\n    # save sql to gcs bucket\n    file_name = f'{stack_name}/load_train_data.sql'\n\
+      \n    # Initialize a client\n    storage_client = storage.Client()\n\n    #\
+      \ Convert the string to bytes\n    content_bytes = sql.encode('utf-8')\n\n \
+      \   # Upload the file to GCS\n    bucket = storage_client.bucket(file_bucket)\n\
+      \    blob = bucket.blob(file_name)\n    blob.upload_from_string(content_bytes)\n\
+      \n    df = extract_bq_data(client, sql)\n    print(f\"Training dataset df.shape\
+      \ {df.shape}\")\n\n    # process features\n    df_processed = process_prospects_features(\n\
+      \        df, d_model_config, training_mode=True, model_type=model_type, target_name=target_column\n\
+      \    )\n    print(f\"Training dataset processed df.shape {df_processed.shape}\"\
+      )\n\n    # save data to pipeline bucket\n    df_processed.to_csv(\n        f'gs://{file_bucket}/nba_product_reco_prospects/training_dataset.csv',\
+      \ index=False\n    )\n    print(f'Training data saved into {file_bucket}')\n\
+      \n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - preprocess

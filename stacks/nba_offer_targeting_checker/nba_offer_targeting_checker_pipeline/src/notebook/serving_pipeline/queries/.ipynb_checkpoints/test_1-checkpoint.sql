@@ -17,7 +17,7 @@ WITH CTE AS (
     COUNT(CASE WHEN ranking = 10 THEN ranking ELSE NULL END) as ranking_10,
     SUM(ranking) AS ranking_sum
   FROM 
-    nba_offer_targeting_np.nba_ffh_offer_ranking
+    {dataset_id}.nba_ffh_offer_ranking
   GROUP BY
     cust_id,
     mobility_ban,
@@ -33,15 +33,15 @@ ODD_ONES AS (
 ),
 valid_t1 AS (
   SELECT *,
-  'valid_t1' as table_1 FROM nba_offer_targeting_np.nba_ffh_offer_ranking_cat3
+  'valid_t1' as table_1 FROM {dataset_id}.nba_ffh_offer_ranking_cat3
 ),
 valid_t2 AS (
   SELECT *,
-  'valid_t2' as table_2 FROM nba_offer_targeting_np.nba_ffh_offer_ranking_existing
+  'valid_t2' as table_2 FROM {dataset_id}.nba_ffh_offer_ranking_existing
 ),
 valid_t3 AS (
   SELECT *,
-  'valid_t3' as table_3 FROM nba_offer_targeting_np.nba_ffh_offer_ranking_prospects
+  'valid_t3' as table_3 FROM {dataset_id}.nba_ffh_offer_ranking_prospects
 )
 SELECT 
   OO.cust_id,
