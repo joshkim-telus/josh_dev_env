@@ -1,9 +1,17 @@
 name: Train and save model
 inputs:
 - {name: file_bucket, type: String}
+- {name: resource_bucket, type: String}
 - {name: service_type, type: String}
 - {name: project_id, type: String}
 - {name: dataset_id, type: String}
+- {name: model_type, type: String}
+- {name: train_csv, type: String}
+- {name: save_file_name, type: String}
+- {name: stats_file_name, type: String}
+- {name: pipeline_path, type: String}
+- {name: hs_nba_utils_path, type: String}
+- {name: token, type: String}
 outputs:
 - {name: metrics, type: Metrics}
 - {name: metricsc, type: ClassificationMetrics}
@@ -31,328 +39,64 @@ implementation:
       python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
     - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
       \ import *\n\ndef train_and_save_model(file_bucket: str\n                  \
-      \      , service_type: str\n                        , project_id: str\n    \
-      \                    , dataset_id: str\n                        , metrics: Output[Metrics]\n\
-      \                        , metricsc: Output[ClassificationMetrics]\n       \
-      \                 , model: Output[Model]\n                        # , token:\
+      \      , resource_bucket: str\n                        , service_type: str\n\
+      \                        , project_id: str\n                        , dataset_id:\
+      \ str\n                        , model_type: str\n                        ,\
+      \ train_csv: str\n                        , save_file_name: str\n          \
+      \              , stats_file_name: str\n                        , pipeline_path:\
+      \ str\n                        , hs_nba_utils_path: str\n                  \
+      \      , metrics: Output[Metrics]\n                        , metricsc: Output[ClassificationMetrics]\n\
+      \                        , model: Output[Model]\n                        , token:\
       \ str\n                        )-> NamedTuple(\"output\", [(\"col_list\", list),\
-      \ (\"model_uri\", str)]):\n\n    #### Import Libraries ####\n\n    telus_purple\
-      \ = '#4B286D'\n    telus_green = '#66CC00'\n    telus_grey = '#F4F4F7'\n\n \
-      \   import os \n    import gc\n    import time\n    import pickle\n    import\
-      \ joblib\n    import logging \n    import pandas as pd\n    import numpy as\
-      \ np\n    import xgboost as xgb\n    import seaborn as sns\n\n    import matplotlib.pyplot\
-      \ as plt\n    import plotly.graph_objs as go\n    import plotly.express as px\n\
-      \n    from plotly.subplots import make_subplots\n    from datetime import datetime\n\
-      \    from sklearn.metrics import roc_auc_score\n    from sklearn.preprocessing\
-      \ import normalize\n    from sklearn.model_selection import train_test_split\n\
-      \    from google.cloud import storage\n    from google.cloud import bigquery\n\
-      \n    from pycaret.classification import setup,create_model,tune_model, predict_model,get_config,compare_models,save_model,tune_model,\
-      \ models\n    from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve,\
-      \ mean_squared_error, f1_score, precision_score, recall_score, confusion_matrix,\
-      \ roc_curve, classification_report\n    from pycaret.datasets import get_data\n\
-      \n    def get_lift(prob, y_test, q):\n        result = pd.DataFrame(columns=['Prob',\
-      \ 'Churn'])\n        result['Prob'] = prob\n        result['Churn'] = y_test\n\
-      \        # result['Decile'] = pd.qcut(1-result['Prob'], 10, labels = False)\n\
-      \        result['Decile'] = pd.qcut(result['Prob'], q, labels=[i for i in range(q,\
-      \ 0, -1)])\n        add = pd.DataFrame(result.groupby('Decile')['Churn'].mean()).reset_index()\n\
-      \        add.columns = ['Decile', 'avg_real_churn_rate']\n        result = result.merge(add,\
-      \ on='Decile', how='left')\n        result.sort_values('Decile', ascending=True,\
-      \ inplace=True)\n        lg = pd.DataFrame(result.groupby('Decile')['Prob'].mean()).reset_index()\n\
-      \        lg.columns = ['Decile', 'avg_model_pred_churn_rate']\n        lg.sort_values('Decile',\
-      \ ascending=False, inplace=True)\n        lg['avg_churn_rate_total'] = result['Churn'].mean()\n\
-      \        lg['total_churn'] = result['Churn'].sum()\n        lg = lg.merge(add,\
-      \ on='Decile', how='left')\n        lg['lift'] = lg['avg_real_churn_rate'] /\
-      \ lg['avg_churn_rate_total']\n\n        return lg\n\n    def create_folder_if_not_exists(path):\n\
-      \        \"\"\"\n        Create a new folder based on a path if that path does\
-      \ not currently exist.\n        \"\"\"\n        if not os.path.exists(path):\n\
-      \            os.makedirs(path)\n            print(f\"Folder created: {path}\"\
-      )\n        else:\n            print(f\"Folder already exists: {path}\")\n\n\
-      \    def ploty_model_metrics(actual, predicted, plot=False):\n        f1_score_\
-      \ = f1_score(actual, predicted)\n        recall_score_ = recall_score(actual,\
-      \ predicted)\n        acc_score_ = accuracy_score(actual, predicted)\n     \
-      \   pr_score_ = precision_score(actual, predicted)\n\n        metrics_df = pd.DataFrame(data=[[acc_score_,\
-      \ pr_score_,recall_score_, f1_score_,]],\n                                 \
-      \ columns=['Accuracy', 'Precision', 'Recall', 'F1_score'])\n\n        trace\
-      \ = go.Bar(x = (metrics_df.T[0].values), \n                        y = list(metrics_df.columns),\
-      \ \n                        text = np.round_(metrics_df.T[0].values,4),\n  \
-      \                      textposition = 'auto',\n                        orientation\
-      \ = 'h', \n                        opacity = 0.8,\n                        marker=dict(\n\
-      \                                    color=[telus_purple] * 4,\n           \
-      \                         line=dict(color='#000000',width=1.5)\n           \
-      \                     )\n                       )\n        fig = go.Figure()\n\
-      \        fig.add_trace(trace)\n        fig.update_layout(title='Model Metrics')\n\
-      \n        if plot:\n            fig.show()\n        return  metrics_df, fig\n\
-      \n    def plotly_confusion_matrix(actual, \n                               \
-      \ predicted, \n                                axis_labels='',\n           \
-      \                     plot=False):\n        cm=confusion_matrix(actual, predicted)\n\
-      \n        if axis_labels=='':\n            x = [str(x) for x in range(pd.Series(actual).nunique())]\n\
-      \            #list(np.arange(0, actual.nunique()))\n            y = x\n    \
-      \    else:\n            y = axis_labels\n            x = axis_labels\n\n   \
-      \     fig = px.imshow(cm, \n                    text_auto=True,\n          \
-      \          aspect='auto',\n                    color_continuous_scale = 'Blues',\n\
-      \                    labels = dict(x = \"Predicted Labels\",\n             \
-      \                     y= \"Actual Labels\"),\n                    x = x,\n \
-      \                   y = y\n                    )\n        if plot:\n       \
-      \     fig.show()\n\n        return cm, fig\n\n    def plotly_output_hist(actual,\n\
-      \                           prediction_probs,\n                           plot=False\n\
-      \                          ):\n        hist_ = px.histogram(x = prediction_probs,\n\
-      \                             color = actual,\n                            \
-      \ nbins=100,\n                             labels=dict(color='True Labels',\n\
-      \                                         x = 'Prediction Probability'\n   \
-      \                                     )\n                            )\n   \
-      \     if plot:\n            hist_.show()\n\n\n        return hist_\n\n\n   \
-      \ def plotly_precision_recall(actual,\n                                predictions_prob,\n\
-      \                                plot=False\n                              \
-      \ ):\n        prec, recall, threshold = precision_recall_curve(actual, predictions_prob)\n\
-      \n        trace = go.Scatter(\n                            x=recall,\n     \
-      \                       y=prec,\n                            mode='lines',\n\
-      \                            line=dict(color=telus_purple),\n              \
-      \              fill='tozeroy',\n                            name='Precision-Recall\
-      \ curve'\n                        )\n        layout = go.Layout(\n         \
-      \                   title='Precision-Recall Curve',\n                      \
-      \      xaxis=dict(title='Recall'),\n                            yaxis=dict(title='Precision')\n\
-      \                        )\n        fig = go.Figure(data=[trace], layout=layout)\n\
-      \n        if plot:\n            fig.show()\n\n        return fig\n\n    def\
-      \ plotly_roc(actual,\n                    predictions_prob,\n              \
-      \      plot=False\n                   ):\n        auc_score = roc_auc_score(actual,\
-      \ predictions_prob)\n        fpr, tpr, thresholds  = roc_curve(actual, predictions_prob)\n\
-      \n        df = pd.DataFrame({\n                            'False Positive Rate':\
-      \ fpr,\n                            'True Positive Rate': tpr\n            \
-      \              }, \n                            index=thresholds)\n        df.index.name\
-      \ = \"Thresholds\"\n        df.columns.name = \"Rate\"\n        df = df.loc[df.index\
-      \ <= 1]\n        fig_tpr_fpr = 0\n\n        fig_tpr_fpr= px.line(\n        \
-      \                    df, \n                            title='TPR and FPR at\
-      \ every threshold',\n                        )\n\n        # ROC Curve with AUC\n\
-      \        trace = go.Scatter(\n                    x=fpr,\n                 \
-      \   y=tpr,\n                    mode='lines',\n                    line=dict(color=telus_purple),\n\
-      \                    fill='tozeroy',\n                    name='Precision-Recall\
-      \ curve'\n                )\n        layout = go.Layout(\n                 \
-      \           title=f'ROC Curve (AUC={auc_score:.4f})',\n                    \
-      \        xaxis=dict(title='False Positive Rate'),\n                        \
-      \    yaxis=dict(title='True Positive Rate')\n                        )\n   \
-      \     fig_roc = go.Figure(data=[trace], layout=layout)\n\n        fig_roc.add_shape(\n\
-      \            type='line', line=dict(dash='dash'),\n            x0=0, x1=1, y0=0,\
-      \ y1=1\n        )\n        fig_roc.update_xaxes(constrain='domain')\n\n    \
-      \    if plot:\n            fig_tpr_fpr.show()\n            fig_roc.show()\n\n\
-      \n        return fig_tpr_fpr, fig_roc, df, auc_score\n\n    def plotly_lift_curve(actual,\n\
-      \                          predictions_prob,\n                          step=0.01,\n\
-      \                          plot=False\n                         ):\n       \
-      \ #Define an auxiliar dataframe to plot the curve\n        aux_lift = pd.DataFrame()\n\
-      \        #Create a real and predicted column for our new DataFrame and assign\
-      \ values\n        aux_lift['real'] = actual\n        aux_lift['predicted'] =\
-      \ predictions_prob\n        #Order the values for the predicted probability\
-      \ column:\n        aux_lift.sort_values('predicted',ascending=False,inplace=True)\n\
-      \n        #Create the values that will go into the X axis of our plot\n    \
-      \    x_val = np.arange(step,1+step,step)\n        #Calculate the ratio of ones\
-      \ in our data\n        ratio_ones = aux_lift['real'].sum() / len(aux_lift)\n\
-      \        #Create an empty vector with the values that will go on the Y axis\
-      \ our our plot\n        y_v = []\n\n        #Calculate for each x value its\
-      \ correspondent y value\n        for x in x_val:\n            num_data = int(np.ceil(x*len(aux_lift)))\
-      \ #The ceil function returns the closest integer bigger than our number \n \
-      \           data_here = aux_lift.iloc[:num_data,:]   # ie. np.ceil(1.4) = 2\n\
-      \            ratio_ones_here = data_here['real'].sum()/len(data_here)\n    \
-      \        y_v.append(ratio_ones_here / ratio_ones)\n\n        # Lift Curve \n\
-      \        trace = go.Scatter(\n                    x=x_val,\n               \
-      \     y=y_v,\n                    mode='lines',\n                    line=dict(color=telus_purple),\n\
-      \n                    name='Lift Curve'\n                )\n        layout =\
-      \ go.Layout(\n                            title=f'Lift Curve',\n           \
-      \                 xaxis=dict(title='Proportion of Sample'),\n              \
-      \              yaxis=dict(title='Lift')\n                        )\n       \
-      \ fig_lift = go.Figure(data=[trace], layout=layout)\n\n        fig_lift.add_shape(\n\
-      \            type='line', line=dict(dash='dash'),\n            x0=0, x1=1, y0=1,\
-      \ y1=1\n        )\n        fig_lift.update_xaxes(constrain='domain')\n\n   \
-      \     if plot:\n            fig_lift.show()\n\n        return fig_lift\n\n \
-      \   def plotly_feature_importance(model,\n                                 \
-      \ columns,\n                                  plot=False):\n        coefficients\
-      \  = pd.DataFrame(model.feature_importances_)\n        column_data   = pd.DataFrame(columns)\n\
-      \        coef_sumry    = (pd.merge(coefficients,column_data,left_index= True,\n\
-      \                                  right_index= True, how = \"left\"))\n\n \
-      \       coef_sumry.columns = [\"coefficients\",\"features\"]\n        coef_sumry\
-      \ = coef_sumry.sort_values(by = \"coefficients\",ascending = False)\n\n    \
-      \    fig_feats = 0\n        trace= go.Bar(y = coef_sumry[\"features\"].head(15).iloc[::-1],\n\
-      \                      x = coef_sumry[\"coefficients\"].head(15).iloc[::-1],\n\
-      \                      name = \"coefficients\",\n                      marker\
-      \ = dict(color = coef_sumry[\"coefficients\"],\n                           \
-      \         colorscale = \"Viridis\",\n                                    line\
-      \ = dict(width = .6,color = \"black\")\n                                   ),\n\
-      \                      orientation='h'\n                     )\n        layout\
-      \ = go.Layout(\n                            title='Feature Importance',\n  \
-      \                          yaxis=dict(title='Features')\n\n                \
-      \        )\n        fig_feats = go.Figure(data=[trace], layout=layout)\n\n \
-      \       if plot:\n            fig_feats.update_yaxes(automargin=True)\n    \
-      \        fig_feats.show()\n        return coef_sumry, fig_feats\n\n    def plotly_model_report(model,\n\
-      \                            actual,\n                            predicted,\n\
-      \                            predictions_prob,\n                           \
-      \ bucket_name,\n                            show_report = True,\n          \
-      \                  columns=[],\n                            save_path = ''\n\
-      \                           ):\n        print(model.__class__.__name__)\n\n\
-      \        metrics_df, fig_metrics = ploty_model_metrics(actual, \n          \
-      \                                        predicted, \n                     \
-      \                             plot=False)\n        cm, fig_cm = plotly_confusion_matrix(actual,\
-      \ \n                                            predicted, \n              \
-      \                              axis_labels='',\n                           \
-      \                 plot=False)\n        fig_hist = plotly_output_hist(actual,\
-      \ \n                                      prediction_probs=predictions_prob,\n\
-      \                                      plot=False)\n        fig_pr = plotly_precision_recall(actual,\n\
-      \                                    predictions_prob,\n                   \
-      \                 plot=False\n                                   )\n       \
-      \ fig_tpr_fpr, fig_roc, _, auc_score = plotly_roc(actual,\n                \
-      \                    predictions_prob,\n                                   \
-      \ plot=False\n                                   )\n        try:\n         \
-      \   coefs_df, fig_feats = plotly_feature_importance(model=model, \n        \
-      \                                                    columns = columns,\n  \
-      \                                                            plot=False)\n \
-      \           coefs_df=coefs_df.to_dict()\n        except:\n            coefs_df\
-      \ = 0\n            pass\n        fig_lift = plotly_lift_curve(actual,\n    \
-      \                          predictions_prob,\n                             \
-      \ step=0.01,\n                              plot=False\n                   \
-      \          )\n        # Figure out how to put this into report on Monday ->\
-      \ Not Urgent\n        cr=classification_report(actual,predicted, output_dict=True)\n\
-      \n        # Generate dataframe with summary of results in one row\n\n      \
-      \  results_cols = ['date', 'model_name', 'estimator_type', \n              \
-      \          'confusion_matrix','classification_report', \n                  \
-      \      'auc_score', 'feature_importances']\n        results_list = [datetime.now().strftime(\"\
-      %Y-%m-%d\"), model.__class__.__name__,  model._estimator_type,\n           \
-      \             cm, cr,\n                        auc_score, coefs_df\n       \
-      \                ]\n\n        results_df_combined = pd.concat([pd.DataFrame([results_list],\
-      \ columns=results_cols),\n                                         metrics_df],\n\
-      \                                       axis=1)\n\n        # Generate Plotly\
-      \ page report\n\n        report_fig = make_subplots(rows=4, \n             \
-      \                   cols=2, \n                                print_grid=False,\
-      \ \n                                specs=[[{}, {}], \n                    \
-      \                 [{}, {}],\n                                     [{}, {}],\n\
-      \                                     [{}, {}],\n                          \
-      \           ],\n                                subplot_titles=('Confusion Matrix',\n\
-      \                                            'Model Metrics',\n            \
-      \                                'Probability Output Histogram',\n         \
-      \                                   'Precision - Recall curve',\n          \
-      \                                  'TPR & FPR Vs. Threshold',\n            \
-      \                                f'ROC Curve: AUC Score {np.round(auc_score,\
-      \ 3)}',                                        \n                          \
-      \                  'Feature importance',\n                                 \
-      \           'Lift Curve'\n                                            )\n  \
-      \                              )        \n\n        report_fig.append_trace(fig_cm.data[0],1,1)\n\
-      \        report_fig.update_coloraxes(showscale=False)\n        report_fig.append_trace(fig_metrics.data[0],1,2)\n\
-      \n        report_fig.append_trace(fig_hist.data[0],2,1)\n        report_fig.append_trace(fig_hist.data[1],2,1)\n\
-      \        report_fig.append_trace(fig_pr.data[0],2,2)\n\n        report_fig.append_trace(fig_tpr_fpr.data[0],3,1)\n\
-      \        report_fig.append_trace(fig_tpr_fpr.data[1],3,1)\n        report_fig.append_trace(fig_roc.data[0],3,2)\n\
-      \        try:\n            report_fig.append_trace(fig_feats.data[0],4,1)\n\
-      \        except:\n            pass\n        report_fig.append_trace(fig_lift.data[0],4,2)\
-      \    \n        title_str = f\"{model.__class__.__name__} : Model performance\
-      \ report\"\n        report_fig['layout'].update(title = f'<b>{title_str}</b><br>',\n\
-      \                        autosize = True, height = 1500,width = 1200,\n    \
-      \                    plot_bgcolor = 'rgba(240,240,240, 0.95)',\n           \
-      \             paper_bgcolor = 'rgba(240,240,240, 0.95)',\n                 \
-      \       margin = dict(b = 195))\n\n        report_fig[\"layout\"][\"xaxis1\"\
-      ].update(dict(title = \"Predicted Labels\"))\n        report_fig[\"layout\"\
-      ][\"yaxis1\"].update(dict(title = \"Actual Labels\"))\n\n        report_fig[\"\
-      layout\"][\"xaxis3\"].update(dict(title = \"Prediction Probabilities\"))\n \
-      \       report_fig[\"layout\"][\"yaxis3\"].update(dict(title = \"Count\"))\n\
-      \n        report_fig[\"layout\"][\"xaxis4\"].update(dict(title = \"Recall\"\
-      ))\n        report_fig[\"layout\"][\"yaxis4\"].update(dict(title = \"Precision\"\
-      ))\n\n        report_fig[\"layout\"][\"xaxis5\"].update(dict(title = \"Thresholds\"\
-      ))\n        report_fig[\"layout\"][\"yaxis5\"].update(dict(title = \"Rate\"\
-      ))\n\n        report_fig[\"layout\"][\"xaxis6\"].update(dict(title = \"False\
-      \ Positive Rate\"))\n        report_fig[\"layout\"][\"yaxis6\"].update(dict(title\
-      \ = \"True Positive Rate\"))\n\n        report_fig[\"layout\"][\"yaxis7\"].update(dict(title\
-      \ = \"Features\"))\n\n        report_fig[\"layout\"][\"xaxis8\"].update(dict(title\
-      \ = \"Proportion of Sample\"))\n        report_fig[\"layout\"][\"yaxis8\"].update(dict(title\
-      \ = \"Lift\"))             \n\n        if show_report:\n            report_fig.show()\
-      \       \n\n        #Save html report\n        todays_date = datetime.now().strftime(\"\
-      %Y-%m-%d\")\n        report_fig.write_html(f\"{save_path}{model.__class__.__name__}_{todays_date}.html\"\
-      )\n        bucket = storage.Client().bucket(bucket_name)\n        filename =\
-      \ f\"{model.__class__.__name__}_{todays_date}.html\"\n        blob = bucket.blob(f\"\
-      {save_path}{filename}\")\n        blob.upload_from_filename(f\"{save_path}{model.__class__.__name__}_{todays_date}.html\"\
-      )\n        print(f\"{filename} sucessfully uploaded to GCS bucket!\")\n\n  \
-      \      return results_df_combined, report_fig\n\n\n    def save_reports_to_gcs(models,\
-      \ y_true, y_pred, y_score, file_bucket, save_path, columns, show_report=False):\n\
-      \n        # define_the_bucket\n        bucket = storage.Client().bucket(file_bucket)\n\
-      \        date=datetime.now().strftime(\"%Y-%m-%d\")\n        model_test_set_reports\
-      \ = []\n        model_to_report_map = {}\n\n        # If single model passed\
-      \ through\n        if type(models) != list:\n            models = [models]\n\
-      \n        create_folder_if_not_exists(save_path)\n\n        # Add code to set\
-      \ model to a list if only 1 model passed\n        for i in range(len(models)):\n\
-      \n            print(models[i])\n\n            # Pass data to generate plotly_report\n\
-      \            report_df,report_fig = plotly_model_report(model=models[i],\n \
-      \                                           actual=y_true,\n               \
-      \                             predicted=y_pred,\n                          \
-      \                  predictions_prob=y_score,\n                             \
-      \               bucket_name  = file_bucket,\n                              \
-      \              show_report = show_report,\n                                \
-      \            columns = columns,\n                                          \
-      \  save_path = save_path\n                                           )\n\n \
-      \           todays_date = datetime.now().strftime(\"%Y-%m-%d\")\n          \
-      \  model_to_report_map[models[i].__class__.__name__ ]=report_fig\n\n       \
-      \     # report_fig.write_html(f\"{save_path}{todays_date}_{model.__class__.__name__}.html\"\
-      )\n            model_test_set_reports.append(report_df)\n\n        model_test_set_reports_concat\
-      \ = pd.concat(model_test_set_reports)\n\n        return model_test_set_reports_concat,\
-      \ model_to_report_map\n\n    df_train = pd.read_csv('gs://{file_bucket}/{service_type}/training_dataset.csv',\
-      \ index_col=False)  \n\n    #### For wb\n    import google.oauth2.credentials\n\
-      \    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client\
+      \ (\"model_uri\", str)]):\n\n    #### Import Libraries ####\n    import os \n\
+      \    import gc\n    import sys\n    import time\n    import pickle\n    import\
+      \ pandas as pd\n    import numpy as np\n    import xgboost as xgb\n\n    from\
+      \ pathlib import Path\n    from yaml import safe_load\n\n    from datetime import\
+      \ datetime\n    from google.cloud import storage\n    from google.cloud import\
+      \ bigquery\n\n    telus_purple = '#4B286D'\n    telus_green = '#66CC00'\n  \
+      \  telus_grey = '#F4F4F7'\n\n    # for prod\n    pth_project = Path(os.getcwd())\n\
+      \    pth_model_config = pth_project / 'model_config.yaml'\n    sys.path.insert(0,\
+      \ pth_project.as_posix())\n\n    #### For wb\n    import google.oauth2.credentials\n\
+      \    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n    client\
       \ = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config\
       \ = bigquery.QueryJobConfig()\n\n#     #### For prod\n#     client = bigquery.Client(project=project_id)\n\
-      #     job_config = bigquery.QueryJobConfig()\n\n    #set up features (list)\n\
-      \    cols_1 = df_train.columns.values\n\n    #train test split\n    df_train,\
-      \ df_val = train_test_split(df_train, shuffle=True, test_size=0.25, random_state=42,\n\
-      \                                        stratify=df_train['target']\n     \
-      \                                   )\n\n    create_time = datetime.now().strftime(\"\
-      %Y-%m-%d %H:%M:%S\")\n    df_train.to_csv('gs://{}/{}/backup/{}_train_{}.csv'.format(file_bucket,\
-      \ service_type, service_type, create_time))\n    df_val.to_csv('gs://{}/{}/backup/{}_val_{}.csv'.format(file_bucket,\
-      \ service_type, service_type, create_time))\n    df_test.to_csv('gs://{}/{}/backup/{}_test_{}.csv'.format(file_bucket,\
-      \ service_type, service_type, create_time))\n\n    ban_train = df_train[['ban',\
-      \ 'subscriber_no']]\n    X_train = df_train[features]\n    y_train = np.squeeze(df_train['target'].values)\n\
-      \n    ban_val = df_val[['ban', 'subscriber_no']]\n    X_val = df_val[features]\n\
-      \    y_val = np.squeeze(df_val['target'].values)\n\n    ban_test = df_test[['ban',\
-      \ 'subscriber_no']]\n    X_test = df_test[features]\n    y_test = np.squeeze(df_test['target'].values)\n\
-      \n    del df_train, df_val, df_test\n    gc.collect()\n\n    # build model and\
-      \ fit in training data\n    # xgb_model = xgb.XGBClassifier(\n    #     learning_rate=0.1,\n\
-      \    #     n_estimators=100,\n    #     max_depth=8,\n    #     min_child_weight=1,\n\
-      \    #     gamma=0,\n    #     subsample=0.8,\n    #     colsample_bytree=0.8,\n\
-      \    #     objective='binary:logistic',\n    #     nthread=4,\n    #     scale_pos_weight=1\n\
-      \    #     # seed=27\n    # )\n\n    xgb_model = xgb.XGBClassifier(\n      \
-      \  learning_rate=0.02,\n        n_estimators=250,\n        max_depth=10,\n \
-      \       min_child_weight=1,\n        gamma=0,\n        subsample=0.8,\n    \
-      \    colsample_bytree=0.8,\n        objective='binary:logistic',\n        nthread=4,\n\
-      \        scale_pos_weight=1,\n        seed=27\n    )\n\n    xgb_model.fit(X_train,\
-      \ y_train)\n    print('xgb training done')\n\n    #predictions on X_val\n  \
-      \  y_pred = xgb_model.predict_proba(X_val, ntree_limit=xgb_model.best_iteration)[:,\
-      \ 1]\n    y_pred_label = (y_pred > 0.5).astype(int)\n    auc = roc_auc_score(y_val,\
-      \ y_pred_label)\n    metrics.log_metric(\"AUC\", auc)\n\n    pred_prb = xgb_model.predict_proba(X_test,\
-      \ ntree_limit=xgb_model.best_iteration)[:, 1]\n    lg = get_lift(pred_prb, y_test,\
-      \ 10)\n\n    y_true = y_test\n    y_pred = (pred_prb > 0.5).astype(int)\n  \
-      \  y_score = pred_prb \n\n#     model_reports, model_to_report_map = save_reports_to_gcs(models\
-      \ = xgb_model\n#                                                           \
-      \  , y_true = y_true\n#                                                    \
-      \         , y_pred = y_pred \n#                                            \
-      \                 , y_score = y_score\n#                                   \
-      \                          , file_bucket = file_bucket\n#                  \
-      \                                           , save_path = f'{service_type}/reports/'\n\
-      #                                                             , columns = features\n\
-      #                                                             , show_report=False\n\
-      #                                                             )\n\n    # # Pass\
-      \ data to generate plotly_report\n    # report_df,report_fig = plotly_model_report(model=xgb_model,\n\
-      \    #                                 actual=y_true,\n    #               \
-      \                  predicted=y_pred,\n    #                                \
-      \ predictions_prob=y_score,\n    #                                 bucket_name\
-      \ = file_bucket,\n    #                                 show_report = True,\n\
-      \    #                                 columns = features,\n    #          \
-      \                       save_path = f'{service_type}/reports/'\n    #      \
-      \                          )\n\n    model_class_name = xgb_model.__class__.__name__\n\
-      \    # final_model_report = model_to_report_map[model_class_name]    \n\n  \
-      \  #### Save the Report and Model \n    storage_client = storage.Client()\n\
-      \    bucket = storage_client.get_bucket(file_bucket)\n\n    # save the model\
-      \ in GCS\n    models_dict = {}\n    create_time = datetime.now().strftime(\"\
-      %Y-%m-%d %H:%M:%S\")\n    models_dict['create_time'] = create_time\n    models_dict['model']\
-      \ = xgb_model\n    models_dict['features'] = features\n    lg.to_csv('gs://{}/{}/lift_on_scoring_data_{}.csv'.format(file_bucket,\
-      \ service_type, create_time, index=False))\n\n    with open('model_dict.pkl',\
-      \ 'wb') as handle:\n        pickle.dump(models_dict, handle)\n    handle.close()\n\
-      \n    MODEL_PATH = '{}/{}_xgb_models/'.format(service_type, service_type)\n\
-      \    blob = bucket.blob(MODEL_PATH)\n    if not blob.exists(storage_client):\n\
-      \        blob.upload_from_string('')\n\n    model_name_onbkt = '{}{}_models_xgb_{}'.format(MODEL_PATH,\
-      \ service_type, models_dict['create_time'])\n    blob = bucket.blob(model_name_onbkt)\n\
-      \    blob.upload_from_filename('model_dict.pkl')\n\n    model.uri = f'gs://{file_bucket}/{model_name_onbkt}'\n\
-      \n    print(f\"....model loaded to GCS done at {str(create_time)}\")\n\n   \
-      \ col_list = features\n\n    return (col_list, model.uri)\n\n"
+      #     job_config = bigquery.QueryJobConfig()\n\n\n    def extract_dir_from_bucket(\n\
+      \        bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline'\
+      \ \n    ):\n        \"\"\"\n        Download files from a specified bucket to\
+      \ a local path, excluding a specified prefix.\n\n        Parameters:\n     \
+      \   - bucket: The bucket object from which to download files.\n        - local_path:\
+      \ The local path where the files will be downloaded to.\n        - prefix: The\
+      \ prefix to filter the files in the bucket. Only files with this prefix will\
+      \ be downloaded.\n        - split_prefix: The prefix to exclude from the downloaded\
+      \ file paths. Default is 'serving_pipeline'.\n        \"\"\"\n        for blob\
+      \ in bucket.list_blobs(prefix=prefix):\n            if not blob.name.endswith(\"\
+      /\"):\n                path = local_path / blob.name.split(f'{split_prefix}/')[-1]\n\
+      \                str_path = path.as_posix()\n                Path(str_path[:str_path.rindex('/')]).mkdir(parents=True,\
+      \ exist_ok=True)\n                blob.download_to_filename(str_path)\n\n  \
+      \  # download utils and model config locally\n    storage_client = storage.Client()\n\
+      \    bucket = storage_client.bucket(resource_bucket)\n    # extract_dir_from_bucket(\n\
+      \    #     bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}', split_prefix='notebook'\n\
+      \    # ) \n    # extract_dir_from_bucket(\n    #     bucket, pth_project, f'{stack_name}/{pipeline_path}/queries',\
+      \ split_prefix='training_pipeline'\n    # )\n\n    extract_dir_from_bucket(\n\
+      \        bucket, pth_project, f'{hs_nba_utils_path}', split_prefix='notebook'\n\
+      \    ) \n\n    blob = bucket.blob(f'{pipeline_path}/model_config.yaml')\n  \
+      \  blob.download_to_filename(pth_model_config)\n\n    # import local modules\n\
+      \    from hs_nba_utils.modeling.train import train\n    from hs_nba_utils.modeling.evaluate\
+      \ import evaluate\n    from hs_nba_utils.modeling.save_model import save_model\n\
+      \n\n    # load model config\n    d_model_config = safe_load(pth_model_config.open())\n\
+      \n    # train    \n    df_result, xgb_model = train(file_bucket=file_bucket,\
+      \ \n                service_type=service_type, \n                model_type=model_type,\
+      \ \n                d_model_config=d_model_config, \n                train_csv=train_csv,\
+      \ \n                save_file_name=save_file_name\n                ) \n\n  \
+      \  print('training step successfully completed')\n\n    # evaluate\n    df_stats\
+      \ = evaluate(df_result=df_result, \n                file_bucket=file_bucket,\
+      \ \n                service_type=service_type, \n                model_type=model_type,\
+      \ \n                d_model_config=d_model_config, \n                stats_file_name=stats_file_name\n\
+      \                )\n\n    print('evaluate step successfully completed')\n\n\
+      \    # save model \n    col_list, model_uri = save_model(model=xgb_model, \n\
+      \                file_bucket=file_bucket, \n                service_type=service_type,\
+      \ \n                d_model_config=d_model_config\n                )\n\n   \
+      \ print('save model step successfully completed')\n\n    print(model_uri)\n\n"
     args:
     - --executor_input
     - {executorInput: null}

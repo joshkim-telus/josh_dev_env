@@ -3,6 +3,13 @@ model_id: 7001
 
 target_column: 'model_scenario'
 
+target: 'target'
+
+customer_id_fields:
+    - cust_id
+    - ban
+    - lpds_id
+
 customer_ids:
     - name: cust_id
       type: int
