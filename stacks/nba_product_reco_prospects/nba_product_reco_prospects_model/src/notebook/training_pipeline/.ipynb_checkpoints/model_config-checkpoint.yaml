@@ -23,6 +23,8 @@ customer_ids:
       type: int
     - name: fms_address_id
       type: int
+    - name: split_type
+      type: string
       
 target_variables:
     acquisition:

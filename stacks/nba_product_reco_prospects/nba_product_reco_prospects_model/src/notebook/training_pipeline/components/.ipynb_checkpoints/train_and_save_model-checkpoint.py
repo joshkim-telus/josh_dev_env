@@ -62,7 +62,6 @@ def train_and_save_model(file_bucket: str
 #     client = bigquery.Client(project=project_id)
 #     job_config = bigquery.QueryJobConfig()
     
-
     def extract_dir_from_bucket(
         bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline' 
     ):
@@ -91,7 +90,6 @@ def train_and_save_model(file_bucket: str
     # extract_dir_from_bucket(
     #     bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix='training_pipeline'
     # )
-    
     extract_dir_from_bucket(
         bucket, pth_project, f'{hs_nba_utils_path}', split_prefix='notebook'
     ) 
@@ -103,7 +101,6 @@ def train_and_save_model(file_bucket: str
     from hs_nba_utils.modeling.train import train
     from hs_nba_utils.modeling.evaluate import evaluate
     from hs_nba_utils.modeling.save_model import save_model
-
 
     # load model config
     d_model_config = safe_load(pth_model_config.open())

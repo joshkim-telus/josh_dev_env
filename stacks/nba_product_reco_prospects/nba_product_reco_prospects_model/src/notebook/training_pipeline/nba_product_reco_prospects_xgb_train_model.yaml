@@ -60,7 +60,7 @@ implementation:
       \    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n    client\
       \ = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config\
       \ = bigquery.QueryJobConfig()\n\n#     #### For prod\n#     client = bigquery.Client(project=project_id)\n\
-      #     job_config = bigquery.QueryJobConfig()\n\n\n    def extract_dir_from_bucket(\n\
+      #     job_config = bigquery.QueryJobConfig()\n\n    def extract_dir_from_bucket(\n\
       \        bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline'\
       \ \n    ):\n        \"\"\"\n        Download files from a specified bucket to\
       \ a local path, excluding a specified prefix.\n\n        Parameters:\n     \
@@ -77,13 +77,13 @@ implementation:
       \    bucket = storage_client.bucket(resource_bucket)\n    # extract_dir_from_bucket(\n\
       \    #     bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}', split_prefix='notebook'\n\
       \    # ) \n    # extract_dir_from_bucket(\n    #     bucket, pth_project, f'{stack_name}/{pipeline_path}/queries',\
-      \ split_prefix='training_pipeline'\n    # )\n\n    extract_dir_from_bucket(\n\
+      \ split_prefix='training_pipeline'\n    # )\n    extract_dir_from_bucket(\n\
       \        bucket, pth_project, f'{hs_nba_utils_path}', split_prefix='notebook'\n\
       \    ) \n\n    blob = bucket.blob(f'{pipeline_path}/model_config.yaml')\n  \
       \  blob.download_to_filename(pth_model_config)\n\n    # import local modules\n\
       \    from hs_nba_utils.modeling.train import train\n    from hs_nba_utils.modeling.evaluate\
       \ import evaluate\n    from hs_nba_utils.modeling.save_model import save_model\n\
-      \n\n    # load model config\n    d_model_config = safe_load(pth_model_config.open())\n\
+      \n    # load model config\n    d_model_config = safe_load(pth_model_config.open())\n\
       \n    # train    \n    df_result, xgb_model = train(file_bucket=file_bucket,\
       \ \n                service_type=service_type, \n                model_type=model_type,\
       \ \n                d_model_config=d_model_config, \n                train_csv=train_csv,\
