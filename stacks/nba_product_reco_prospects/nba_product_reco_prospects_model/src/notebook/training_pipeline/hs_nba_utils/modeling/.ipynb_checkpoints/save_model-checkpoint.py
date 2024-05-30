@@ -21,6 +21,8 @@ from typing import List, Dict, Tuple, Optional
 
 def save_model(model, 
             file_bucket:str, 
+            stack_name: str,
+            pipeline_path: str, 
             service_type: str,
             d_model_config:dict
             ):
@@ -31,6 +33,9 @@ def save_model(model,
     Args:
         - model (xgb.Booster or xgb.XGBRegressor/XGBClassifier): The pre-trained XGBoost model.
         - file_bucket: A GCS Bucket where training dataset is saved.
+        - stack_name: Model stack name
+        - pipeline_path: A GCS Pipeline path where related files/artifacts will be saved. 
+        - service_type: Service type name
         - d_model_config: A dictionary containing the metadata information for the model.
 
     Returns:
@@ -57,12 +62,13 @@ def save_model(model,
         pickle.dump(models_dict, handle)
     handle.close()
 
-    MODEL_PATH = '{}/{}_xgb_models/'.format(service_type, service_type)
-    blob = bucket.blob(MODEL_PATH)
+    model_path = f'{file_bucket}/{stack_name}/{pipeline_path}/{service_type}_xgb_models'
+        
+    blob = bucket.blob(model_path)
     if not blob.exists(storage_client):
         blob.upload_from_string('')
 
-    model_name_onbkt = '{}{}_models_xgb_{}'.format(MODEL_PATH, service_type, models_dict['create_time'])
+    model_name_onbkt = f'{model_path}/{service_type}_models_xgb_{create_time}'
     blob = bucket.blob(model_name_onbkt)
     blob.upload_from_filename('model_dict.pkl')
 
@@ -73,4 +79,5 @@ def save_model(model,
     col_list = features
 
     return (col_list, model.uri)
-
+    
+    

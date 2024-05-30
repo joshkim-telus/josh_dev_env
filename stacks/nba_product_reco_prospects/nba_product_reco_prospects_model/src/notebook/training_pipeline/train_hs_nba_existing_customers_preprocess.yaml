@@ -63,12 +63,9 @@ implementation:
       \                Path(str_path[:str_path.rindex('/')]).mkdir(parents=True, exist_ok=True)\n\
       \                blob.download_to_filename(str_path)\n\n    # download utils\
       \ and model config locally\n    storage_client = storage.Client()\n    bucket\
-      \ = storage_client.bucket(resource_bucket)\n    # extract_dir_from_bucket(\n\
-      \    #     bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}', split_prefix='notebook'\n\
-      \    # ) \n    # extract_dir_from_bucket(\n    #     bucket, pth_project, f'{stack_name}/{pipeline_path}/queries',\
-      \ split_prefix='training_pipeline'\n    # )\n\n    extract_dir_from_bucket(\n\
-      \        bucket, pth_project, f'{hs_nba_utils_path}', split_prefix='notebook'\n\
-      \    ) \n    extract_dir_from_bucket(\n        bucket, pth_project, f'{pipeline_path}/queries',\
+      \ = storage_client.bucket(resource_bucket)\n    extract_dir_from_bucket(\n \
+      \       bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}', split_prefix='notebook'\n\
+      \    ) \n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{pipeline_path}/queries',\
       \ split_prefix='training_pipeline'\n    )\n\n    blob = bucket.blob(f'{pipeline_path}/model_config.yaml')\n\
       \    blob.download_to_filename(pth_model_config)\n\n    # import local modules\n\
       \    from hs_nba_utils.etl.extract import extract_bq_data\n    from hs_nba_utils.modeling.prospects_features_preprocessing\
@@ -83,17 +80,15 @@ implementation:
       \        project_id=project_id\n        , dataset_id=dataset_id\n        , table_id=table_id\n\
       \        , target_column=target_column\n        , customer_ids=str_customer_ids\n\
       \        , feature_names=str_feature_names\n        , target_labels=str_target_labels\n\
-      \    )\n\n    # save sql to gcs bucket\n    file_name = f'{stack_name}/{load_sql}'\n\
+      \    )\n\n    # save sql to gcs bucket\n    file_name = f'{stack_name}/{pipeline_path}/queries/{load_sql}'\n\
       \n    # Convert the string to bytes\n    content_bytes = sql.encode('utf-8')\n\
       \n    # Upload the file to GCS\n    bucket = storage_client.bucket(file_bucket)\n\
       \    blob = bucket.blob(file_name)\n    blob.upload_from_string(content_bytes)\n\
       \n    df = extract_bq_data(client, sql)\n    print(f\"Training dataset df.shape\
-      \ {df.shape}\")\n\n    # save data to pipeline bucket\n    df.to_csv(\n    \
-      \    f'gs://{file_bucket}/{stack_name}/training_dataset_pre.csv', index=False\n\
-      \    )\n\n    # process features\n    df_processed = process_prospects_features(\n\
+      \ {df.shape}\")\n\n    # process features\n    df_processed = process_prospects_features(\n\
       \        df, d_model_config, training_mode=True, model_type=model_type, target_name=target_column\n\
       \    )\n    print(f\"Training dataset processed df.shape {df_processed.shape}\"\
-      )\n\n    # save data to pipeline bucket\n    df_processed.to_csv(\n        f'gs://{file_bucket}/{stack_name}/{train_csv}',\
+      )\n\n    # save data to pipeline bucket\n    df_processed.to_csv(\n        f'gs://{file_bucket}/{stack_name}/{pipeline_path}/{train_csv}',\
       \ index=False\n    )\n    print(f'Training data saved into {file_bucket}')\n\
       \n"
     args:

@@ -76,20 +76,13 @@ def preprocess(
     # download utils and model config locally
     storage_client = storage.Client()
     bucket = storage_client.bucket(resource_bucket)
-    # extract_dir_from_bucket(
-    #     bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}', split_prefix='notebook'
-    # ) 
-    # extract_dir_from_bucket(
-    #     bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix='training_pipeline'
-    # )
-    
     extract_dir_from_bucket(
-        bucket, pth_project, f'{hs_nba_utils_path}', split_prefix='notebook'
+        bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}', split_prefix='notebook'
     ) 
     extract_dir_from_bucket(
-        bucket, pth_project, f'{pipeline_path}/queries', split_prefix='training_pipeline'
+        bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix='training_pipeline'
     )
-    
+
     blob = bucket.blob(f'{pipeline_path}/model_config.yaml')
     blob.download_to_filename(pth_model_config)
 
@@ -118,7 +111,7 @@ def preprocess(
     )
     
     # save sql to gcs bucket
-    file_name = f'{stack_name}/{load_sql}'
+    file_name = f'{stack_name}/{pipeline_path}/queries/{load_sql}'
 
     # Convert the string to bytes
     content_bytes = sql.encode('utf-8')
@@ -131,11 +124,6 @@ def preprocess(
     df = extract_bq_data(client, sql)
     print(f"Training dataset df.shape {df.shape}")
     
-    # save data to pipeline bucket
-    df.to_csv(
-        f'gs://{file_bucket}/{stack_name}/training_dataset_pre.csv', index=False
-    )
-    
     # process features
     df_processed = process_prospects_features(
         df, d_model_config, training_mode=True, model_type=model_type, target_name=target_column
@@ -144,7 +132,7 @@ def preprocess(
 
     # save data to pipeline bucket
     df_processed.to_csv(
-        f'gs://{file_bucket}/{stack_name}/{train_csv}', index=False
+        f'gs://{file_bucket}/{stack_name}/{pipeline_path}/{train_csv}', index=False
     )
     print(f'Training data saved into {file_bucket}')
     

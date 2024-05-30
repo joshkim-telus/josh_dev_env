@@ -11,6 +11,7 @@ from typing import NamedTuple
 )
 def train_and_save_model(file_bucket: str
                         , resource_bucket: str
+                        , stack_name: str
                         , service_type: str
                         , project_id: str
                         , dataset_id: str
@@ -84,15 +85,12 @@ def train_and_save_model(file_bucket: str
     # download utils and model config locally
     storage_client = storage.Client()
     bucket = storage_client.bucket(resource_bucket)
-    # extract_dir_from_bucket(
-    #     bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}', split_prefix='notebook'
-    # ) 
-    # extract_dir_from_bucket(
-    #     bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix='training_pipeline'
-    # )
     extract_dir_from_bucket(
-        bucket, pth_project, f'{hs_nba_utils_path}', split_prefix='notebook'
+        bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}', split_prefix='notebook'
     ) 
+    extract_dir_from_bucket(
+        bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix='training_pipeline'
+    )
     
     blob = bucket.blob(f'{pipeline_path}/model_config.yaml')
     blob.download_to_filename(pth_model_config)
@@ -107,6 +105,8 @@ def train_and_save_model(file_bucket: str
 
     # train    
     df_result, xgb_model = train(file_bucket=file_bucket, 
+                stack_name=stack_name, 
+                pipeline_path=pipeline_path, 
                 service_type=service_type, 
                 model_type=model_type, 
                 d_model_config=d_model_config, 
@@ -119,6 +119,8 @@ def train_and_save_model(file_bucket: str
     # evaluate
     df_stats = evaluate(df_result=df_result, 
                 file_bucket=file_bucket, 
+                stack_name=stack_name, 
+                pipeline_path=pipeline_path, 
                 service_type=service_type, 
                 model_type=model_type, 
                 d_model_config=d_model_config, 
@@ -130,6 +132,8 @@ def train_and_save_model(file_bucket: str
     # save model 
     col_list, model_uri = save_model(model=xgb_model, 
                 file_bucket=file_bucket, 
+                stack_name=stack_name, 
+                pipeline_path=pipeline_path, 
                 service_type=service_type, 
                 d_model_config=d_model_config
                 )
@@ -138,3 +142,4 @@ def train_and_save_model(file_bucket: str
     
     print(model_uri)
 
+    return (col_list, model_uri)

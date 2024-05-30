@@ -6,6 +6,49 @@ from typing import List, Dict, Tuple, Optional
 # warnings.simplefilter(action='ignore', category=SettingWithCopyWarning)
 # warnings.simplefilter(action='ignore', category=FutureWarning)
 
+def _extract_AB_BC_flag(province: str):
+    """
+    Generate AB BC flag 
+    """
+    if pd.isnull(province): return -1
+    if province in ('AB', 'BC'): return 1
+    
+    return 0
+
+def replace_null(value: str):
+    """
+    Fill null values in the column
+    """
+    if pd.isnull(value):
+        return "UNKNOWN"
+    else: 
+        return value
+
+def _extract_account_risk_value(value: str):
+    """ 
+    Generate account risk values
+    """
+    if pd.isnull(value): return 0
+    if 'Low ' in value: return 1
+    if 'Medium' in value: return 2
+    if 'High' in value: return 3
+    
+    return 0
+
+def _extract_fsa(pstl_cd_list: List[str]):
+    """
+    Extract FSA from postal code
+    """
+    # return first fsa that check conditions
+    for pstl_cd in pstl_cd_list:
+        if pd.notnull(pstl_cd) and \
+            isinstance(pstl_cd, str) and \
+                len(pstl_cd) == 6:
+
+            return pstl_cd[:3]
+            
+    return None
+
 def process_prospects_features(
     df_input: pd.DataFrame, 
     d_model_metadata: dict, 
@@ -27,7 +70,43 @@ def process_prospects_features(
     """
 
     df = df_input.copy() 
+    
+    # create AB_BC binary feature
+    if 'cust_prov_state_cd' in df.columns:
+        df['cust_prov_state_cd'] = df.apply(
+            lambda row: _extract_AB_BC_flag(row['cust_prov_state_cd']), axis = 1
+        )
 
+    # create acct risk value
+    if 'acct_cr_risk_txt' in df.columns:
+        df['acct_cr_risk_txt'] = df.apply(
+            lambda row: _extract_account_risk_value(row['acct_cr_risk_txt']), axis = 1
+        )
+
+    # create ebill value
+    if 'acct_ebill_ind' in df.columns:
+        df['acct_ebill_ind'] = df.apply(
+            lambda row: 1 if row['acct_ebill_ind'] == 'Y' else 0, axis = 1
+        )
+
+    # extract FSA
+    if 'fsa' in df.columns:
+        df['fsa'] = df.apply(
+            lambda row: _extract_fsa([row['winning_pstl_cd'], row['bill_pstl_cd']]), axis = 1
+        )
+
+    # extract language
+    if 'cust_pref_lang_txt' in df.columns:
+        df['cust_pref_lang_txt'] = df.apply(
+            lambda row: 1 if row['cust_pref_lang_txt'] == 'English' else 0, axis = 1
+        )
+        
+    # replace null with string
+    if 'demogr_census_division_typ' in df.columns:
+        df['demogr_census_division_typ'] = df.apply(
+            lambda row: replace_null(row['demogr_census_division_typ']), axis = 1
+        )
+        
     # Now we need to transform the features of the feature store.
     def encode_categorical_features(df):
         from sklearn.preprocessing import LabelEncoder

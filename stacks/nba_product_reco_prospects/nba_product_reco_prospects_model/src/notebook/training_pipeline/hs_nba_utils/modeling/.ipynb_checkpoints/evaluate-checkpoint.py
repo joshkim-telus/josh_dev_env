@@ -16,6 +16,8 @@ from typing import List, Dict, Tuple, Optional
 
 def evaluate(df_result: pd.DataFrame, 
              file_bucket: str, 
+             stack_name: str, 
+             pipeline_path: str,
              service_type: str, 
              model_type: str, 
              d_model_config: dict, 
@@ -27,6 +29,8 @@ def evaluate(df_result: pd.DataFrame,
     Args:
         - df_result: Returned dataset from train() function
         - file_bucket: A GCS Bucket where training dataset is saved.
+        - stack_name: Model stack name
+        - pipeline_path: A GCS Pipeline path where related files/artifacts will be saved. 
         - service_type: Service type name
         - model_type: 'acquisition' or 'tier'
         - d_model_config: A dictionary containing the metadata information for the model.
@@ -38,6 +42,7 @@ def evaluate(df_result: pd.DataFrame,
 
     def extract_stats(
         file_bucket: str, 
+        stack_name: str, 
         service_type: str, 
         stats_file_name: str, 
         n: int, 
@@ -55,7 +60,6 @@ def evaluate(df_result: pd.DataFrame,
 
         Returns:
         pd.DataFrame: A DataFrame containing statistics and metrics for evaluating the predictions.
-
         """
 
         # true_predctions - check if prediction is in top n
@@ -99,7 +103,7 @@ def evaluate(df_result: pd.DataFrame,
         })
         df_stats = pd.concat([df_stats, df_w_avg])
 
-        df_stats.to_csv(f'gs://{file_bucket}/{service_type}/{stats_file_name}', index=False)
+        df_stats.to_csv(f'gs://{file_bucket}/{stack_name}/{pipeline_path}/{stats_file_name}', index=False)
         
         return df_stats
     
@@ -113,6 +117,7 @@ def evaluate(df_result: pd.DataFrame,
     l_pred_ordered = [label for label in d_target_mapping.keys()]
     probabilities =  df_result[l_pred_ordered].to_numpy()
     results_ranked = np.argsort(-probabilities, axis=1)
-    df_stats = extract_stats(file_bucket, service_type, stats_file_name, 3, results_ranked, df_result['target'], d_target_mapping)
+    df_stats = extract_stats(file_bucket, stack_name, service_type, stats_file_name, 3, results_ranked, df_result['target'], d_target_mapping)
     
     return df_stats
+    
