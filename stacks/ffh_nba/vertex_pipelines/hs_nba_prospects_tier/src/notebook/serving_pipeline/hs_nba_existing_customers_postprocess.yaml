@@ -1,0 +1,82 @@
+name: Postprocess
+description: Postprocess data for a machine learning pipeline.
+inputs:
+- {name: project_id, type: String}
+- {name: output_dataset_id, type: String}
+- {name: score_table_id, type: String}
+- {name: resource_bucket, type: String}
+- {name: file_bucket, type: String}
+- {name: stack_name, type: String}
+- {name: model_type, type: String}
+- {name: pipeline_type, type: String}
+- {name: pipeline_path, type: String}
+- {name: hs_nba_utils_path, type: String}
+- {name: token, type: String}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef postprocess(\n    project_id: str,\n    output_dataset_id:\
+      \ str,\n    score_table_id: str,\n    resource_bucket: str,\n    file_bucket:\
+      \ str,\n    stack_name: str,\n    model_type: str,\n    pipeline_type: str,\n\
+      \    pipeline_path: str,\n    hs_nba_utils_path: str, \n    token: str\n   \
+      \ ):\n    \"\"\"\n    Postprocess data for a machine learning pipeline.\n  \
+      \  \"\"\"\n\n    # import global modules\n    from google.cloud import storage\n\
+      \    from pathlib import Path\n    from yaml import safe_load\n    import sys\n\
+      \    import os\n    import pandas as pd\n\n    # set global vars\n    pth_project\
+      \ = Path(os.getcwd())\n    pth_model_config = pth_project / 'model_config.yaml'\n\
+      \    pth_queries = pth_project / 'queries'\n    sys.path.insert(0, pth_project.as_posix())\n\
+      \n    # init gcp clients\n    storage_client = storage.Client()\n\n    def extract_dir_from_bucket(\n\
+      \        bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline'\
+      \ \n    ):    \n        \"\"\"\n        Download files from a specified bucket\
+      \ to a local path, excluding a specified prefix.\n\n        Parameters:\n  \
+      \      - bucket: The bucket object from which to download files.\n        -\
+      \ local_path: The local path where the files will be downloaded to.\n      \
+      \  - prefix: The prefix to filter the files in the bucket. Only files with this\
+      \ prefix will be downloaded.\n        - split_prefix: The prefix to exclude\
+      \ from the downloaded file paths. Default is 'serving_pipeline'.\n        \"\
+      \"\"\n        for blob in bucket.list_blobs(prefix=prefix):\n            if\
+      \ not blob.name.endswith(\"/\"):\n                path = local_path / blob.name.split(f'{split_prefix}/')[-1]\n\
+      \                str_path = path.as_posix()\n                Path(str_path[:str_path.rindex('/')]).mkdir(parents=True,\
+      \ exist_ok=True)\n                blob.download_to_filename(str_path)\n\n  \
+      \  # download utils and model config locally\n    storage_client = storage.Client()\n\
+      \    bucket = storage_client.bucket(resource_bucket)\n    extract_dir_from_bucket(\n\
+      \        bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}', split_prefix='notebook'\n\
+      \    )\n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{pipeline_path}/queries'\n\
+      \    )\n    blob = bucket.blob(f'{stack_name}/{pipeline_path}/model_config.yaml')\n\
+      \    blob.download_to_filename(pth_model_config)\n\n    # import local modules\n\
+      \    from hs_nba_utils.etl.load import create_temp_table, insert_from_temp_table\n\
+      \n    # load model config\n    d_model_config = safe_load(pth_model_config.open())\n\
+      \n   # load data from bucket\n    df_scores = pd.read_csv(f'gs://{file_bucket}/{pipeline_type}/df_score.csv')\n\
+      \n    print(f'Scores df.shape {df_scores.shape}')\n\n    # insert model id and\
+      \ and set unavailable targets to None\n    df_scores['model_id'] = d_model_config['model_id']\n\
+      \    l_unavailable_targets = d_model_config['unavailable_target_variables']\n\
+      \    if l_unavailable_targets:\n        df_scores[l_unavailable_targets] = [None]\
+      \ * len(l_unavailable_targets)\n\n    # create temp table in bq\n    temp_table_name\
+      \ = create_temp_table(\n        project_id, output_dataset_id, score_table_id,\
+      \ df_scores\n    )\n\n    print(f'created a temp table {temp_table_name}')\n\
+      \n    # insert data from temp into main table\n    current_part_dt = str(df_scores['part_dt'].max())\n\
+      \    insert_from_temp_table(\n        project_id, output_dataset_id, score_table_id,\
+      \ temp_table_name, current_part_dt,\n        pth_queries / 'drop_current_part_dt.sql',\
+      \ pth_queries / 'insert_from_temp_table.sql', token\n    )\n\n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - postprocess

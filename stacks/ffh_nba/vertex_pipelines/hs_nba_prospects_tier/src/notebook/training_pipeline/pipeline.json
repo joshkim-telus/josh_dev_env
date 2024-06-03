@@ -1,0 +1,484 @@
+{
+  "pipelineSpec": {
+    "components": {
+      "comp-preprocess": {
+        "executorLabel": "exec-preprocess",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "file_bucket": {
+              "type": "STRING"
+            },
+            "hs_nba_utils_path": {
+              "type": "STRING"
+            },
+            "load_sql": {
+              "type": "STRING"
+            },
+            "model_type": {
+              "type": "STRING"
+            },
+            "pipeline_path": {
+              "type": "STRING"
+            },
+            "pipeline_type": {
+              "type": "STRING"
+            },
+            "preprocess_output_csv": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "resource_bucket": {
+              "type": "STRING"
+            },
+            "stack_name": {
+              "type": "STRING"
+            },
+            "table_id": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-train-and-save-model": {
+        "executorLabel": "exec-train-and-save-model",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "file_bucket": {
+              "type": "STRING"
+            },
+            "hs_nba_utils_path": {
+              "type": "STRING"
+            },
+            "model_type": {
+              "type": "STRING"
+            },
+            "pipeline_path": {
+              "type": "STRING"
+            },
+            "pipeline_type": {
+              "type": "STRING"
+            },
+            "preprocess_output_csv": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "resource_bucket": {
+              "type": "STRING"
+            },
+            "save_file_name": {
+              "type": "STRING"
+            },
+            "service_type": {
+              "type": "STRING"
+            },
+            "stack_name": {
+              "type": "STRING"
+            },
+            "stats_file_name": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "metrics": {
+              "artifactType": {
+                "schemaTitle": "system.Metrics",
+                "schemaVersion": "0.0.1"
+              }
+            },
+            "metricsc": {
+              "artifactType": {
+                "schemaTitle": "system.ClassificationMetrics",
+                "schemaVersion": "0.0.1"
+              }
+            },
+            "model": {
+              "artifactType": {
+                "schemaTitle": "system.Model",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          },
+          "parameters": {
+            "col_list": {
+              "type": "STRING"
+            },
+            "model_uri": {
+              "type": "STRING"
+            }
+          }
+        }
+      }
+    },
+    "deploymentSpec": {
+      "executors": {
+        "exec-preprocess": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "preprocess"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef preprocess(\n    project_id: str,\n    dataset_id: str,\n    table_id: str,\n    file_bucket: str,\n    resource_bucket: str,\n    stack_name: str,\n    pipeline_path: str,\n    hs_nba_utils_path: str, \n    model_type: str,\n    load_sql: str, \n    preprocess_output_csv: str,\n    pipeline_type: str, \n    token: str\n):\n    \"\"\"\n    Preprocess data for a machine learning training pipeline.\n    \"\"\"\n\n    # import global modules\n    from google.cloud import storage\n    from google.cloud import bigquery\n    from pathlib import Path\n    from yaml import safe_load\n    import sys\n    import os\n\n    # for prod\n    pth_project = Path(os.getcwd())\n    pth_model_config = pth_project / 'model_config.yaml'\n    pth_queries = pth_project / 'queries'\n    sys.path.insert(0, pth_project.as_posix())\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    def extract_dir_from_bucket(\n        bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline' \n    ):\n        \"\"\"\n        Download files from a specified bucket to a local path, excluding a specified prefix.\n\n        Parameters:\n        - bucket: The bucket object from which to download files.\n        - local_path: The local path where the files will be downloaded to.\n        - prefix: The prefix to filter the files in the bucket. Only files with this prefix will be downloaded.\n        - split_prefix: The prefix to exclude from the downloaded file paths. Default is 'serving_pipeline'.\n        \"\"\"\n        for blob in bucket.list_blobs(prefix=prefix):\n            if not blob.name.endswith(\"/\"):\n                path = local_path / blob.name.split(f'{split_prefix}/')[-1]\n                str_path = path.as_posix()\n                Path(str_path[:str_path.rindex('/')]).mkdir(parents=True, exist_ok=True)\n                blob.download_to_filename(str_path)\n\n    # download utils and model config locally\n    storage_client = storage.Client()\n    bucket = storage_client.bucket(resource_bucket)\n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}', split_prefix='notebook'\n    ) \n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix=pipeline_type\n    )\n\n    blob = bucket.blob(f'{stack_name}/{pipeline_path}/model_config.yaml')\n    blob.download_to_filename(pth_model_config)\n\n    # import local modules\n    from hs_nba_utils.etl.extract import extract_bq_data\n    from hs_nba_utils.modeling.prospects_features_preprocessing import process_prospects_features\n\n    # load model config\n    d_model_config = safe_load(pth_model_config.open())\n\n    # select columns to query\n    target_column = d_model_config['target_column']\n    str_feature_names = ','.join([f\"cast({f['name']} as {f['type']}) as {f['name']}\" for f in d_model_config['features']])\n    str_customer_ids = ','.join([f\"cast({f['name']} as {f['type']}) as {f['name']}\" for f in d_model_config['customer_ids']])\n    str_target_labels = ','.join([f\"\\\"{f['name']}\\\"\" for f in d_model_config['target_variables']['acquisition']])\n\n    # extract training data\n    sql = (pth_queries / load_sql).read_text().format(\n        project_id=project_id\n        , dataset_id=dataset_id\n        , table_id=table_id\n        , target_column=target_column\n        , customer_ids=str_customer_ids\n        , feature_names=str_feature_names\n        , target_labels=str_target_labels\n    )\n\n    # save sql to gcs bucket\n    file_name = f'{pipeline_type}_queries/load_train_data_formatted.sql'\n\n    # Convert the string to bytes\n    content_bytes = sql.encode('utf-8')\n\n    # Upload the file to GCS\n    bucket = storage_client.bucket(file_bucket)\n    blob = bucket.blob(file_name)\n    blob.upload_from_string(content_bytes)\n\n    df = extract_bq_data(client, sql)\n    print(f\"Training dataset df.shape {df.shape}\")\n\n    # process features\n    df_processed = process_prospects_features(\n        df, d_model_config, training_mode=True, model_type=model_type, target_name=target_column\n    )\n    print(f\"Training dataset processed df.shape {df_processed.shape}\")\n\n    # save data to pipeline bucket\n    df_processed.to_csv(\n        f'gs://{file_bucket}/{pipeline_type}/{preprocess_output_csv}', index=False\n    )\n    print(f'Training data saved into {file_bucket}')\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 8.0,
+              "memoryLimit": 32.0
+            }
+          }
+        },
+        "exec-train-and-save-model": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "train_and_save_model"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef train_and_save_model(file_bucket: str\n                        , resource_bucket: str\n                        , stack_name: str\n                        , service_type: str\n                        , project_id: str\n                        , dataset_id: str\n                        , model_type: str\n                        , pipeline_type: str \n                        , preprocess_output_csv: str\n                        , save_file_name: str\n                        , stats_file_name: str\n                        , pipeline_path: str\n                        , hs_nba_utils_path: str\n                        , metrics: Output[Metrics]\n                        , metricsc: Output[ClassificationMetrics]\n                        , model: Output[Model]\n                        , token: str\n                        )-> NamedTuple(\"output\", [(\"col_list\", list), (\"model_uri\", str)]):\n\n    #### Import Libraries ####\n    import os \n    import gc\n    import sys\n    import time\n    import pickle\n    import pandas as pd\n    import numpy as np\n    import xgboost as xgb\n\n    from pathlib import Path\n    from yaml import safe_load\n\n    from datetime import datetime\n    from google.cloud import storage\n    from google.cloud import bigquery\n\n    # for prod\n    pth_project = Path(os.getcwd())\n    pth_model_config = pth_project / 'model_config.yaml'\n    sys.path.insert(0, pth_project.as_posix())\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod\n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    def extract_dir_from_bucket(\n        bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline' \n    ):\n        \"\"\"\n        Download files from a specified bucket to a local path, excluding a specified prefix.\n\n        Parameters:\n        - bucket: The bucket object from which to download files.\n        - local_path: The local path where the files will be downloaded to.\n        - prefix: The prefix to filter the files in the bucket. Only files with this prefix will be downloaded.\n        - split_prefix: The prefix to exclude from the downloaded file paths. Default is 'serving_pipeline'.\n        \"\"\"\n        for blob in bucket.list_blobs(prefix=prefix):\n            if not blob.name.endswith(\"/\"):\n                path = local_path / blob.name.split(f'{split_prefix}/')[-1]\n                str_path = path.as_posix()\n                Path(str_path[:str_path.rindex('/')]).mkdir(parents=True, exist_ok=True)\n                blob.download_to_filename(str_path)\n\n    # download utils and model config locally\n    storage_client = storage.Client()\n    bucket = storage_client.bucket(resource_bucket)\n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}', split_prefix='notebook'\n    ) \n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix='training_pipeline'\n    )\n\n    blob = bucket.blob(f'{stack_name}/{pipeline_path}/model_config.yaml')\n    blob.download_to_filename(pth_model_config)\n\n    # import local modules\n    from hs_nba_utils.modeling.train import train\n    from hs_nba_utils.modeling.evaluate import evaluate\n    from hs_nba_utils.modeling.save_model import save_model\n\n    # load model config\n    d_model_config = safe_load(pth_model_config.open())\n\n    # train    \n    df_result, xgb_model = train(file_bucket=file_bucket, \n                stack_name=stack_name, \n                pipeline_path=pipeline_path, \n                service_type=service_type, \n                model_type=model_type, \n                pipeline_type=pipeline_type, \n                d_model_config=d_model_config, \n                preprocess_output_csv=preprocess_output_csv, \n                save_file_name=save_file_name\n                ) \n\n    print('training step successfully completed')\n\n    # evaluate\n    df_stats = evaluate(df_result=df_result, \n                file_bucket=file_bucket, \n                stack_name=stack_name, \n                pipeline_path=pipeline_path, \n                service_type=service_type, \n                model_type=model_type, \n                d_model_config=d_model_config, \n                stats_file_name=stats_file_name\n                )\n\n    print('evaluate step successfully completed')\n\n    # save model \n    col_list, model_uri = save_model(model=xgb_model, \n                file_bucket=file_bucket, \n                stack_name=stack_name, \n                pipeline_path=pipeline_path, \n                service_type=service_type, \n                d_model_config=d_model_config\n                )\n\n    print('save model step successfully completed')\n\n    print(model_uri)\n\n    return (col_list, model_uri)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 8.0,
+              "memoryLimit": 32.0
+            }
+          }
+        }
+      }
+    },
+    "pipelineInfo": {
+      "name": "hs-nba-prospects-train-pipeline"
+    },
+    "root": {
+      "dag": {
+        "outputs": {
+          "artifacts": {
+            "train-and-save-model-metrics": {
+              "artifactSelectors": [
+                {
+                  "outputArtifactKey": "metrics",
+                  "producerSubtask": "train-and-save-model"
+                }
+              ]
+            },
+            "train-and-save-model-metricsc": {
+              "artifactSelectors": [
+                {
+                  "outputArtifactKey": "metricsc",
+                  "producerSubtask": "train-and-save-model"
+                }
+              ]
+            }
+          }
+        },
+        "tasks": {
+          "preprocess": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-preprocess"
+            },
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "nba_features_prospect"
+                    }
+                  }
+                },
+                "file_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "hs_nba_utils_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "vertex_pipelines/hs_nba_utils/notebook"
+                    }
+                  }
+                },
+                "load_sql": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "load_train_data.sql"
+                    }
+                  }
+                },
+                "model_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "acquisition"
+                    }
+                  }
+                },
+                "pipeline_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "vertex_pipelines/hs_nba_prospects/training_pipeline"
+                    }
+                  }
+                },
+                "pipeline_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "training_pipeline"
+                    }
+                  }
+                },
+                "preprocess_output_csv": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "df_train.csv"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "resource_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default"
+                    }
+                  }
+                },
+                "stack_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ffh_nba"
+                    }
+                  }
+                },
+                "table_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "master_features_set_prospect_train_vw"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.c.c0AY_VpZjMoteIn7qaDtWklDcMxWy8MpfvSSnPfQ1Cb8f-ULhYKSlMi9eTa7faebrh9zUkTvTclFFMkW2BBt_tDMNUoPo1Kc8RHh36hVqAt7zpDgabbhiaOhiQRuSZGCSIxEAs9Fq-pnk8ShCs-Ul6YTzNEgb9izqfy0aqqPbG79ndaLgDUrYXlJ_4ZV_Qx6Er2cfAg4Xz7NcFHs9DoUvSzzNsy1JreKYPhVFx1jF9knUvWsC8XUE58Eq2k93KdDU8m8EsLwfBag9fWNQrzVHsTpKxVW5j36pT4meyAVIW8m3idLvBc33tOBP13v0XddidIg1dfMxsuBinv1PbhuWSsqZ0xEi4SNKxx_YFvRIHa_zopfJlVLKKjOW_5N2TNnJEOgN395KUdwwmdrdJt78SrFOWIhpMvQmhxfsX4cMBOvqicSd3rFhpIwzhSly8p2uvuFBXw7ipX_x8MbJe2xXVwhFnZoaanvWQouqF5-4YuqRjYiYIzvJmbwM6xRa7XbmFbzXq6p9zo8l6x0JuIzMBdXF__90Zra258zMtxhFyeeZ667rMoUtmw4IpiowuRzg1rxj-6eXVIOz--b2W8UmpFpn260xqklsQ1jl0U4Q3os-Ooga-vew2M4cQeiUiysRBUIcbbvni7oJjYb9yvU-zlyZFv5BaOdpWXSZhkdk-edoctf0ai4pf3q4t3F19qi70_X5xx_e9zqBeU61OdmcyJ4cvM9h4kj8SIfvon02F7ypnZWu4hBl8qwxrs1s3sJ5uygFpWttjv_003en-_hIa-ro7peY3lybempJtYrnlXko3utjFgrXBchW4atUIg4VUqIVgZOhjIpef1Ip6aR6l-soipcmUug0an7avpxJXzslaXU9nakdivsIapJ6vtIBl4O5xWXYsgQMbmcYWOsoX5-2Zn3BY6ulFkR1IQm_uZB1-MWitSX_4QrWaagdQuMoSdom5cYkgxcwj_1z3Sy8ftaiXM3b4n3tRXFm8sfRzScpoeQdkQfww-zO"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "preprocess"
+            }
+          },
+          "train-and-save-model": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-train-and-save-model"
+            },
+            "dependentTasks": [
+              "preprocess"
+            ],
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "nba_features_prospect"
+                    }
+                  }
+                },
+                "file_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "hs_nba_utils_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "vertex_pipelines/hs_nba_utils/notebook"
+                    }
+                  }
+                },
+                "model_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "acquisition"
+                    }
+                  }
+                },
+                "pipeline_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "vertex_pipelines/hs_nba_prospects/training_pipeline"
+                    }
+                  }
+                },
+                "pipeline_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "training_pipeline"
+                    }
+                  }
+                },
+                "preprocess_output_csv": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "df_train.csv"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "resource_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default"
+                    }
+                  }
+                },
+                "save_file_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "df_test_exp.csv"
+                    }
+                  }
+                },
+                "service_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "hs_nba_prospects"
+                    }
+                  }
+                },
+                "stack_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ffh_nba"
+                    }
+                  }
+                },
+                "stats_file_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "df_stats.csv"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.c.c0AY_VpZjMoteIn7qaDtWklDcMxWy8MpfvSSnPfQ1Cb8f-ULhYKSlMi9eTa7faebrh9zUkTvTclFFMkW2BBt_tDMNUoPo1Kc8RHh36hVqAt7zpDgabbhiaOhiQRuSZGCSIxEAs9Fq-pnk8ShCs-Ul6YTzNEgb9izqfy0aqqPbG79ndaLgDUrYXlJ_4ZV_Qx6Er2cfAg4Xz7NcFHs9DoUvSzzNsy1JreKYPhVFx1jF9knUvWsC8XUE58Eq2k93KdDU8m8EsLwfBag9fWNQrzVHsTpKxVW5j36pT4meyAVIW8m3idLvBc33tOBP13v0XddidIg1dfMxsuBinv1PbhuWSsqZ0xEi4SNKxx_YFvRIHa_zopfJlVLKKjOW_5N2TNnJEOgN395KUdwwmdrdJt78SrFOWIhpMvQmhxfsX4cMBOvqicSd3rFhpIwzhSly8p2uvuFBXw7ipX_x8MbJe2xXVwhFnZoaanvWQouqF5-4YuqRjYiYIzvJmbwM6xRa7XbmFbzXq6p9zo8l6x0JuIzMBdXF__90Zra258zMtxhFyeeZ667rMoUtmw4IpiowuRzg1rxj-6eXVIOz--b2W8UmpFpn260xqklsQ1jl0U4Q3os-Ooga-vew2M4cQeiUiysRBUIcbbvni7oJjYb9yvU-zlyZFv5BaOdpWXSZhkdk-edoctf0ai4pf3q4t3F19qi70_X5xx_e9zqBeU61OdmcyJ4cvM9h4kj8SIfvon02F7ypnZWu4hBl8qwxrs1s3sJ5uygFpWttjv_003en-_hIa-ro7peY3lybempJtYrnlXko3utjFgrXBchW4atUIg4VUqIVgZOhjIpef1Ip6aR6l-soipcmUug0an7avpxJXzslaXU9nakdivsIapJ6vtIBl4O5xWXYsgQMbmcYWOsoX5-2Zn3BY6ulFkR1IQm_uZB1-MWitSX_4QrWaagdQuMoSdom5cYkgxcwj_1z3Sy8ftaiXM3b4n3tRXFm8sfRzScpoeQdkQfww-zO"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "train-and-save-model"
+            }
+          }
+        }
+      },
+      "inputDefinitions": {
+        "parameters": {
+          "file_bucket": {
+            "type": "STRING"
+          },
+          "project_id": {
+            "type": "STRING"
+          },
+          "region": {
+            "type": "STRING"
+          },
+          "resource_bucket": {
+            "type": "STRING"
+          }
+        }
+      },
+      "outputDefinitions": {
+        "artifacts": {
+          "train-and-save-model-metrics": {
+            "artifactType": {
+              "schemaTitle": "system.Metrics",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "train-and-save-model-metricsc": {
+            "artifactType": {
+              "schemaTitle": "system.ClassificationMetrics",
+              "schemaVersion": "0.0.1"
+            }
+          }
+        }
+      }
+    },
+    "schemaVersion": "2.0.0",
+    "sdkVersion": "kfp-1.8.18"
+  },
+  "runtimeConfig": {
+    "parameters": {
+      "file_bucket": {
+        "stringValue": "divg-groovyhoon-pr-d2eab4"
+      },
+      "project_id": {
+        "stringValue": "divg-groovyhoon-pr-d2eab4"
+      },
+      "region": {
+        "stringValue": "northamerica-northeast1"
+      },
+      "resource_bucket": {
+        "stringValue": "divg-groovyhoon-pr-d2eab4-default"
+      }
+    }
+  }
+}
