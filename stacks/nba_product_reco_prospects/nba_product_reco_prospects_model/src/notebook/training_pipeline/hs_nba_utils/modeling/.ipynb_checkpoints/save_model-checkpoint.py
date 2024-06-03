@@ -62,13 +62,17 @@ def save_model(model,
         pickle.dump(models_dict, handle)
     handle.close()
 
-    model_path = f'{file_bucket}/{stack_name}/{pipeline_path}/{service_type}_xgb_models'
+    model_path = 'models/'
         
     blob = bucket.blob(model_path)
     if not blob.exists(storage_client):
         blob.upload_from_string('')
 
-    model_name_onbkt = f'{model_path}/{service_type}_models_xgb_{create_time}'
+    model_name_onbkt = f'{model_path}{service_type}_xgb_models_latest.pkl'
+    blob = bucket.blob(model_name_onbkt)
+    blob.upload_from_filename('model_dict.pkl')
+        
+    model_name_onbkt = f'{model_path}{service_type}_xgb_models_{create_time}.pkl'
     blob = bucket.blob(model_name_onbkt)
     blob.upload_from_filename('model_dict.pkl')
 

@@ -51,7 +51,7 @@ def _extract_fsa(pstl_cd_list: List[str]):
 
 def process_prospects_features(
     df_input: pd.DataFrame, 
-    d_model_metadata: dict, 
+    d_model_config: dict, 
     training_mode: bool = False,
     model_type: str = 'acquisition', # 'acquisition' or 'tier'
     target_name: str = None # mandatory in training mode
@@ -61,7 +61,7 @@ def process_prospects_features(
     
     Args:
         - df_input: A pandas DataFrame containing the input data.
-        - d_model_metadata: A dictionary containing the metadata information for the model.
+        - d_model_config: A dictionary containing the metadata information for the model.
         - training_mode: A boolean indicating whether the function is being used for training or inference. Default is False.
         - target_name: A string indicating the name of the target variable. This parameter is mandatory in training mode.
 
@@ -122,8 +122,8 @@ def process_prospects_features(
         return df
 
     # extract features name
-    l_customer_ids = [f['name'] for f in d_model_metadata['customer_ids']]
-    l_features = [d_f['name'] for d_f in d_model_metadata['features']]
+    l_customer_ids = [f['name'] for f in d_model_config['customer_ids']]
+    l_features = [d_f['name'] for d_f in d_model_config['features']]
     
     df_features = df[l_features]
     df_features = encode_categorical_features(df_features)
@@ -139,7 +139,7 @@ def process_prospects_features(
         # extract target name - index mapping
         d_target_mapping = {
             d_target_info['name']: d_target_info['class_index']
-            for d_target_info in d_model_metadata['target_variables'][model_type]
+            for d_target_info in d_model_config['target_variables'][model_type]
         }
         
         # map target values

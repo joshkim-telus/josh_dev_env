@@ -16,7 +16,8 @@ def train_and_save_model(file_bucket: str
                         , project_id: str
                         , dataset_id: str
                         , model_type: str
-                        , train_csv: str
+                        , pipeline_type: str 
+                        , preprocess_output_csv: str
                         , save_file_name: str
                         , stats_file_name: str
                         , pipeline_path: str
@@ -43,10 +44,6 @@ def train_and_save_model(file_bucket: str
     from datetime import datetime
     from google.cloud import storage
     from google.cloud import bigquery
-
-    telus_purple = '#4B286D'
-    telus_green = '#66CC00'
-    telus_grey = '#F4F4F7'
 
     # for prod
     pth_project = Path(os.getcwd())
@@ -92,7 +89,7 @@ def train_and_save_model(file_bucket: str
         bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix='training_pipeline'
     )
     
-    blob = bucket.blob(f'{pipeline_path}/model_config.yaml')
+    blob = bucket.blob(f'{stack_name}/{pipeline_path}/model_config.yaml')
     blob.download_to_filename(pth_model_config)
 
     # import local modules
@@ -109,8 +106,9 @@ def train_and_save_model(file_bucket: str
                 pipeline_path=pipeline_path, 
                 service_type=service_type, 
                 model_type=model_type, 
+                pipeline_type=pipeline_type, 
                 d_model_config=d_model_config, 
-                train_csv=train_csv, 
+                preprocess_output_csv=preprocess_output_csv, 
                 save_file_name=save_file_name
                 ) 
     

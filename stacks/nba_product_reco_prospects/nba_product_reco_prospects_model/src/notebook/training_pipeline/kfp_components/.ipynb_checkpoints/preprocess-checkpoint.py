@@ -3,7 +3,7 @@ from typing import Any
 
 @component(
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
-    output_component_file="train_hs_nba_existing_customers_preprocess.yaml"
+    output_component_file="train_hs_nba_prospects_preprocess.yaml"
 )
 def preprocess(
     project_id: str,
@@ -16,7 +16,8 @@ def preprocess(
     hs_nba_utils_path: str, 
     model_type: str,
     load_sql: str, 
-    train_csv: str,
+    preprocess_output_csv: str,
+    pipeline_type: str, 
     token: str
 ):
     """
@@ -30,8 +31,6 @@ def preprocess(
     from yaml import safe_load
     import sys
     import os
-    
-    # set global vars
     
     # for prod
     pth_project = Path(os.getcwd())
@@ -49,10 +48,6 @@ def preprocess(
 #     #### For prod 
 #     client = bigquery.Client(project=project_id)
 #     job_config = bigquery.QueryJobConfig()
-
-    # import query 
-    # process features
-    # save data to bucket
 
     def extract_dir_from_bucket(
         bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline' 
@@ -80,12 +75,12 @@ def preprocess(
         bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}', split_prefix='notebook'
     ) 
     extract_dir_from_bucket(
-        bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix='training_pipeline'
+        bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix=pipeline_type
     )
 
-    blob = bucket.blob(f'{pipeline_path}/model_config.yaml')
+    blob = bucket.blob(f'{stack_name}/{pipeline_path}/model_config.yaml')
     blob.download_to_filename(pth_model_config)
-
+    
     # import local modules
     from hs_nba_utils.etl.extract import extract_bq_data
     from hs_nba_utils.modeling.prospects_features_preprocessing import process_prospects_features
@@ -111,7 +106,7 @@ def preprocess(
     )
     
     # save sql to gcs bucket
-    file_name = f'{stack_name}/{pipeline_path}/queries/{load_sql}'
+    file_name = 'queries/load_train_data_formatted.sql'
 
     # Convert the string to bytes
     content_bytes = sql.encode('utf-8')
@@ -132,7 +127,7 @@ def preprocess(
 
     # save data to pipeline bucket
     df_processed.to_csv(
-        f'gs://{file_bucket}/{stack_name}/{pipeline_path}/{train_csv}', index=False
+        f'gs://{file_bucket}/training_data/{preprocess_output_csv}', index=False
     )
     print(f'Training data saved into {file_bucket}')
     

@@ -103,7 +103,7 @@ def evaluate(df_result: pd.DataFrame,
         })
         df_stats = pd.concat([df_stats, df_w_avg])
 
-        df_stats.to_csv(f'gs://{file_bucket}/{stack_name}/{pipeline_path}/{stats_file_name}', index=False)
+        df_stats.to_csv(f'gs://{file_bucket}/eval/{stats_file_name}', index=False)
         
         return df_stats
     
