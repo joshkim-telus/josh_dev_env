@@ -24,22 +24,6 @@ target_variables:
       reco: whsia
     - name: hpro_acquisition
       reco: hpro
-    # - name: mob_acquisition
-    #   reco: mob
-    # - name: hsic_renewal
-    #   reco: rn_hsic
-    # - name: ttv_renewal
-    #   reco: rn_tv 
-    - name: shs_renewal
-      reco: rn_shs
-    # - name: hsic_upsell
-    #   reco: up_hsic
-    - name: ttv_upsell
-      reco: up_tv
-    - name: shs_upsell
-      reco: up_shs
-    # - name: tos_upsell
-    #   reco: up_tos
     
 # tiers mapping
 tiers:
@@ -48,11 +32,11 @@ tiers:
           reco: tos_u
         - name: tos_complete_tier_acquisition
           reco: tos_c
-    # hsic_acquisition:
-    #     - name: hsic_ultimate_tier_acquisition
-    #       reco: hsic_u
-    #     - name: hsic_complete_tier_acquisition
-    #       reco: hsic_c
+    hsic_acquisition:
+        - name: hsic_medium_tier_acquisition
+          reco: hsic_2
+        - name: hsic_high_tier_acquisition
+          reco: hsic_3
      
 # combos
 combos:

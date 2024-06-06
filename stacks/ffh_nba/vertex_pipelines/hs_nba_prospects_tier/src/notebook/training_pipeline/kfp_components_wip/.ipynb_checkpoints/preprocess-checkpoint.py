@@ -92,7 +92,7 @@ def preprocess(
     target_column = d_model_config['target_column']
     str_feature_names = ','.join([f"cast({f['name']} as {f['type']}) as {f['name']}" for f in d_model_config['features']])
     str_customer_ids = ','.join([f"cast({f['name']} as {f['type']}) as {f['name']}" for f in d_model_config['customer_ids']])
-    str_target_labels = ','.join([f"\"{f['name']}\"" for f in d_model_config['target_variables']['acquisition']])
+    str_target_labels = ','.join([f"\"{f['name']}\"" for f in d_model_config['target_variables'][model_type]])
     
     # extract training data
     sql = (pth_queries / load_sql).read_text().format(

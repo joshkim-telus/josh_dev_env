@@ -2,15 +2,16 @@ name: Aggregate results
 description: Aggregate hs_nba_existing_customers and hs_nba_existing_customers_tiers
 inputs:
 - {name: project_id, type: String}
-- {name: dataset_id, type: String}
+- {name: output_dataset_id, type: String}
 - {name: aggregate_results_table_id, type: String}
 - {name: resource_bucket, type: String}
 - {name: stack_name, type: String}
 - {name: pipeline_path, type: String}
 - {name: hs_nba_utils_path, type: String}
+- {name: token, type: String}
 implementation:
   container:
-    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest
     command:
     - sh
     - -c
@@ -28,18 +29,18 @@ implementation:
       printf "%s" "$0" > "$program_path/ephemeral_component.py"
       python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
     - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
-      \ import *\n\ndef aggregate_results(\n    project_id: str,\n    dataset_id:\
+      \ import *\n\ndef aggregate_results(\n    project_id: str,\n    output_dataset_id:\
       \ str,\n    aggregate_results_table_id: str,\n    resource_bucket: str,\n  \
-      \  stack_name: str,\n    pipeline_path: str,\n    hs_nba_utils_path: str\n):\n\
-      \    \"\"\"\n    Aggregate hs_nba_existing_customers and hs_nba_existing_customers_tiers\
-      \ \n    model scores  and insert results into bq output table\n    \"\"\"\n\n\
-      \    # import global modules\n    from google.cloud import storage\n    from\
-      \ google.cloud import bigquery\n    from pathlib import Path\n    from yaml\
-      \ import safe_load\n    import sys\n    import os\n\n    # set global vars\n\
-      \    pth_project = Path(os.getcwd())\n    pth_output_table_config = pth_project\
-      \ / 'output_table_config.yaml'\n    pth_queries = pth_project / 'queries'\n\
-      \    sys.path.insert(0, pth_project.as_posix())\n\n    # init gcp clients\n\
-      \    storage_client = storage.Client()\n    bq_client = bigquery.Client(project=project_id)\n\
+      \  stack_name: str,\n    pipeline_path: str,\n    hs_nba_utils_path: str, \n\
+      \    token: str\n):\n    \"\"\"\n    Aggregate hs_nba_existing_customers and\
+      \ hs_nba_existing_customers_tiers \n    model scores  and insert results into\
+      \ bq output table\n    \"\"\"\n\n    # import global modules\n    from google.cloud\
+      \ import storage\n    from google.cloud import bigquery\n    from pathlib import\
+      \ Path\n    from yaml import safe_load\n    import sys\n    import os\n\n  \
+      \  # set global vars\n    pth_project = Path(os.getcwd())\n    pth_output_table_config\
+      \ = pth_project / 'output_table_config.yaml'\n    pth_queries = pth_project\
+      \ / 'queries'\n    sys.path.insert(0, pth_project.as_posix())\n\n    # init\
+      \ gcp clients\n    storage_client = storage.Client()\n    bq_client = bigquery.Client(project=project_id)\n\
       \n    def extract_dir_from_bucket(\n        bucket: Any, local_path: Path, prefix:\
       \ str, split_prefix: str = 'serving_pipeline' \n    ):    \n        \"\"\"\n\
       \        Download files from a specified bucket to a local path, excluding a\
@@ -67,12 +68,12 @@ implementation:
       \    df_scores = extract_bq_data(bq_client, pth_query=pth_extract_scores)\n\n\
       \    # postprocess output\n    df_to_load = build_output_dataframe(df_scores,\
       \ d_output_table_config)\n\n    # create temp table in bq\n    temp_table_name\
-      \ = create_temp_table(\n        project_id, dataset_id, aggregate_results_table_id,\
+      \ = create_temp_table(\n        project_id, output_dataset_id, aggregate_results_table_id,\
       \ df_to_load\n    )\n\n    # insert data from temp into main table\n    current_part_dt\
       \ = str(df_to_load['part_dt'].max())\n    insert_from_temp_table(\n        project_id,\
-      \ dataset_id, aggregate_results_table_id, temp_table_name, current_part_dt,\n\
-      \        pth_queries / 'drop_current_part_dt.sql', pth_queries / 'insert_from_temp_table_aggregate_results.sql'\n\
-      \    )\n\n"
+      \ output_dataset_id, aggregate_results_table_id, temp_table_name, current_part_dt,\n\
+      \        pth_queries / 'drop_current_part_dt.sql', pth_queries / 'insert_from_temp_table_aggregate_results.sql',\
+      \ token\n    )\n\n"
     args:
     - --executor_input
     - {executorInput: null}

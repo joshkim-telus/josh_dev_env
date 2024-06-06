@@ -94,7 +94,7 @@ def postprocess(
     )
     
     print(f'created a temp table {temp_table_name}')
-
+    
     # insert data from temp into main table
     current_part_dt = str(df_scores['part_dt'].max())
     insert_from_temp_table(

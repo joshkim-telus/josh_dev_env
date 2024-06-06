@@ -8,12 +8,13 @@ from typing import Any
 )
 def aggregate_results(
     project_id: str,
-    dataset_id: str,
+    output_dataset_id: str,
     aggregate_results_table_id: str,
     resource_bucket: str,
     stack_name: str,
     pipeline_path: str,
-    hs_nba_utils_path: str
+    hs_nba_utils_path: str, 
+    token: str
 ):
     """
     Aggregate hs_nba_existing_customers and hs_nba_existing_customers_tiers 
@@ -86,12 +87,14 @@ def aggregate_results(
     
     # create temp table in bq
     temp_table_name = create_temp_table(
-        project_id, dataset_id, aggregate_results_table_id, df_to_load
+        project_id, output_dataset_id, aggregate_results_table_id, df_to_load
     )
 
     # insert data from temp into main table
     current_part_dt = str(df_to_load['part_dt'].max())
     insert_from_temp_table(
-        project_id, dataset_id, aggregate_results_table_id, temp_table_name, current_part_dt,
-        pth_queries / 'drop_current_part_dt.sql', pth_queries / 'insert_from_temp_table_aggregate_results.sql'
+        project_id, output_dataset_id, aggregate_results_table_id, temp_table_name, current_part_dt,
+        pth_queries / 'drop_current_part_dt.sql', pth_queries / 'insert_from_temp_table_aggregate_results.sql', token
     )
+    
+    

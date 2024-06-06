@@ -1,5 +1,5 @@
 # HS NBA existing customer model configuration
-model_id: 7001
+model_id: 7002
 
 target_column: 'model_scenario'
 

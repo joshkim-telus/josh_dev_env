@@ -47,6 +47,32 @@
           }
         }
       },
+      "comp-run-sp": {
+        "executorLabel": "exec-run-sp",
+        "inputDefinitions": {
+          "parameters": {
+            "from_date": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "to_date": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "parameters": {
+            "col_list": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
       "comp-train-and-save-model": {
         "executorLabel": "exec-train-and-save-model",
         "inputDefinitions": {
@@ -144,11 +170,35 @@
               "sh",
               "-ec",
               "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
-              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef preprocess(\n    project_id: str,\n    dataset_id: str,\n    table_id: str,\n    file_bucket: str,\n    resource_bucket: str,\n    stack_name: str,\n    pipeline_path: str,\n    hs_nba_utils_path: str, \n    model_type: str,\n    load_sql: str, \n    preprocess_output_csv: str,\n    pipeline_type: str, \n    token: str\n):\n    \"\"\"\n    Preprocess data for a machine learning training pipeline.\n    \"\"\"\n\n    # import global modules\n    from google.cloud import storage\n    from google.cloud import bigquery\n    from pathlib import Path\n    from yaml import safe_load\n    import sys\n    import os\n\n    # for prod\n    pth_project = Path(os.getcwd())\n    pth_model_config = pth_project / 'model_config.yaml'\n    pth_queries = pth_project / 'queries'\n    sys.path.insert(0, pth_project.as_posix())\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    def extract_dir_from_bucket(\n        bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline' \n    ):\n        \"\"\"\n        Download files from a specified bucket to a local path, excluding a specified prefix.\n\n        Parameters:\n        - bucket: The bucket object from which to download files.\n        - local_path: The local path where the files will be downloaded to.\n        - prefix: The prefix to filter the files in the bucket. Only files with this prefix will be downloaded.\n        - split_prefix: The prefix to exclude from the downloaded file paths. Default is 'serving_pipeline'.\n        \"\"\"\n        for blob in bucket.list_blobs(prefix=prefix):\n            if not blob.name.endswith(\"/\"):\n                path = local_path / blob.name.split(f'{split_prefix}/')[-1]\n                str_path = path.as_posix()\n                Path(str_path[:str_path.rindex('/')]).mkdir(parents=True, exist_ok=True)\n                blob.download_to_filename(str_path)\n\n    # download utils and model config locally\n    storage_client = storage.Client()\n    bucket = storage_client.bucket(resource_bucket)\n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}', split_prefix='notebook'\n    ) \n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix=pipeline_type\n    )\n\n    blob = bucket.blob(f'{stack_name}/{pipeline_path}/model_config.yaml')\n    blob.download_to_filename(pth_model_config)\n\n    # import local modules\n    from hs_nba_utils.etl.extract import extract_bq_data\n    from hs_nba_utils.modeling.prospects_features_preprocessing import process_prospects_features\n\n    # load model config\n    d_model_config = safe_load(pth_model_config.open())\n\n    # select columns to query\n    target_column = d_model_config['target_column']\n    str_feature_names = ','.join([f\"cast({f['name']} as {f['type']}) as {f['name']}\" for f in d_model_config['features']])\n    str_customer_ids = ','.join([f\"cast({f['name']} as {f['type']}) as {f['name']}\" for f in d_model_config['customer_ids']])\n    str_target_labels = ','.join([f\"\\\"{f['name']}\\\"\" for f in d_model_config['target_variables']['acquisition']])\n\n    # extract training data\n    sql = (pth_queries / load_sql).read_text().format(\n        project_id=project_id\n        , dataset_id=dataset_id\n        , table_id=table_id\n        , target_column=target_column\n        , customer_ids=str_customer_ids\n        , feature_names=str_feature_names\n        , target_labels=str_target_labels\n    )\n\n    # save sql to gcs bucket\n    file_name = f'{pipeline_type}_queries/load_train_data_formatted.sql'\n\n    # Convert the string to bytes\n    content_bytes = sql.encode('utf-8')\n\n    # Upload the file to GCS\n    bucket = storage_client.bucket(file_bucket)\n    blob = bucket.blob(file_name)\n    blob.upload_from_string(content_bytes)\n\n    df = extract_bq_data(client, sql)\n    print(f\"Training dataset df.shape {df.shape}\")\n\n    # process features\n    df_processed = process_prospects_features(\n        df, d_model_config, training_mode=True, model_type=model_type, target_name=target_column\n    )\n    print(f\"Training dataset processed df.shape {df_processed.shape}\")\n\n    # save data to pipeline bucket\n    df_processed.to_csv(\n        f'gs://{file_bucket}/{pipeline_type}/{preprocess_output_csv}', index=False\n    )\n    print(f'Training data saved into {file_bucket}')\n\n"
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef preprocess(\n    project_id: str,\n    dataset_id: str,\n    table_id: str,\n    file_bucket: str,\n    resource_bucket: str,\n    stack_name: str,\n    pipeline_path: str,\n    hs_nba_utils_path: str, \n    model_type: str,\n    load_sql: str, \n    preprocess_output_csv: str,\n    pipeline_type: str, \n    token: str\n):\n    \"\"\"\n    Preprocess data for a machine learning training pipeline.\n    \"\"\"\n\n    # import global modules\n    from google.cloud import storage\n    from google.cloud import bigquery\n    from pathlib import Path\n    from yaml import safe_load\n    import sys\n    import os\n\n    # for prod\n    pth_project = Path(os.getcwd())\n    pth_model_config = pth_project / 'model_config.yaml'\n    pth_queries = pth_project / 'queries'\n    sys.path.insert(0, pth_project.as_posix())\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    def extract_dir_from_bucket(\n        bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline' \n    ):\n        \"\"\"\n        Download files from a specified bucket to a local path, excluding a specified prefix.\n\n        Parameters:\n        - bucket: The bucket object from which to download files.\n        - local_path: The local path where the files will be downloaded to.\n        - prefix: The prefix to filter the files in the bucket. Only files with this prefix will be downloaded.\n        - split_prefix: The prefix to exclude from the downloaded file paths. Default is 'serving_pipeline'.\n        \"\"\"\n        for blob in bucket.list_blobs(prefix=prefix):\n            if not blob.name.endswith(\"/\"):\n                path = local_path / blob.name.split(f'{split_prefix}/')[-1]\n                str_path = path.as_posix()\n                Path(str_path[:str_path.rindex('/')]).mkdir(parents=True, exist_ok=True)\n                blob.download_to_filename(str_path)\n\n    # download utils and model config locally\n    storage_client = storage.Client()\n    bucket = storage_client.bucket(resource_bucket)\n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}', split_prefix='notebook'\n    ) \n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix=pipeline_type\n    )\n\n    blob = bucket.blob(f'{stack_name}/{pipeline_path}/model_config.yaml')\n    blob.download_to_filename(pth_model_config)\n\n    # import local modules\n    from hs_nba_utils.etl.extract import extract_bq_data\n    from hs_nba_utils.modeling.prospects_features_preprocessing import process_prospects_features\n\n    # load model config\n    d_model_config = safe_load(pth_model_config.open())\n\n    # select columns to query\n    target_column = d_model_config['target_column']\n    str_feature_names = ','.join([f\"cast({f['name']} as {f['type']}) as {f['name']}\" for f in d_model_config['features']])\n    str_customer_ids = ','.join([f\"cast({f['name']} as {f['type']}) as {f['name']}\" for f in d_model_config['customer_ids']])\n    str_target_labels = ','.join([f\"\\\"{f['name']}\\\"\" for f in d_model_config['target_variables'][model_type]])\n\n    # extract training data\n    sql = (pth_queries / load_sql).read_text().format(\n        project_id=project_id\n        , dataset_id=dataset_id\n        , table_id=table_id\n        , target_column=target_column\n        , customer_ids=str_customer_ids\n        , feature_names=str_feature_names\n        , target_labels=str_target_labels\n    )\n\n    # save sql to gcs bucket\n    file_name = f'{pipeline_type}_queries/load_train_data_formatted.sql'\n\n    # Convert the string to bytes\n    content_bytes = sql.encode('utf-8')\n\n    # Upload the file to GCS\n    bucket = storage_client.bucket(file_bucket)\n    blob = bucket.blob(file_name)\n    blob.upload_from_string(content_bytes)\n\n    df = extract_bq_data(client, sql)\n    print(f\"Training dataset df.shape {df.shape}\")\n\n    # process features\n    df_processed = process_prospects_features(\n        df, d_model_config, training_mode=True, model_type=model_type, target_name=target_column\n    )\n    print(f\"Training dataset processed df.shape {df_processed.shape}\")\n\n    # save data to pipeline bucket\n    df_processed.to_csv(\n        f'gs://{file_bucket}/{pipeline_type}/{preprocess_output_csv}', index=False\n    )\n    print(f'Training data saved into {file_bucket}')\n\n"
             ],
             "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
             "resources": {
               "cpuLimit": 8.0,
+              "memoryLimit": 32.0
+            }
+          }
+        },
+        "exec-run-sp": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "run_sp"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef run_sp(from_date: str\n          , to_date: str \n          , project_id: str\n          , token: str\n          ) -> NamedTuple(\"output\", [(\"col_list\", list)]):\n\n    from google.cloud import bigquery\n    import logging \n    from datetime import datetime\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n#     #### For prod \n#     client = bigquery.Client(project=project_id)\n#     job_config = bigquery.QueryJobConfig()\n\n    # Change dataset / table + sp table name to version in bi-layer\n    query =\\\n        f\"\"\"\n            BEGIN\n              DECLARE date_exists BOOL DEFAULT FALSE;\n\n              -- Check if the date '2023-05-01' exists in the from_dt column\n              SET date_exists = (\n                SELECT COUNT(1) > 0\n                FROM `{project_id}.nba_features_prospect.master_features_set_prospect`\n                WHERE from_dt = '{from_date}'\n              );\n\n              -- Conditionally execute the script if the date does not exist\n              IF date_exists = FALSE THEN\n                EXECUTE IMMEDIATE FORMAT('''\n                  DECLARE _from_dt DATE DEFAULT '{from_date}';\n                  DECLARE _to_dt DATE DEFAULT '{to_date}';\n                  CALL `{project_id}.nba_targets.sp_persist_targets_prospect`(_from_dt, _to_dt);\n                  CALL `{project_id}.nba_features_prospect.sp_persist_master_features_set`(_from_dt, _to_dt);\n                ''');\n              END IF;\n\n              SELECT * FROM `{project_id}.nba_features_prospect.master_features_set_prospect` LIMIT 1000; \n\n            END;\n        \"\"\"\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n\n    col_list = list([col for col in df.columns])\n\n    return (col_list,)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 4.0,
               "memoryLimit": 32.0
             }
           }
@@ -212,6 +262,9 @@
             "componentRef": {
               "name": "comp-preprocess"
             },
+            "dependentTasks": [
+              "run-sp"
+            ],
             "inputs": {
               "parameters": {
                 "dataset_id": {
@@ -224,7 +277,7 @@
                 "file_bucket": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4_hs_nba_prospects"
                     }
                   }
                 },
@@ -301,7 +354,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.c.c0AY_VpZjMoteIn7qaDtWklDcMxWy8MpfvSSnPfQ1Cb8f-ULhYKSlMi9eTa7faebrh9zUkTvTclFFMkW2BBt_tDMNUoPo1Kc8RHh36hVqAt7zpDgabbhiaOhiQRuSZGCSIxEAs9Fq-pnk8ShCs-Ul6YTzNEgb9izqfy0aqqPbG79ndaLgDUrYXlJ_4ZV_Qx6Er2cfAg4Xz7NcFHs9DoUvSzzNsy1JreKYPhVFx1jF9knUvWsC8XUE58Eq2k93KdDU8m8EsLwfBag9fWNQrzVHsTpKxVW5j36pT4meyAVIW8m3idLvBc33tOBP13v0XddidIg1dfMxsuBinv1PbhuWSsqZ0xEi4SNKxx_YFvRIHa_zopfJlVLKKjOW_5N2TNnJEOgN395KUdwwmdrdJt78SrFOWIhpMvQmhxfsX4cMBOvqicSd3rFhpIwzhSly8p2uvuFBXw7ipX_x8MbJe2xXVwhFnZoaanvWQouqF5-4YuqRjYiYIzvJmbwM6xRa7XbmFbzXq6p9zo8l6x0JuIzMBdXF__90Zra258zMtxhFyeeZ667rMoUtmw4IpiowuRzg1rxj-6eXVIOz--b2W8UmpFpn260xqklsQ1jl0U4Q3os-Ooga-vew2M4cQeiUiysRBUIcbbvni7oJjYb9yvU-zlyZFv5BaOdpWXSZhkdk-edoctf0ai4pf3q4t3F19qi70_X5xx_e9zqBeU61OdmcyJ4cvM9h4kj8SIfvon02F7ypnZWu4hBl8qwxrs1s3sJ5uygFpWttjv_003en-_hIa-ro7peY3lybempJtYrnlXko3utjFgrXBchW4atUIg4VUqIVgZOhjIpef1Ip6aR6l-soipcmUug0an7avpxJXzslaXU9nakdivsIapJ6vtIBl4O5xWXYsgQMbmcYWOsoX5-2Zn3BY6ulFkR1IQm_uZB1-MWitSX_4QrWaagdQuMoSdom5cYkgxcwj_1z3Sy8ftaiXM3b4n3tRXFm8sfRzScpoeQdkQfww-zO"
+                      "stringValue": "ya29.a0AXooCgs2ZW2TDC5ZJIHwS0XeXMPLMQMvieL8rhxF2Nxdpg6a6NwyQLGDje3i_UxLk0wV2HxVbFQ1b9uO9V0ryeFzKnBFZG1HRGBJE9kLl2U5DBnSd9oNbs0Et8XiKJmGwaibC6hX6t0ekX1FiDnlHwNMQ8vT6evClk5w_Nj_FrkaCgYKAf4SARISFQHGX2Mi9XgTqeeNl-6ee1_HrYUFbg0178"
                     }
                   }
                 }
@@ -309,6 +362,49 @@
             },
             "taskInfo": {
               "name": "preprocess"
+            }
+          },
+          "run-sp": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-run-sp"
+            },
+            "inputs": {
+              "parameters": {
+                "from_date": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "2023-04-01"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "to_date": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "2024-03-31"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.a0AXooCgs2ZW2TDC5ZJIHwS0XeXMPLMQMvieL8rhxF2Nxdpg6a6NwyQLGDje3i_UxLk0wV2HxVbFQ1b9uO9V0ryeFzKnBFZG1HRGBJE9kLl2U5DBnSd9oNbs0Et8XiKJmGwaibC6hX6t0ekX1FiDnlHwNMQ8vT6evClk5w_Nj_FrkaCgYKAf4SARISFQHGX2Mi9XgTqeeNl-6ee1_HrYUFbg0178"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "run-sp"
             }
           },
           "train-and-save-model": {
@@ -333,7 +429,7 @@
                 "file_bucket": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4_hs_nba_prospects"
                     }
                   }
                 },
@@ -417,7 +513,7 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.c.c0AY_VpZjMoteIn7qaDtWklDcMxWy8MpfvSSnPfQ1Cb8f-ULhYKSlMi9eTa7faebrh9zUkTvTclFFMkW2BBt_tDMNUoPo1Kc8RHh36hVqAt7zpDgabbhiaOhiQRuSZGCSIxEAs9Fq-pnk8ShCs-Ul6YTzNEgb9izqfy0aqqPbG79ndaLgDUrYXlJ_4ZV_Qx6Er2cfAg4Xz7NcFHs9DoUvSzzNsy1JreKYPhVFx1jF9knUvWsC8XUE58Eq2k93KdDU8m8EsLwfBag9fWNQrzVHsTpKxVW5j36pT4meyAVIW8m3idLvBc33tOBP13v0XddidIg1dfMxsuBinv1PbhuWSsqZ0xEi4SNKxx_YFvRIHa_zopfJlVLKKjOW_5N2TNnJEOgN395KUdwwmdrdJt78SrFOWIhpMvQmhxfsX4cMBOvqicSd3rFhpIwzhSly8p2uvuFBXw7ipX_x8MbJe2xXVwhFnZoaanvWQouqF5-4YuqRjYiYIzvJmbwM6xRa7XbmFbzXq6p9zo8l6x0JuIzMBdXF__90Zra258zMtxhFyeeZ667rMoUtmw4IpiowuRzg1rxj-6eXVIOz--b2W8UmpFpn260xqklsQ1jl0U4Q3os-Ooga-vew2M4cQeiUiysRBUIcbbvni7oJjYb9yvU-zlyZFv5BaOdpWXSZhkdk-edoctf0ai4pf3q4t3F19qi70_X5xx_e9zqBeU61OdmcyJ4cvM9h4kj8SIfvon02F7ypnZWu4hBl8qwxrs1s3sJ5uygFpWttjv_003en-_hIa-ro7peY3lybempJtYrnlXko3utjFgrXBchW4atUIg4VUqIVgZOhjIpef1Ip6aR6l-soipcmUug0an7avpxJXzslaXU9nakdivsIapJ6vtIBl4O5xWXYsgQMbmcYWOsoX5-2Zn3BY6ulFkR1IQm_uZB1-MWitSX_4QrWaagdQuMoSdom5cYkgxcwj_1z3Sy8ftaiXM3b4n3tRXFm8sfRzScpoeQdkQfww-zO"
+                      "stringValue": "ya29.a0AXooCgs2ZW2TDC5ZJIHwS0XeXMPLMQMvieL8rhxF2Nxdpg6a6NwyQLGDje3i_UxLk0wV2HxVbFQ1b9uO9V0ryeFzKnBFZG1HRGBJE9kLl2U5DBnSd9oNbs0Et8XiKJmGwaibC6hX6t0ekX1FiDnlHwNMQ8vT6evClk5w_Nj_FrkaCgYKAf4SARISFQHGX2Mi9XgTqeeNl-6ee1_HrYUFbg0178"
                     }
                   }
                 }
@@ -468,7 +564,7 @@
   "runtimeConfig": {
     "parameters": {
       "file_bucket": {
-        "stringValue": "divg-groovyhoon-pr-d2eab4"
+        "stringValue": "divg-groovyhoon-pr-d2eab4_hs_nba_prospects"
       },
       "project_id": {
         "stringValue": "divg-groovyhoon-pr-d2eab4"

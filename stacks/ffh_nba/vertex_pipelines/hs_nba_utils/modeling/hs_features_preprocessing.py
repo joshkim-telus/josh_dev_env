@@ -6,6 +6,7 @@ from typing import List, Dict, Tuple, Optional
 # warnings.simplefilter(action='ignore', category=SettingWithCopyWarning)
 # warnings.simplefilter(action='ignore', category=FutureWarning)
 
+
 def _extract_AB_BC_flag(province: str):
     """
     Generate AB BC flag 
@@ -15,14 +16,6 @@ def _extract_AB_BC_flag(province: str):
     
     return 0
 
-def replace_null(value: str):
-    """
-    Fill null values in the column
-    """
-    if pd.isnull(value):
-        return "UNKNOWN"
-    else: 
-        return value
 
 def _extract_account_risk_value(value: str):
     """ 
@@ -34,6 +27,7 @@ def _extract_account_risk_value(value: str):
     if 'High' in value: return 3
     
     return 0
+
 
 def _extract_fsa(pstl_cd_list: List[str]):
     """
@@ -49,11 +43,11 @@ def _extract_fsa(pstl_cd_list: List[str]):
             
     return None
 
-def process_prospects_features(
+
+def process_hs_features(
     df_input: pd.DataFrame, 
-    d_model_config: dict, 
+    d_model_metadata: dict, 
     training_mode: bool = False,
-    model_type: str = 'acquisition', # 'acquisition' or 'tier'
     target_name: str = None # mandatory in training mode
 ) -> pd.DataFrame:
     """
@@ -61,7 +55,7 @@ def process_prospects_features(
     
     Args:
         - df_input: A pandas DataFrame containing the input data.
-        - d_model_config: A dictionary containing the metadata information for the model.
+        - d_model_metadata: A dictionary containing the metadata information for the model.
         - training_mode: A boolean indicating whether the function is being used for training or inference. Default is False.
         - target_name: A string indicating the name of the target variable. This parameter is mandatory in training mode.
 
@@ -100,57 +94,37 @@ def process_prospects_features(
         df['cust_pref_lang_txt'] = df.apply(
             lambda row: 1 if row['cust_pref_lang_txt'] == 'English' else 0, axis = 1
         )
-        
-    # replace null with string
-    if 'demogr_census_division_typ' in df.columns:
-        df['demogr_census_division_typ'] = df.apply(
-            lambda row: replace_null(row['demogr_census_division_typ']), axis = 1
-        )
-        
-    # Now we need to transform the features of the feature store.
-    def encode_categorical_features(df):
-        from sklearn.preprocessing import LabelEncoder
 
-        # Get a list of all categorical columns
-        cat_columns = df.select_dtypes(include=['object', 'category']).columns.tolist()
-
-        # Encode each categorical column
-        for col in cat_columns:
-            le = LabelEncoder()
-            df[col] = le.fit_transform(df[col])
-
-        return df
-
-    # extract features name
-    l_customer_ids = [f['name'] for f in d_model_config['customer_ids']]
-    l_features = [d_f['name'] for d_f in d_model_config['features']]
+    # diff in days of ref dt
+    for f in d_model_metadata['date_to_days_features']:
+        df[f['name']] = (
+            pd.to_datetime(df[f['name']], errors='coerce') - pd.to_datetime(df['part_dt'], errors='coerce')
+        ).dt.days
     
-    df_features = df[l_features]
-    df_features = encode_categorical_features(df_features)
-    df_features[l_customer_ids] = df[l_customer_ids]
+    # extract features name
+    l_features = [d_f['name'] for d_f in d_model_metadata['features']]
+
+    df_features = df[l_features + [target_name]] if training_mode else df[l_features]
     df_features = df_features.fillna(0)
-    if training_mode: 
-        df_features[target_name] = df[target_name]
-    else: 
-        df_features = df_features
+
+    # convert features to type
+    for d_f in d_model_metadata['features']:
+        df_features[d_f['name']] = df_features[d_f['name']].astype(d_f['type'])
 
     if training_mode:
-        
         # extract target name - index mapping
         d_target_mapping = {
             d_target_info['name']: d_target_info['class_index']
-            for d_target_info in d_model_config['target_variables'][model_type]
+            for d_target_info in d_model_metadata['target_variables']
         }
-        
         # map target values
         df_features['target'] = df_features[target_name].map(d_target_mapping)
-        # df_features = df_features.drop(columns=target_name)
-        df_features['part_dt'] = df['part_dt']
+        df_features = df_features.drop(columns=target_name)
 
     else:
+        l_customer_ids = d_model_metadata['customer_ids']
+        df_features[l_customer_ids] = df[l_customer_ids]
         df_features = df_features[l_customer_ids + l_features]
         df_features['part_dt'] = df['part_dt']
 
     return df_features
-
-    

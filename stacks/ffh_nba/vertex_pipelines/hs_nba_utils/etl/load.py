@@ -60,6 +60,7 @@ def insert_from_temp_table(
     current_part_dt: str,
     pth_drop_query: Path,
     pth_insert_query: Path,
+    token: str
 ):
     """
     Inserts data from a temporary table into a main table in BigQuery.
@@ -77,14 +78,23 @@ def insert_from_temp_table(
         None
     """
 
-    bq_client = bigquery.Client(project=project_id)
+    #### For wb
+    import google.oauth2.credentials
+    CREDENTIALS = google.oauth2.credentials.Credentials(token)
+    
+    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
+    job_config = bigquery.QueryJobConfig()
+
+#     #### For prod 
+#     client = bigquery.Client(project=project_id)
+#     job_config = bigquery.QueryJobConfig()
 
     # remove existing part_dt to avoid duplicates
     sql_drop = pth_drop_query.read_text().format(
         project_id=project_id, dataset_id=dataset_id, 
         table_id=table_id, current_part_dt=current_part_dt
     )
-    query_job = bq_client.query(sql_drop)
+    query_job = client.query(sql_drop)
     rows = query_job.result()  # Waits for query to finish
     for row in rows:
         print(row.name)
@@ -95,7 +105,7 @@ def insert_from_temp_table(
         project_id=project_id, dataset_id=dataset_id, 
         table_id=table_id, temp_table_id=temp_table_id
     )
-    query_job = bq_client.query(sql_insert)
+    query_job = client.query(sql_insert)
     rows = query_job.result()  # Waits for query to finish
     for row in rows:
         print(row.name)

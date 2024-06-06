@@ -74,7 +74,7 @@ implementation:
       \ ','.join([f\"cast({f['name']} as {f['type']}) as {f['name']}\" for f in d_model_config['features']])\n\
       \    str_customer_ids = ','.join([f\"cast({f['name']} as {f['type']}) as {f['name']}\"\
       \ for f in d_model_config['customer_ids']])\n    str_target_labels = ','.join([f\"\
-      \\\"{f['name']}\\\"\" for f in d_model_config['target_variables']['acquisition']])\n\
+      \\\"{f['name']}\\\"\" for f in d_model_config['target_variables'][model_type]])\n\
       \n    # extract training data\n    sql = (pth_queries / load_sql).read_text().format(\n\
       \        project_id=project_id\n        , dataset_id=dataset_id\n        , table_id=table_id\n\
       \        , target_column=target_column\n        , customer_ids=str_customer_ids\n\

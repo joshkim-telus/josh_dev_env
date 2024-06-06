@@ -19,15 +19,7 @@ SELECT
   SAFE_CAST(sws_acquisition AS numeric) AS sws_acquisition,
   SAFE_CAST(wifi_acquisition AS numeric) AS wifi_acquisition,
   SAFE_CAST(whsia_acquisition AS numeric) AS whsia_acquisition,
-  SAFE_CAST(hpro_acquisition AS numeric) AS hpro_acquisition,
-  SAFE_CAST(mob_acquisition AS numeric) AS mob_acquisition,
-  SAFE_CAST(hsic_renewal AS numeric) AS hsic_renewal,
-  SAFE_CAST(ttv_renewal AS numeric) AS ttv_renewal,
-  SAFE_CAST(shs_renewal AS numeric) AS shs_renewal,
-  SAFE_CAST(hsic_upsell AS numeric) AS hsic_upsell,
-  SAFE_CAST(ttv_upsell AS numeric) AS ttv_upsell,
-  SAFE_CAST(shs_upsell AS numeric) AS shs_upsell,
-  SAFE_CAST(tos_upsell AS numeric) AS tos_upsell
+  SAFE_CAST(hpro_acquisition AS numeric) AS hpro_acquisition
 FROM
   `{temp_table_id}`
 

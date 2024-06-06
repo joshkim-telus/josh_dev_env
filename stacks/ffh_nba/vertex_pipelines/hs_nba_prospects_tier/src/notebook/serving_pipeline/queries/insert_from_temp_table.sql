@@ -1,3 +1,4 @@
+
 -- insert new rows into main bq table
 INSERT INTO
   `{project_id}.{dataset_id}.{table_id}`
@@ -10,25 +11,13 @@ SELECT
   SAFE_CAST(ban_src_id AS int) AS ban_src_id,
   SAFE_CAST(lpds_id AS int) AS lpds_id,
   SAFE_CAST(fms_address_id AS string) AS fms_address_id,
-  SAFE_CAST(hsic_acquisition AS numeric) AS hsic_acquisition,
-  SAFE_CAST(ttv_acquisition AS numeric) AS ttv_acquisition,
-  SAFE_CAST(shs_acquisition AS numeric) AS shs_acquisition,
-  SAFE_CAST(sing_acquisition AS numeric) AS sing_acquisition,
-  SAFE_CAST(tos_acquisition AS numeric) AS tos_acquisition,
-  SAFE_CAST(lwc_acquisition AS numeric) AS lwc_acquisition,
-  SAFE_CAST(sws_acquisition AS numeric) AS sws_acquisition,
-  SAFE_CAST(wifi_acquisition AS numeric) AS wifi_acquisition,
-  SAFE_CAST(whsia_acquisition AS numeric) AS whsia_acquisition,
-  SAFE_CAST(hpro_acquisition AS numeric) AS hpro_acquisition,
-  SAFE_CAST(mob_acquisition AS numeric) AS mob_acquisition,
-  SAFE_CAST(hsic_renewal AS numeric) AS hsic_renewal,
-  SAFE_CAST(ttv_renewal AS numeric) AS ttv_renewal,
-  SAFE_CAST(shs_renewal AS numeric) AS shs_renewal,
-  SAFE_CAST(hsic_upsell AS numeric) AS hsic_upsell,
-  SAFE_CAST(ttv_upsell AS numeric) AS ttv_upsell,
-  SAFE_CAST(shs_upsell AS numeric) AS shs_upsell,
-  SAFE_CAST(tos_upsell AS numeric) AS tos_upsell
+  SAFE_CAST(hsic_low_tier_acquisition AS numeric) AS hsic_low_tier_acquisition,
+  SAFE_CAST(hsic_medium_tier_acquisition AS numeric) AS hsic_medium_tier_acquisition,
+  SAFE_CAST(hsic_high_tier_acquisition AS numeric) AS hsic_high_tier_acquisition,
+  SAFE_CAST(tos_basic_tier_acquisition AS numeric) AS tos_basic_tier_acquisition,
+  SAFE_CAST(tos_standard_tier_acquisition AS numeric) AS tos_standard_tier_acquisition,
+  SAFE_CAST(tos_ultimate_tier_acquisition AS numeric) AS tos_ultimate_tier_acquisition,
+  SAFE_CAST(tos_complete_tier_acquisition AS numeric) AS tos_complete_tier_acquisition,
 FROM
   `{temp_table_id}`
-
 

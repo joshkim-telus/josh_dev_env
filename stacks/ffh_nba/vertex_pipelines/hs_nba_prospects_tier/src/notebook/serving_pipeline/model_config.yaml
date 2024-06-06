@@ -1,5 +1,5 @@
 # HS NBA existing customer model configuration
-model_id: 7001
+model_id: 7003
 
 target_column: 'model_scenario'
 
@@ -63,475 +63,516 @@ target_variables:
       class_index: 5
     - name: tos_complete_tier_acquisition
       class_index: 6
-      
-unavailable_target_variables: 
 
+unavailable_target_variables: 
+    
 features:
-    - name: avg_usg_cnt_4w_news 
-      type: float64
-    - name: avg_usg_dl_4w_news 
-      type: float64
-    - name: avg_usg_ul_4w_news 
-      type: float64
-    - name: avg_usg_cnt_4w_sports 
-      type: float64
-    - name: avg_usg_dl_4w_sports 
-      type: float64
-    - name: avg_usg_ul_4w_sports 
-      type: float64
-    - name: avg_usg_cnt_4w_tv_and_movies 
-      type: float64
-    - name: avg_usg_dl_4w_tv_and_movies 
-      type: float64
-    - name: avg_usg_ul_4w_tv_and_movies 
-      type: float64
-    - name: bill_wln_avg_zscore_ban_subtotal_amt 
-      type: float64
-    - name: bill_wln_avg_ban_subtotal_amt 
-      type: float64
-    - name: bill_wln_stddev_ban_subtotal_amt 
-      type: float64
-    - name: bill_wln_avg_zscore_ban_debit_amt 
-      type: float64
-    - name: bill_wln_avg_ban_debit_amt 
-      type: float64
-    - name: bill_wln_stddev_ban_debit_amt 
-      type: float64
-    - name: bill_wln_avg_zscore_ban_discount_amt 
-      type: float64
-    - name: bill_wln_avg_ban_discount_amt 
-      type: float64
-    - name: bill_wln_stddev_ban_discount_amt 
-      type: float64
-    - name: bill_wln_avg_zscore_ban_credit_amt 
-      type: float64
-    - name: bill_wln_avg_ban_credit_amt 
-      type: float64
-    - name: bill_wln_stddev_ban_credit_amt 
-      type: float64
-    - name: bill_wln_avg_zscore_sing_debit_amt 
-      type: float64
-    - name: bill_wln_avg_zscore_sing_discount_amt 
-      type: float64
-    - name: bill_wln_avg_zscore_sing_credit_amt 
-      type: float64
-    - name: bill_wln_avg_zscore_hsic_debit_amt 
-      type: float64
-    - name: bill_wln_avg_zscore_hsic_discount_amt 
-      type: float64
-    - name: bill_wln_avg_zscore_hsic_credit_amt 
-      type: float64
-    - name: bill_wln_avg_zscore_ttv_debit_amt 
-      type: float64
-    - name: bill_wln_avg_zscore_ttv_discount_amt 
-      type: float64
-    - name: bill_wln_avg_zscore_ttv_credit_amt 
-      type: float64
-    - name: bill_wln_avg_zscore_smhm_debit_amt 
-      type: float64
-    - name: bill_wln_avg_zscore_smhm_discount_amt 
-      type: float64
-    - name: bill_wln_avg_zscore_smhm_credit_amt 
-      type: float64
-    - name: bill_wln_avg_zscore_sing_ld_na_call_cnt 
-      type: float64
-    - name: bill_wln_avg_zscore_sing_ld_intl_call_cnt 
-      type: float64
-    - name: bill_wln_avg_zscore_hsic_usg_gb 
-      type: float64
-    - name: bill_wln_avg_zscore_ttv_ppv_cnt 
-      type: float64
-    - name: bill_wln_avg_zscore_ttv_vod_cnt 
-      type: float64
-    - name: bill_wln_avg_sing_debit_amt 
-      type: float64
-    - name: bill_wln_avg_sing_discount_amt 
-      type: float64
-    - name: bill_wln_avg_sing_credit_amt 
-      type: float64
-    - name: bill_wln_avg_hsic_debit_amt 
-      type: float64
-    - name: bill_wln_avg_hsic_discount_amt 
-      type: float64
-    - name: bill_wln_avg_hsic_credit_amt 
-      type: float64
-    - name: bill_wln_avg_ttv_debit_amt 
-      type: float64
-    - name: bill_wln_avg_ttv_discount_amt 
-      type: float64
-    - name: bill_wln_avg_ttv_credit_amt 
-      type: float64
-    - name: bill_wln_avg_smhm_debit_amt 
-      type: float64
-    - name: bill_wln_avg_smhm_discount_amt 
-      type: float64
-    - name: bill_wln_avg_smhm_credit_amt 
-      type: float64
-    - name: bill_wln_avg_sing_ld_na_call_cnt 
-      type: float64
-    - name: bill_wln_avg_sing_ld_intl_call_cnt 
-      type: float64
-    - name: bill_wln_avg_hsic_usg_gb 
-      type: float64
-    - name: bill_wln_avg_ttv_ppv_cnt 
-      type: float64
-    - name: bill_wln_avg_ttv_vod_cnt 
-      type: float64
-    - name: bill_wln_stddev_sing_debit_amt 
-      type: float64
-    - name: bill_wln_stddev_sing_discount_amt 
-      type: float64
-    - name: bill_wln_stddev_sing_credit_amt 
-      type: float64
-    - name: bill_wln_stddev_hsic_debit_amt 
-      type: float64
-    - name: bill_wln_stddev_hsic_discount_amt 
-      type: float64
-    - name: bill_wln_stddev_hsic_credit_amt 
-      type: float64
-    - name: bill_wln_stddev_ttv_debit_amt 
-      type: float64
-    - name: bill_wln_stddev_ttv_discount_amt 
-      type: float64
-    - name: bill_wln_stddev_ttv_credit_amt 
-      type: float64
-    - name: bill_wln_stddev_smhm_debit_amt 
-      type: float64
-    - name: bill_wln_stddev_smhm_discount_amt 
-      type: float64
-    - name: bill_wln_stddev_smhm_credit_amt 
-      type: float64
-    - name: bill_wln_stddev_sing_ld_na_call_cnt 
-      type: float64
-    - name: bill_wln_stddev_sing_ld_intl_call_cnt 
-      type: float64
-    - name: bill_wln_stddev_hsic_usg_gb 
-      type: float64
-    - name: bill_wln_stddev_ttv_ppv_cnt 
-      type: float64
-    - name: bill_wln_stddev_ttv_vod_cnt 
-      type: float64
-    - name: bill_wln_tot_disc_pct 
-      type: float64
-    - name: bill_wln_sing_disc_pct 
-      type: float64
-    - name: bill_wln_hsic_disc_pct 
-      type: float64
-    - name: bill_wln_ttv_disc_pct 
-      type: float64
-    - name: bill_wln_smhm_disc_pct 
-      type: float64
-    - name: clk_wls_tot_cnt_r30d 
-      type: int64
-    - name: clk_wls_plan_cnt_r30d 
-      type: int64
-    - name: clk_wls_device_cnt_r30d 
-      type: int64
-    - name: clk_wls_smartwatch_cnt_r30d 
-      type: int64
-    - name: clk_wls_tablet_cnt_r30d 
-      type: int64
-    - name: clk_wln_tot_cnt_r30d 
-      type: int64
-    - name: clk_wln_eligibility_cnt_r30d 
-      type: int64
-    - name: clk_wln_sing_cnt_r30d 
-      type: int64
-    - name: clk_wln_hsic_cnt_r30d 
-      type: int64
-    - name: clk_wln_fibre_cnt_r30d 
-      type: int64
-    - name: clk_wln_whsia_cnt_r30d 
-      type: int64
-    - name: clk_wln_wifi_plus_cnt_r30d 
-      type: int64
-    - name: clk_wln_tv_cnt_r30d 
-      type: int64
-    - name: clk_wln_optik_cnt_r30d 
-      type: int64
-    - name: clk_wln_pik_cnt_r30d 
-      type: int64
-    - name: clk_wln_streamplus_cnt_r30d 
-      type: int64
-    - name: clk_wln_streaming_cnt_r30d 
-      type: int64
-    - name: clk_wln_security_cnt_r30d 
-      type: int64
-    - name: clk_wln_smarthome_security_cnt_r30d 
-      type: int64
-    - name: clk_wln_online_security_cnt_r30d 
-      type: int64
-    - name: clk_wln_smartwear_security_cnt_r30d 
-      type: int64
-    - name: clk_deal_tot_cnt_r30d 
-      type: int64
-    - name: clk_deal_wls_cnt_r30d 
-      type: int64
-    - name: clk_deal_wln_cnt_r30d 
-      type: int64
-    - name: clk_deal_wln_sing_cnt_r30d 
-      type: int64
-    - name: clk_deal_wln_hsic_cnt_r30d 
-      type: int64
-    - name: clk_deal_wln_whsia_cnt_r30d 
-      type: int64
-    - name: clk_deal_wln_tv_cnt_r30d 
-      type: int64
-    - name: clk_deal_wln_security_cnt_r30d 
-      type: int64
-    - name: clk_upgr_tot_cnt_r30d 
-      type: int64
-    - name: clk_upgr_wls_cnt_r30d 
-      type: int64
-    - name: clk_upgr_wln_cnt_r30d 
-      type: int64
-    - name: clk_upgr_wln_sing_cnt_r30d 
-      type: int64
-    - name: clk_upgr_wln_hsic_cnt_r30d 
-      type: int64
-    - name: clk_upgr_wln_whsia_cnt_r30d 
-      type: int64
-    - name: clk_upgr_wln_tv_cnt_r30d 
-      type: int64
-    - name: clk_upgr_wln_security_cnt_r30d 
-      type: int64
-    - name: clk_chg_tot_cnt_r30d 
-      type: int64
-    - name: clk_chg_wls_cnt_r30d 
-      type: int64
-    - name: clk_chg_wln_cnt_r30d 
-      type: int64
-    - name: clk_chg_wln_sing_cnt_r30d 
-      type: int64
-    - name: clk_chg_wln_hsic_cnt_r30d 
-      type: int64
-    - name: clk_chg_wln_whsia_cnt_r30d 
-      type: int64
-    - name: clk_chg_wln_tv_cnt_r30d 
-      type: int64
-    - name: clk_chg_wln_security_cnt_r30d 
-      type: int64
-    - name: clk_health_livingwell_cnt_r30d 
-      type: int64
-    - name: clk_health_mypet_cnt_r30d 
-      type: int64
-    - name: clk_travel_cnt_r30d 
-      type: int64
-    - name: clk_billing_cnt_r30d 
-      type: int64
-    - name: clk_service_agreement_cnt_r30d 
-      type: int64
-    - name: acct_cr_risk_txt 
-      type: string
-    - name: acct_ebill_ind 
-      type: string
-    - name: cust_cr_val_txt 
-      type: string
-    - name: cust_pref_lang_txt 
-      type: string
-    - name: cust_prov_state_cd 
-      type: string
-    - name: cust_age_yr_num 
-      type: int64
-    - name: demogr_med_age 
-      type: float64
-    - name: demogr_avg_child 
-      type: float64
-    - name: demogr_pct_family_with_child_living_at_home 
-      type: float64
-    - name: demogr_employment_rate 
-      type: float64
-    - name: demogr_avg_household_size 
-      type: float64
-    - name: demogr_avg_income 
-      type: float64
-    - name: demogr_med_income 
-      type: float64
-    - name: demogr_urban_flag 
-      type: float64
-    - name: demogr_rural_flag 
-      type: float64
-    - name: demogr_family_flag 
-      type: float64
-    - name: demogr_lsname_large_diverse_families 
-      type: float64
-    - name: demogr_lsname_younger_singles_and_couples 
-      type: float64
-    - name: demogr_lsname_very_young_singles_and_couples 
-      type: float64
-    - name: demogr_lsname_older_families_and_empty_nests 
-      type: float64
-    - name: demogr_lsname_middle_age_families 
-      type: float64
-    - name: demogr_lsname_mature_singles_and_couples 
-      type: float64
-    - name: demogr_lsname_young_families 
-      type: float64
-    - name: demogr_lsname_school_age_families 
-      type: float64
-    - name: demogr_retired_pstl_cd_ind 
-      type: float64
-    - name: demogr_census_division_typ 
-      type: string
-    - name: demogr_lifestage_sort 
-      type: float64
-    - name: hs_usg_avg_tot_gb 
-      type: float64
-    - name: hs_usg_avg_dl_gb 
-      type: float64
-    - name: hs_usg_avg_ul_gb 
-      type: float64
-    - name: prod_tot_cnt 
-      type: int64
-    - name: prod_wln_cnt 
-      type: int64
-    - name: prod_wls_cnt 
-      type: int64
-    - name: prod_mob_cnt 
-      type: int64
-    - name: prod_sing_cnt 
-      type: int64
-    - name: prod_hsic_cnt 
-      type: int64
-    - name: prod_whsia_cnt 
-      type: int64
-    - name: prod_ttv_cnt 
-      type: int64
-    - name: prod_smhm_cnt 
-      type: int64
-    - name: prod_tos_cnt 
-      type: int64
-    - name: prod_wifiplus_cnt 
-      type: int64
-    - name: prod_stv_cnt 
-      type: int64
-    - name: prod_other_cnt 
-      type: int64
-    - name: prod_deact_prod_cnt 
-      type: int64
-    - name: prod_act_prod_cnt_r7d 
-      type: int64
-    - name: prod_act_wln_cnt_r7d 
-      type: int64
-    - name: prod_deact_prod_cnt_r7d 
-      type: int64
-    - name: prod_deact_wln_cnt_r7d 
-      type: int64
-    - name: hsic_tenure_days 
-      type: int64
-    # - name: contract_end_date_hsic 
-    #   type: date
-    - name: sing_tenure_days 
-      type: int64
-    # - name: contract_end_date_sing 
-    #   type: date
-    - name: ttv_tenure_days 
-      type: int64
-    # - name: contract_end_date_ttv 
-    #   type: date
-    - name: smhm_tenure_days 
-      type: int64
-    # - name: contract_end_date_smhm 
-    #   type: date
-    - name: ffh_tenure 
-      type: int64
-    - name: new_account_ind 
-      type: int64
-    - name: wls_trip_sum_duration_days_1m 
-      type: int64
-    - name: wls_trip_sum_duration_days_3m 
-      type: int64
-    - name: wls_trip_sum_duration_days_6m 
-      type: int64
-    - name: wls_trip_sum_active_roaming_days_1m 
-      type: int64
-    - name: wls_trip_sum_active_roaming_days_3m 
-      type: int64
-    - name: wls_trip_sum_active_roaming_days_6m 
-      type: int64
-    - name: wls_usg_avg_data_qty_1m_roaming 
-      type: float64
-    - name: wls_usg_avg_sms_snd_qty_1m_roaming 
-      type: float64
-    - name: wls_usg_avg_sms_rcv_qty_1m_roaming 
-      type: float64
-    - name: wls_usg_avg_voice_qty_1m_roaming 
-      type: float64
-    - name: wls_usg_avg_data_qty_3m_roaming 
-      type: float64
-    - name: wls_usg_avg_sms_snd_qty_3m_roaming 
-      type: float64
-    - name: wls_usg_avg_sms_rcv_qty_3m_roaming 
-      type: float64
-    - name: wls_usg_avg_voice_qty_3m_roaming 
-      type: float64
-    - name: wls_usg_avg_data_qty_6m_roaming 
-      type: float64
-    - name: wls_usg_avg_sms_snd_qty_6m_roaming 
-      type: float64
-    - name: wls_usg_avg_sms_rcv_qty_6m_roaming 
-      type: float64
-    - name: wls_usg_avg_voice_qty_6m_roaming 
-      type: float64
-    - name: wls_usg_tot_country_code_travelled_6m_roaming 
-      type: int64
-    - name: wls_usg_avg_data_qty_1m_domestic 
-      type: float64
-    - name: wls_usg_avg_sms_snd_qty_1m_domestic 
-      type: float64
-    - name: wls_usg_avg_sms_rcv_qty_1m_domestic 
-      type: float64
-    - name: wls_usg_avg_voice_qty_1m_domestic 
-      type: float64
-    - name: wls_usg_avg_data_qty_3m_domestic 
-      type: float64
-    - name: wls_usg_avg_sms_snd_qty_3m_domestic 
-      type: float64
-    - name: wls_usg_avg_sms_rcv_qty_3m_domestic 
-      type: float64
-    - name: wls_usg_avg_voice_qty_3m_domestic 
-      type: float64
-    - name: wls_usg_avg_data_qty_6m_domestic 
-      type: float64
-    - name: wls_usg_avg_sms_snd_qty_6m_domestic 
-      type: float64
-    - name: wls_usg_avg_sms_rcv_qty_6m_domestic 
-      type: float64
-    - name: wls_usg_avg_voice_qty_6m_domestic 
-      type: float64
-    - name: wls_usg_tot_country_code_travelled_6m_domestic 
-      type: int64
-    - name: call_cnt 
-      type: int64
-    - name: call_avg_talk_time 
-      type: float64
-    - name: call_avg_hold_time 
-      type: float64
-    - name: call_avg_emp_cnt 
-      type: float64
-    - name: call_avg_esc_cnt 
-      type: float64
-    - name: call_std_talk_time 
-      type: float64
-    - name: call_std_hold_time 
-      type: float64
-    - name: call_std_emp_cnt 
-      type: float64
-    - name: call_std_esc_cnt 
-      type: float64
-    - name: call_sum_talk_time 
-      type: float64
-    - name: call_sum_hold_time 
-      type: float64
-    - name: call_sum_emp_cnt 
-      type: int64
-    - name: call_sum_esc_cnt 
-      type: int64
-    - name: call_max_talk_time 
-      type: float64
-    - name: call_max_hold_time 
-      type: float64
-    - name: call_max_emp_cnt 
-      type: int64
-    - name: call_max_esc_cnt 
-      type: int64
+  - name: hsic_eligible_ind 
+    type: int64
+  - name: lwc_eligible_ind 
+    type: int64
+  - name: shs_eligible_ind 
+    type: int64
+  - name: sing_eligible_ind 
+    type: int64
+  - name: tos_eligible_ind 
+    type: int64
+  - name: ttv_eligible_ind 
+    type: int64
+  - name: whsia_eligible_ind 
+    type: int64
+  - name: wifi_eligible_ind 
+    type: int64
+  - name: avg_usg_cnt_4w_news 
+    type: float64
+  - name: avg_usg_dl_4w_news 
+    type: float64
+  - name: avg_usg_ul_4w_news 
+    type: float64
+  - name: avg_usg_cnt_4w_sports 
+    type: float64
+  - name: avg_usg_dl_4w_sports 
+    type: float64
+  - name: avg_usg_ul_4w_sports 
+    type: float64
+  - name: avg_usg_cnt_4w_tv_and_movies 
+    type: float64
+  - name: avg_usg_dl_4w_tv_and_movies 
+    type: float64
+  - name: avg_usg_ul_4w_tv_and_movies 
+    type: float64
+  - name: avg_usg_cnt_4w_gaming 
+    type: float64
+  - name: avg_usg_dl_4w_gaming 
+    type: float64
+  - name: avg_usg_ul_4w_gaming 
+    type: float64
+  - name: avg_usg_cnt_4w_smarthome_automation 
+    type: float64
+  - name: avg_usg_dl_4w_smarthome_automation 
+    type: float64
+  - name: avg_usg_ul_4w_smarthome_automation 
+    type: float64
+  - name: avg_usg_cnt_4w_smarthome_security 
+    type: float64
+  - name: avg_usg_dl_4w_smarthome_security 
+    type: float64
+  - name: avg_usg_ul_4w_smarthome_security 
+    type: float64
+  - name: avg_usg_cnt_4w_shopping_deals 
+    type: float64
+  - name: avg_usg_dl_4w_shopping_deals 
+    type: float64
+  - name: avg_usg_ul_4w_shopping_deals 
+    type: float64
+  - name: avg_usg_cnt_4w_telus 
+    type: float64
+  - name: avg_usg_dl_4w_telus 
+    type: float64
+  - name: avg_usg_ul_4w_telus 
+    type: float64
+  - name: bill_wls_avg_zscore_ban_subtotal_amt 
+    type: float64
+  - name: bill_wls_avg_ban_subtotal_amt 
+    type: float64
+  - name: bill_wls_stddev_ban_subtotal_amt 
+    type: float64
+  - name: bill_wls_avg_zscore_ban_debit_amt 
+    type: float64
+  - name: bill_wls_avg_ban_debit_amt 
+    type: float64
+  - name: bill_wls_stddev_ban_debit_amt 
+    type: float64
+  - name: bill_wls_avg_zscore_ban_discount_amt 
+    type: float64
+  - name: bill_wls_avg_ban_discount_amt 
+    type: float64
+  - name: bill_wls_stddev_ban_discount_amt 
+    type: float64
+  - name: bill_wls_avg_zscore_ban_credit_amt 
+    type: float64
+  - name: bill_wls_avg_ban_credit_amt 
+    type: float64
+  - name: bill_wls_stddev_ban_credit_amt 
+    type: float64
+  - name: bill_wls_avg_zscore_rc_mthly_debit_amt 
+    type: float64
+  - name: bill_wls_avg_zscore_rc_mthly_discount_amt 
+    type: float64
+  - name: bill_wls_avg_zscore_rc_mthly_credit_amt 
+    type: float64
+  - name: bill_wls_avg_zscore_rc_addon_debit_amt 
+    type: float64
+  - name: bill_wls_avg_zscore_rc_addon_discount_amt 
+    type: float64
+  - name: bill_wls_avg_zscore_rc_addon_credit_amt 
+    type: float64
+  - name: bill_wls_avg_zscore_rc_other_debit_amt 
+    type: float64
+  - name: bill_wls_avg_zscore_rc_other_discount_amt 
+    type: float64
+  - name: bill_wls_avg_zscore_rc_other_credit_amt 
+    type: float64
+  - name: bill_wls_avg_zscore_oc_device_debit_amt 
+    type: float64
+  - name: bill_wls_avg_zscore_oc_device_discount_amt 
+    type: float64
+  - name: bill_wls_avg_zscore_oc_device_credit_amt 
+    type: float64
+  - name: bill_wls_avg_zscore_msg_cnt 
+    type: float64
+  - name: bill_wls_avg_zscore_roam_day_cnt 
+    type: float64
+  - name: bill_wls_avg_zscore_data_usg_gb 
+    type: float64
+  - name: bill_wls_avg_zscore_call_usage_min 
+    type: float64
+  - name: bill_wls_avg_rc_debit_amt 
+    type: float64
+  - name: bill_wls_avg_rc_discount_amt 
+    type: float64
+  - name: bill_wls_avg_rc_credit_amt 
+    type: float64
+  - name: bill_wls_avg_rc_addon_debit_amt 
+    type: float64
+  - name: bill_wls_avg_rc_addon_discount_amt 
+    type: float64
+  - name: bill_wls_avg_rc_addon_credit_amt 
+    type: float64
+  - name: bill_wls_avg_rc_other_debit_amt 
+    type: float64
+  - name: bill_wls_avg_rc_other_discount_amt 
+    type: float64
+  - name: bill_wls_avg_rc_other_credit_amt 
+    type: float64
+  - name: bill_wls_avg_device_debit_amt 
+    type: float64
+  - name: bill_wls_avg_device_discount_amt 
+    type: float64
+  - name: bill_wls_avg_device_credit_amt 
+    type: float64
+  - name: bill_wls_avg_msg_cnt 
+    type: float64
+  - name: bill_wls_avg_roam_day_cnt 
+    type: float64
+  - name: bill_wls_avg_data_usg_gb 
+    type: float64
+  - name: bill_wls_avg_call_usg_min 
+    type: float64
+  - name: bill_wls_stddev_rc_debit_amt 
+    type: float64
+  - name: bill_wls_stddev_rc_discount_amt 
+    type: float64
+  - name: bill_wls_stddev_rc_credit_amt 
+    type: float64
+  - name: bill_wls_stddev_rc_addon_debit_amt 
+    type: float64
+  - name: bill_wls_stddev_rc_addon_discount_amt 
+    type: float64
+  - name: bill_wls_stddev_rc_addon_credit_amt 
+    type: float64
+  - name: bill_wls_stddev_rc_other_debit_amt 
+    type: float64
+  - name: bill_wls_stddev_rc_other_discount_amt 
+    type: float64
+  - name: bill_wls_stddev_rc_other_credit_amt 
+    type: float64
+  - name: bill_wls_stddev_device_debit_amt 
+    type: float64
+  - name: bill_wls_stddev_device_discount_amt 
+    type: float64
+  - name: bill_wls_stddev_device_credit_amt 
+    type: float64
+  - name: bill_wls_stddev_msg_cnt 
+    type: float64
+  - name: bill_wls_stddev_roam_day_cnt 
+    type: float64
+  - name: bill_wls_stddev_data_usg_gb 
+    type: float64
+  - name: bill_wls_stddev_call_usg_min 
+    type: float64
+  - name: bill_wls_tot_disc_pct 
+    type: float64
+  - name: bill_wls_rc_disc_pct 
+    type: float64
+  - name: bill_wls_rc_addon_disc_pct 
+    type: float64
+  - name: bill_wls_rc_other_disc_pct 
+    type: float64
+  - name: bill_wls_device_disc_pct 
+    type: float64
+  - name: call_cnt 
+    type: int64
+  - name: call_avg_talk_time 
+    type: float64
+  - name: call_avg_hold_time 
+    type: float64
+  - name: call_avg_emp_cnt 
+    type: float64
+  - name: call_avg_esc_cnt 
+    type: float64
+  - name: call_std_talk_time 
+    type: float64
+  - name: call_std_hold_time 
+    type: float64
+  - name: call_std_emp_cnt 
+    type: float64
+  - name: call_std_esc_cnt 
+    type: float64
+  - name: call_sum_talk_time 
+    type: float64
+  - name: call_sum_hold_time 
+    type: float64
+  - name: call_sum_emp_cnt 
+    type: int64
+  - name: call_sum_esc_cnt 
+    type: int64
+  - name: call_max_talk_time 
+    type: float64
+  - name: call_max_hold_time 
+    type: float64
+  - name: call_max_emp_cnt 
+    type: int64
+  - name: call_max_esc_cnt 
+    type: int64
+  - name: clk_wls_tot_cnt_r90d 
+    type: int64
+  - name: clk_wls_plan_cnt_r90d 
+    type: int64
+  - name: clk_wls_device_cnt_r90d 
+    type: int64
+  - name: clk_wls_smartwatch_cnt_r90d 
+    type: int64
+  - name: clk_wls_tablet_cnt_r90d 
+    type: int64
+  - name: clk_wln_tot_cnt_r90d 
+    type: int64
+  - name: clk_wln_eligibility_cnt_r90d 
+    type: int64
+  - name: clk_wln_sing_cnt_r90d 
+    type: int64
+  - name: clk_wln_hsic_cnt_r90d 
+    type: int64
+  - name: clk_wln_fibre_cnt_r90d 
+    type: int64
+  - name: clk_wln_whsia_cnt_r90d 
+    type: int64
+  - name: clk_wln_wifi_plus_cnt_r90d 
+    type: int64
+  - name: clk_wln_tv_cnt_r90d 
+    type: int64
+  - name: clk_wln_optik_cnt_r90d 
+    type: int64
+  - name: clk_wln_pik_cnt_r90d 
+    type: int64
+  - name: clk_wln_streamplus_cnt_r90d 
+    type: int64
+  - name: clk_wln_streaming_cnt_r90d 
+    type: int64
+  - name: clk_wln_security_cnt_r90d 
+    type: int64
+  - name: clk_wln_smarthome_security_cnt_r90d 
+    type: int64
+  - name: clk_wln_online_security_cnt_r90d 
+    type: int64
+  - name: clk_wln_smartwear_security_cnt_r90d 
+    type: int64
+  - name: clk_deal_tot_cnt_r90d 
+    type: int64
+  - name: clk_deal_wls_cnt_r90d 
+    type: int64
+  - name: clk_deal_wln_cnt_r90d 
+    type: int64
+  - name: clk_deal_wln_sing_cnt_r90d 
+    type: int64
+  - name: clk_deal_wln_hsic_cnt_r90d 
+    type: int64
+  - name: clk_deal_wln_whsia_cnt_r90d 
+    type: int64
+  - name: clk_deal_wln_tv_cnt_r90d 
+    type: int64
+  - name: clk_deal_wln_security_cnt_r90d 
+    type: int64
+  - name: clk_upgr_tot_cnt_r90d 
+    type: int64
+  - name: clk_upgr_wls_cnt_r90d 
+    type: int64
+  - name: clk_upgr_wln_cnt_r90d 
+    type: int64
+  - name: clk_upgr_wln_sing_cnt_r90d 
+    type: int64
+  - name: clk_upgr_wln_hsic_cnt_r90d 
+    type: int64
+  - name: clk_upgr_wln_whsia_cnt_r90d 
+    type: int64
+  - name: clk_upgr_wln_tv_cnt_r90d 
+    type: int64
+  - name: clk_upgr_wln_security_cnt_r90d 
+    type: int64
+  - name: clk_chg_tot_cnt_r90d 
+    type: int64
+  - name: clk_chg_wls_cnt_r90d 
+    type: int64
+  - name: clk_chg_wln_cnt_r90d 
+    type: int64
+  - name: clk_chg_wln_sing_cnt_r90d 
+    type: int64
+  - name: clk_chg_wln_hsic_cnt_r90d 
+    type: int64
+  - name: clk_chg_wln_whsia_cnt_r90d 
+    type: int64
+  - name: clk_chg_wln_tv_cnt_r90d 
+    type: int64
+  - name: clk_chg_wln_security_cnt_r90d 
+    type: int64
+  - name: clk_health_livingwell_cnt_r90d 
+    type: int64
+  - name: clk_health_mypet_cnt_r90d 
+    type: int64
+  - name: clk_travel_cnt_r90d 
+    type: int64
+  - name: clk_billing_cnt_r90d 
+    type: int64
+  - name: clk_service_agreement_cnt_r90d 
+    type: int64
+  - name: cust_age_yr_num 
+    type: int64
+  - name: moved_within_3m 
+    type: int64
+  - name: demogr_med_age 
+    type: float64
+  - name: demogr_avg_child 
+    type: float64
+  - name: demogr_pct_family_with_child_living_at_home 
+    type: float64
+  - name: demogr_employment_rate 
+    type: float64
+  - name: demogr_avg_household_size 
+    type: float64
+  - name: demogr_avg_income 
+    type: float64
+  - name: demogr_med_income 
+    type: float64
+  - name: demogr_urban_flag 
+    type: float64
+  - name: demogr_rural_flag 
+    type: float64
+  - name: demogr_family_flag 
+    type: float64
+  - name: demogr_lsname_large_diverse_families 
+    type: float64
+  - name: demogr_lsname_younger_singles_and_couples 
+    type: float64
+  - name: demogr_lsname_very_young_singles_and_couples 
+    type: float64
+  - name: demogr_lsname_older_families_and_empty_nests 
+    type: float64
+  - name: demogr_lsname_middle_age_families 
+    type: float64
+  - name: demogr_lsname_mature_singles_and_couples 
+    type: float64
+  - name: demogr_lsname_young_families 
+    type: float64
+  - name: demogr_lsname_school_age_families 
+    type: float64
+  - name: demogr_retired_pstl_cd_ind 
+    type: float64
+  - name: demogr_census_division_typ 
+    type: string
+  - name: demogr_lifestage_sort 
+    type: float64
+  - name: mkt_msg_shs_cnt 
+    type: int64
+  - name: mkt_msg_hsic_cnt 
+    type: int64
+  - name: mkt_msg_ttv_cnt 
+    type: int64
+  - name: mkt_msg_optik_cnt 
+    type: int64
+  - name: mkt_msg_sing_cnt 
+    type: int64
+  - name: mkt_msg_tos_cnt 
+    type: int64
+  - name: mkt_msg_lwc_cnt 
+    type: int64
+  - name: mkt_msg_wifi_cnt 
+    type: int64
+  - name: mkt_msg_sws_cnt 
+    type: int64
+  - name: mkt_msg_mob_cnt 
+    type: int64
+  - name: msg_typ_EM 
+    type: int64
+  - name: msg_typ_SO 
+    type: int64
+  - name: msg_typ_TM 
+    type: int64
+  - name: msg_typ_NO 
+    type: int64
+  - name: msg_typ_SMS 
+    type: int64
+  - name: msg_typ_ACQUISITION 
+    type: int64
+  - name: msg_typ_CBR_FFH 
+    type: int64
+  - name: msg_typ_HSM_West 
+    type: int64
+  - name: msg_typ_STRATEGIC_SALE 
+    type: int64
+  - name: msg_typ_TARGETED_CAMPAIGN 
+    type: int64
+  - name: tot_msg 
+    type: int64
+  # - name: prod_latest_actvn_dt 
+  #   type: date
+  # - name: prod_latest_deactvn_dt 
+  #   type: date
+  - name: prod_tot_cnt 
+    type: int64
+  - name: prod_wls_cnt 
+    type: int64
+  - name: prod_mob_cnt 
+    type: int64
+  - name: prod_whsia_cnt 
+    type: int64
+  - name: prod_tos_cnt 
+    type: int64
+  - name: prod_other_cnt 
+    type: int64
+  - name: prod_deact_prod_cnt 
+    type: int64
+  - name: prod_act_prod_cnt_r7d 
+    type: int64
+  - name: prod_deact_prod_cnt_r7d 
+    type: int64
+  - name: mob_prod_tenure_days 
+    type: int64
+  - name: mob_acct_tenure_days 
+    type: int64
+  - name: new_account_ind 
+    type: int64
+  - name: wls_trip_sum_duration_days_1m 
+    type: int64
+  - name: wls_trip_sum_duration_days_3m 
+    type: int64
+  - name: wls_trip_sum_duration_days_6m 
+    type: int64
+  - name: wls_trip_sum_active_roaming_days_1m 
+    type: int64
+  - name: wls_trip_sum_active_roaming_days_3m 
+    type: int64
+  - name: wls_trip_sum_active_roaming_days_6m 
+    type: int64
+  - name: wls_usg_sum_data_byt_1m_roaming 
+    type: float64
+  - name: wls_usg_sum_sms_snd_cnt_1m_roaming 
+    type: float64
+  - name: wls_usg_sum_sms_rcv_cnt_1m_roaming 
+    type: float64
+  - name: wls_usg_sum_voice_cnt_1m_roaming 
+    type: float64
+  - name: wls_usg_sum_data_byt_3m_roaming 
+    type: float64
+  - name: wls_usg_sum_sms_snd_cnt_3m_roaming 
+    type: float64
+  - name: wls_usg_sum_sms_rcv_cnt_3m_roaming 
+    type: float64
+  - name: wls_usg_sum_voice_cnt_3m_roaming 
+    type: float64
+  - name: wls_usg_sum_data_byt_6m_roaming 
+    type: float64
+  - name: wls_usg_sum_sms_snd_cnt_6m_roaming 
+    type: float64
+  - name: wls_usg_sum_sms_rcv_cnt_6m_roaming 
+    type: float64
+  - name: wls_usg_sum_voice_cnt_6m_roaming 
+    type: float64
+  - name: wls_usg_tot_country_code_travelled_6m_roaming 
+    type: int64
+  - name: wls_usg_sum_data_byt_1m_domestic 
+    type: float64
+  - name: wls_usg_sum_sms_snd_cnt_1m_domestic 
+    type: float64
+  - name: wls_usg_sum_sms_rcv_cnt_1m_domestic 
+    type: float64
+  - name: wls_usg_sum_voice_cnt_1m_domestic 
+    type: float64
+  - name: wls_usg_sum_data_byt_3m_domestic 
+    type: float64
+  - name: wls_usg_sum_sms_snd_cnt_3m_domestic 
+    type: float64
+  - name: wls_usg_sum_sms_rcv_cnt_3m_domestic 
+    type: float64
+  - name: wls_usg_sum_voice_cnt_3m_domestic 
+    type: float64
+  - name: wls_usg_sum_data_byt_6m_domestic 
+    type: float64
+  - name: wls_usg_sum_sms_snd_cnt_6m_domestic 
+    type: float64
+  - name: wls_usg_sum_sms_rcv_cnt_6m_domestic 
+    type: float64
+  - name: wls_usg_sum_voice_cnt_6m_domestic 
+    type: float64
+  - name: wls_usg_tot_country_code_travelled_6m_domestic 
+    type: int64
+
