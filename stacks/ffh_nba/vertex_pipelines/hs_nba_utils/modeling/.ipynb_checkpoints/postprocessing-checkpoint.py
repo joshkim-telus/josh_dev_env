@@ -189,7 +189,7 @@ def build_output_dataframe(
                     conditions, d_tier['name'], df_concat['product_name_tier']
                 )
                 df_concat['tier_score'] = np.where(
-                    conditions, df_concat[d_tier['name']], 0
+                    conditions, df_concat[d_tier['name']], df_concat[d_tier['name']]
                 )
 
             # update dataframe if new tier score is higher then previous tier scores
