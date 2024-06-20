@@ -1,0 +1,72 @@
+name: Preprocess
+inputs:
+- {name: pipeline_dataset, type: String}
+- {name: save_data_path, type: String}
+- {name: project_id, type: String}
+- {name: dataset_id, type: String}
+- {name: score_date_dash, type: String}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef preprocess(pipeline_dataset: str\n               , save_data_path:\
+      \ str\n               , project_id: str\n               , dataset_id: str\n\
+      \               , score_date_dash: str\n               ):\n\n    from google.cloud\
+      \ import bigquery\n    import pandas as pd\n    import numpy as np\n    import\
+      \ gc\n    import time\n\n    def to_categorical(df, cat_feature_names): \n\n\
+      \        df_dummies = pd.get_dummies(df[cat_feature_names]) \n        df_dummies.columns\
+      \ = df_dummies.columns.str.replace('&', 'and')\n        df_dummies.columns =\
+      \ df_dummies.columns.str.replace(' ', '_')\n\n        df.drop(columns=cat_feature_names,\
+      \ axis=1, inplace=True)\n\n        df = df.join(df_dummies)\n\n        #column\
+      \ name clean-up\n        df.columns = df.columns.str.replace(' ', '_')\n   \
+      \     df.columns = df.columns.str.replace('-', '_')\n\n        return df\n\n\
+      \    client = bigquery.Client(project=project_id)\n\n    # pipeline_dataset\n\
+      \    pipeline_dataset_name = f\"{project_id}.{dataset_id}.{pipeline_dataset}\"\
+      \ \n    build_df_pipeline_dataset = f'SELECT * FROM `{pipeline_dataset_name}`'\n\
+      \    df_pipeline_dataset = client.query(build_df_pipeline_dataset).to_dataframe()\n\
+      \n    # demo columns\n    df_pipeline_dataset['demo_urban_flag'] = df_pipeline_dataset.demo_sgname.fillna('').str.lower().apply(lambda\
+      \ x: 1 if 'urban' in x and 'suburban' not in x else 0).astype(int)\n    df_pipeline_dataset['demo_rural_flag']\
+      \ = df_pipeline_dataset.demo_sgname.fillna('').str.lower().apply(lambda x: 1\
+      \ if 'suburban' in x or 'rural' in x or 'town' in x else 0).astype(int)\n  \
+      \  df_pipeline_dataset['demo_family_flag'] = df_pipeline_dataset.demo_lsname.str.lower().str.contains('families').fillna(0).astype(int)\n\
+      \n    # categorical variables to dummy variables\n    cat_feature_names = ['revenue_band',\
+      \ 'payment_mthd', 'ebill_ind', 'dvc_non_telus_ind', 'credit_class', 'contract_type',\
+      \ 'bacct_delinq_ind', 'urbn_rur_ind',\n                     'dnc_sms_ind', 'dnc_em_ind',\
+      \ 'data_usg_trend', 'wls_data_plan_ind', 'wls_data_shr_plan_ind', 'demo_lsname']\n\
+      \n    df_pipeline_dataset = to_categorical(df_pipeline_dataset, cat_feature_names)\n\
+      \n    df_join = df_pipeline_dataset.copy()\n\n    # set up df_target \n    sql_target\
+      \ = ''' SELECT * FROM `{}.{}.bq_telus_postpaid_churn_targets` '''.format(project_id,\
+      \ dataset_id) \n    df_target = client.query(sql_target).to_dataframe()\n  \
+      \  df_target = df_target.loc[\n        df_target['YEAR_MONTH'] == '-'.join(score_date_dash.split('-')[:2])]\
+      \  # score_date_dash = '2022-08-31'\n    df_target['ban'] = df_target['ban'].astype('int64')\n\
+      \    df_target['subscriber_no'] = df_target['subscriber_no'].astype('str')\n\
+      \    df_target = df_target.groupby(['ban', 'subscriber_no']).tail(1)\n\n   \
+      \ # set up df_final\n    df_final = df_join.merge(df_target[['ban', 'subscriber_no',\
+      \ 'target_ind']], on=['ban', 'subscriber_no'], how='left')\n    df_final.rename(columns={'target_ind':\
+      \ 'target'}, inplace=True) \n    df_final['target'].fillna(0, inplace=True)\
+      \ \n    df_final['target'] = df_final['target'].astype(int) \n    print(df_final.shape)\n\
+      \n    # delete df_join\n    del df_join\n    gc.collect()\n    print('......df_final\
+      \ done')\n\n    for f in df_final.columns:\n        df_final[f] = list(df_final[f])\n\
+      \n    df_final.to_csv(save_data_path, index=True) \n    del df_final\n    gc.collect()\n\
+      \    print(f'......csv saved in {save_data_path}')\n    time.sleep(120)\n\n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - preprocess
