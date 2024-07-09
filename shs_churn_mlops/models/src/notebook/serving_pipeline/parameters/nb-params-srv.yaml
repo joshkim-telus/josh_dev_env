@@ -1,0 +1,26 @@
+PROJECT_ID: 'bi-srv-mobilityds-pr-80a48d'
+DATASET_ID: 'nba_features_prospect'
+OUTPUT_DATASET_ID: 'telus_ffh_nba'
+TABLE_ID: 'master_features_set_prospect_predict_vw'
+SCORE_TABLE_ID: 'bq_hs_nba_prospects_scores' # change
+RESOURCE_BUCKET: 'notebook-scripts-2ba8'
+FILE_BUCKET: 'bi-srv-mobilityds-pr-80a48d_hs_nba_prospects'
+REGION: 'northamerica-northeast1'
+MODEL_ID: '7002' 
+STACK_NAME: 'ffh_nba'
+MODEL_NAME: 'hs_nba_prospects' # change 
+SERVICE_TYPE: 'hs_nba_prospects' # change
+SERVICE_TYPE_NAME: 'hs-nba-prospects' # change
+PIPELINE_TYPE: 'serving_pipeline'
+TRAINING_PIPELINE_PATH: 'vertex_pipelines/hs_nba_prospects/training_pipeline' # change
+SERVING_PIPELINE_PATH: 'vertex_pipelines/hs_nba_prospects/serving_pipeline' # change
+HS_NBA_UTILS_PATH: 'vertex_pipelines/hs_nba_utils/notebook'
+MODEL_TYPE: 'acquisition' # change 
+LOAD_SQL: 'load_serving_data.sql'
+PREPROCESS_OUTPUT_CSV: 'df_serving.csv' 
+SAVE_FILE_NAME: 'df_test_exp.csv'
+STATS_FILE_NAME: 'df_stats.csv'
+
+AGGREGATE_RESULTS: True
+AGGREGATE_RESULTS_TABLE_ID: 'bq_product_recommendation_ranked'
+

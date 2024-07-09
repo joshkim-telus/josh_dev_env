@@ -1,0 +1,1514 @@
+  [
+    {
+      "name": "from_dt",
+      "mode": "NULLABLE",
+      "type": "DATE",
+      "description": "From Date - Represents the start date of the Target Data"
+    },
+    {
+      "name": "to_dt",
+      "mode": "NULLABLE",
+      "type": "DATE",
+      "description": "To Date - Represents the end date of the Target Data"
+    },
+    {
+      "name": "training_mode",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Training Mode (0/1)"
+    },
+    {
+      "name": "split_type",
+      "mode": "NULLABLE",
+      "type": "STRING",
+      "description": "Split Type (1-train, 2-val, 3-test, 4-predict)"
+    },
+    {
+      "name": "model_scenario",
+      "mode": "NULLABLE",
+      "type": "STRING",
+      "description": "Model Scenario"
+    },
+    {
+      "name": "prediction_period",
+      "mode": "NULLABLE",
+      "type": "STRING",
+      "description": "Prediction Period - (DAY, WEEK, MONTH)"
+    },
+    {
+      "name": "ref_dt",
+      "mode": "NULLABLE",
+      "type": "DATE",
+      "description": "Reference Date - Represents the date for which the prediction is made, and the date for which Features are retrieved"
+    },
+    {
+      "name": "cust_id",
+      "mode": "NULLABLE",
+      "type": "STRING",
+      "description": "Customer ID"
+    },
+    {
+      "name": "cust_src_id",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Customer Source ID"
+    },
+    {
+      "name": "ban",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Billing Account Number (BAN)"
+    },
+    {
+      "name": "ban_src_id",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "BAN Source ID"
+    },
+    {
+      "name": "lpds_id",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "LPDS ID - unique location identifier"
+    },
+    {
+      "name": "fms_address_id",
+      "mode": "NULLABLE",
+      "type": "STRING",
+      "description": "FMS Address ID"
+    },
+    {
+      "name": "label",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Label - Represents the Target Variable"
+    },
+    {
+      "name": "label_desc",
+      "mode": "NULLABLE",
+      "type": "STRING",
+      "description": "Label Description - Represents the description of the Target Variable"
+    },
+    {
+      "name": "label_dt",
+      "mode": "NULLABLE",
+      "type": "DATE",
+      "description": "Label Date - Represents the date for which the Target Variable is calculated"
+    },
+    {
+      "name": "avg_usg_cnt_4w_news",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Average Usage Count for News Apps in the last 4 weeks"
+    },
+    {
+      "name": "avg_usg_dl_4w_news",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Average Usage Download for News Apps in the last 4 weeks"
+    },
+    {
+      "name": "avg_usg_ul_4w_news",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Average Usage Upload for News Apps in the last 4 weeks"
+    },
+    {
+      "name": "avg_usg_cnt_4w_sports",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Average Usage Count for Sports Apps in the last 4 weeks"
+    },
+    {
+      "name": "avg_usg_dl_4w_sports",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Average Usage Download for Sports Apps in the last 4 weeks"
+    },
+    {
+      "name": "avg_usg_ul_4w_sports",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Average Usage Upload for Sports Apps in the last 4 weeks"
+    },
+    {
+      "name": "avg_usg_cnt_4w_tv_and_movies",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Average Usage Count for TV and Movies Apps in the last 4 weeks"
+    },
+    {
+      "name": "avg_usg_dl_4w_tv_and_movies",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Average Usage Download for TV and Movies Apps in the last 4 weeks"
+    },
+    {
+      "name": "avg_usg_ul_4w_tv_and_movies",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Average Usage Upload for TV and Movies Apps in the last 4 weeks"
+    },
+    {
+      "name": "bill_wln_avg_zscore_ban_subtotal_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for BAN Subtotal Amount"
+    },
+    {
+      "name": "bill_wln_avg_ban_subtotal_amt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline BIll - Average BAN Subtotal Amount"
+    },
+    {
+      "name": "bill_wln_stddev_ban_subtotal_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for BAN Subtotal Amount"
+    },
+    {
+      "name": "bill_wln_avg_zscore_ban_debit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for BAN Debit Amount"
+    },
+    {
+      "name": "bill_wln_avg_ban_debit_amt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average BAN Debit Amount"
+    },
+    {
+      "name": "bill_wln_stddev_ban_debit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for BAN Debit Amount"
+    },
+    {
+      "name": "bill_wln_avg_zscore_ban_discount_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for BAN Discount Amount"
+    },
+    {
+      "name": "bill_wln_avg_ban_discount_amt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average BAN Discount Amount"
+    },
+    {
+      "name": "bill_wln_stddev_ban_discount_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for BAN Discount Amount"
+    },
+    {
+      "name": "bill_wln_avg_zscore_ban_credit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for BAN Credit Amount"
+    },
+    {
+      "name": "bill_wln_avg_ban_credit_amt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average BAN Credit Amount"
+    },
+    {
+      "name": "bill_wln_stddev_ban_credit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for BAN Credit Amount"
+    },
+    {
+      "name": "bill_wln_avg_zscore_sing_debit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for Home Phone Debit Amount"
+    },
+    {
+      "name": "bill_wln_avg_zscore_sing_discount_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for Home Phone Discount Amount"
+    },
+    {
+      "name": "bill_wln_avg_zscore_sing_credit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for Home Phone Credit Amount"
+    },
+    {
+      "name": "bill_wln_avg_zscore_hsic_debit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for Internet Debit Amount"
+    },
+    {
+      "name": "bill_wln_avg_zscore_hsic_discount_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for Internet Discount Amount"
+    },
+    {
+      "name": "bill_wln_avg_zscore_hsic_credit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for Internet Credit Amount"
+    },
+    {
+      "name": "bill_wln_avg_zscore_ttv_debit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for TTV Debit Amount"
+    },
+    {
+      "name": "bill_wln_avg_zscore_ttv_discount_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for TTV Discount Amount"
+    },
+    {
+      "name": "bill_wln_avg_zscore_ttv_credit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for TTV Credit Amount"
+    },
+    {
+      "name": "bill_wln_avg_zscore_smhm_debit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for SMHM Debit Amount"
+    },
+    {
+      "name": "bill_wln_avg_zscore_smhm_discount_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for SMHM Discount Amount"
+    },
+    {
+      "name": "bill_wln_avg_zscore_smhm_credit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for SMHM Credit Amount"
+    },
+    {
+      "name": "bill_wln_avg_zscore_sing_ld_na_call_cnt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for Home Phone Local and National Call Count"
+    },
+    {
+      "name": "bill_wln_avg_zscore_sing_ld_intl_call_cnt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for Home Phone Local and International Call Count"
+    },
+    {
+      "name": "bill_wln_avg_zscore_hsic_usg_gb",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for Internet Usage in GB"
+    },
+    {
+      "name": "bill_wln_avg_zscore_ttv_ppv_cnt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for TTV Pay Per View Count"
+    },
+    {
+      "name": "bill_wln_avg_zscore_ttv_vod_cnt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Average Z-Score for TTV Video on Demand Count"
+    },
+    {
+      "name": "bill_wln_avg_sing_debit_amt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average Home Phone Debit Amount"
+    },
+    {
+      "name": "bill_wln_avg_sing_discount_amt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average Home Phone Discount Amount"
+    },
+    {
+      "name": "bill_wln_avg_sing_credit_amt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average Home Phone Credit Amount"
+    },
+    {
+      "name": "bill_wln_avg_hsic_debit_amt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average Internet Debit Amount"
+    },
+    {
+      "name": "bill_wln_avg_hsic_discount_amt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average Internet Discount Amount"
+    },
+    {
+      "name": "bill_wln_avg_hsic_credit_amt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average Internet Credit Amount"
+    },
+    {
+      "name": "bill_wln_avg_ttv_debit_amt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average TTV Debit Amount"
+    },
+    {
+      "name": "bill_wln_avg_ttv_discount_amt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average TTV Discount Amount"
+    },
+    {
+      "name": "bill_wln_avg_ttv_credit_amt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average TTV Credit Amount"
+    },
+    {
+      "name": "bill_wln_avg_smhm_debit_amt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average SMHM Debit Amount"
+    },
+    {
+      "name": "bill_wln_avg_smhm_discount_amt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average SMHM Discount Amount"
+    },
+    {
+      "name": "bill_wln_avg_smhm_credit_amt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average SMHM Credit Amount"
+    },
+    {
+      "name": "bill_wln_avg_sing_ld_na_call_cnt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average Home Phone Local and National Call Count"
+    },
+    {
+      "name": "bill_wln_avg_sing_ld_intl_call_cnt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average Home Phone Local and International Call Count"
+    },
+    {
+      "name": "bill_wln_avg_hsic_usg_gb",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average Internet Usage in GB"
+    },
+    {
+      "name": "bill_wln_avg_ttv_ppv_cnt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average TTV Pay Per View Count"
+    },
+    {
+      "name": "bill_wln_avg_ttv_vod_cnt",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Average TTV Video on Demand Count"
+    },
+    {
+      "name": "bill_wln_stddev_sing_debit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for Home Phone Debit Amount"
+    },
+    {
+      "name": "bill_wln_stddev_sing_discount_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for Home Phone Discount Amount"
+    },
+    {
+      "name": "bill_wln_stddev_sing_credit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for Home Phone Credit Amount"
+    },
+    {
+      "name": "bill_wln_stddev_hsic_debit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for Internet Debit Amount"
+    },
+    {
+      "name": "bill_wln_stddev_hsic_discount_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for Internet Discount Amount"
+    },
+    {
+      "name": "bill_wln_stddev_hsic_credit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for Internet Credit Amount"
+    },
+    {
+      "name": "bill_wln_stddev_ttv_debit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for TTV Debit Amount"
+    },
+    {
+      "name": "bill_wln_stddev_ttv_discount_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for TTV Discount Amount"
+    },
+    {
+      "name": "bill_wln_stddev_ttv_credit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for TTV Credit Amount"
+    },
+    {
+      "name": "bill_wln_stddev_smhm_debit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for SMHM Debit Amount"
+    },
+    {
+      "name": "bill_wln_stddev_smhm_discount_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for SMHM Discount Amount"
+    },
+    {
+      "name": "bill_wln_stddev_smhm_credit_amt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for SMHM Credit Amount"
+    },
+    {
+      "name": "bill_wln_stddev_sing_ld_na_call_cnt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for Home Phone Local and National Call Count"
+    },
+    {
+      "name": "bill_wln_stddev_sing_ld_intl_call_cnt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for Home Phone Local and International Call Count"
+    },
+    {
+      "name": "bill_wln_stddev_hsic_usg_gb",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for Internet Usage in GB"
+    },
+    {
+      "name": "bill_wln_stddev_ttv_ppv_cnt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for TTV Pay Per View Count"
+    },
+    {
+      "name": "bill_wln_stddev_ttv_vod_cnt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Wireline Bill - Standard Deviation for TTV Video on Demand Count"
+    },
+    {
+      "name": "bill_wln_tot_disc_pct",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Total Discount Percentage"
+    },
+    {
+      "name": "bill_wln_sing_disc_pct",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Home Phone Discount Percentage"
+    },
+    {
+      "name": "bill_wln_hsic_disc_pct",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - Internet Discount Percentage"
+    },
+    {
+      "name": "bill_wln_ttv_disc_pct",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - TTV Discount Percentage"
+    },
+    {
+      "name": "bill_wln_smhm_disc_pct",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireline Bill - SMHM Discount Percentage"
+    },
+    {
+      "name": "clk_wls_tot_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Total Wireless Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wls_plan_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireless Plan Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wls_device_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireless Device Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wls_smartwatch_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Smartwatch Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wls_tablet_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Tablet Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wln_tot_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Total Wireline Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wln_eligibility_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Eligibility Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wln_sing_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Home Phone Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wln_hsic_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Internet Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wln_fibre_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Fibre Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wln_whsia_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - wHSIA Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wln_wifi_plus_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline WiFi Plus Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wln_tv_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline TV Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wln_optik_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Optik Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wln_pik_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Pik Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wln_streamplus_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Stream Plus Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wln_streaming_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Streaming Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wln_security_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Security Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wln_smarthome_security_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Smart Home Security Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wln_online_security_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Online Security Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_wln_smartwear_security_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Smart Wear Security Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_deal_tot_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Total Deal Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_deal_wls_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireless Deal Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_deal_wln_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Deal Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_deal_wln_sing_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Home Phone Deal Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_deal_wln_hsic_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Internet Deal Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_deal_wln_whsia_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - wHSIA Deal Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_deal_wln_tv_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline TV Deal Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_deal_wln_security_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Security Deal Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_upgr_tot_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Total Upgrade Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_upgr_wls_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireless Upgrade Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_upgr_wln_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Upgrade Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_upgr_wln_sing_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Home Phone Upgrade Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_upgr_wln_hsic_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Internet Upgrade Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_upgr_wln_whsia_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - wHSIA Upgrade Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_upgr_wln_tv_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline TV Upgrade Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_upgr_wln_security_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Security Upgrade Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_chg_tot_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Total Change Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_chg_wls_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireless Change Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_chg_wln_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Change Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_chg_wln_sing_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Home Phone Change Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_chg_wln_hsic_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Internet Change Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_chg_wln_whsia_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - wHSIA Change Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_chg_wln_tv_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline TV Change Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_chg_wln_security_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Wireline Security Change Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_health_livingwell_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Health Living Well Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_health_mypet_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Health My Pet Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_travel_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Travel Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_billing_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Billing Page Clicks in the last 30 days"
+    },
+    {
+      "name": "clk_service_agreement_cnt_r30d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Clickstream - Service Agreement Page Clicks in the last 30 days"
+    },
+    {
+      "name": "acct_cr_risk_txt",
+      "mode": "NULLABLE",
+      "type": "STRING",
+      "description": "Account Credit Risk"
+    },
+    {
+      "name": "acct_ebill_ind",
+      "mode": "NULLABLE",
+      "type": "STRING",
+      "description": "Account eBill Indicator"
+    },
+    {
+      "name": "cust_cr_val_txt",
+      "mode": "NULLABLE",
+      "type": "STRING",
+      "description": "Customer Credit Value"
+    },
+    {
+      "name": "cust_pref_lang_txt",
+      "mode": "NULLABLE",
+      "type": "STRING",
+      "description": "Customer Preferred Language"
+    },
+    {
+      "name": "cust_prov_state_cd",
+      "mode": "NULLABLE",
+      "type": "STRING",
+      "description": "Customer Province/State Code"
+    },
+    {
+      "name": "cust_age_yr_num",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Customer Age in Years"
+    },
+    {
+      "name": "demogr_med_age",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Median Age"
+    },
+    {
+      "name": "demogr_avg_child",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Average Number of Children"
+    },
+    {
+      "name": "demogr_pct_family_with_child_living_at_home",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Percentage of Families with Children Living at Home"
+    },
+    {
+      "name": "demogr_employment_rate",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Employment Rate"
+    },
+    {
+      "name": "demogr_avg_household_size",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Average Household Size"
+    },
+    {
+      "name": "demogr_avg_income",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Average Income"
+    },
+    {
+      "name": "demogr_med_income",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Median Income"
+    },
+    {
+      "name": "demogr_urban_flag",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Urban Indicator (0/1)"
+    },
+    {
+      "name": "demogr_rural_flag",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Rural Indicator (0/1)"
+    },
+    {
+      "name": "demogr_family_flag",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Family Indicator (0/1)"
+    },
+    {
+      "name": "demogr_lsname_large_diverse_families",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Large Diverse Families Indicator (0/1)"
+    },
+    {
+      "name": "demogr_lsname_younger_singles_and_couples",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Younger Singles and Couples Indicator (0/1)"
+    },
+    {
+      "name": "demogr_lsname_very_young_singles_and_couples",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Very Young Singles and Couples Indicator (0/1)"
+    },
+    {
+      "name": "demogr_lsname_older_families_and_empty_nests",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Older Families and Empty Nests Indicator (0/1)"
+    },
+    {
+      "name": "demogr_lsname_middle_age_families",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Middle Age Families Indicator (0/1)"
+    },
+    {
+      "name": "demogr_lsname_mature_singles_and_couples",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Mature Singles and Couples Indicator (0/1)"
+    },
+    {
+      "name": "demogr_lsname_young_families",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Young Families Indicator (0/1)"
+    },
+    {
+      "name": "demogr_lsname_school_age_families",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - School Age Families Indicator (0/1)"
+    },
+    {
+      "name": "demogr_retired_pstl_cd_ind",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Retired Postal Code Indicator (0/1)"
+    },
+    {
+      "name": "demogr_census_division_typ",
+      "mode": "NULLABLE",
+      "type": "STRING",
+      "description": "Demographics - Census Division Type"
+    },
+    {
+      "name": "demogr_lifestage_sort",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Demographics - Lifestage Sort"
+    },
+    {
+      "name": "hs_usg_avg_tot_gb",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Internet Usage - Average Total Usage in GB"
+    },
+    {
+      "name": "hs_usg_avg_dl_gb",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Internet Usage - Average Download Usage in GB"
+    },
+    {
+      "name": "hs_usg_avg_ul_gb",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Internet Usage - Average Upload Usage in GB"
+    },
+    {
+      "name": "prod_latest_actvn_dt",
+      "mode": "NULLABLE",
+      "type": "DATE",
+      "description": "Product - Latest Activation Date (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_latest_deactvn_dt",
+      "mode": "NULLABLE",
+      "type": "DATE",
+      "description": "Product - Latest Activation Date (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_tot_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - Total Product Count (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_wln_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - Wireless Product Count (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_wls_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - Wireline Product Count (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_mob_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - Mobile Product Count (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_sing_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - Home Phone Product Count (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_hsic_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - Internet Product Count (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_whsia_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - wHSIA Product Count (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_ttv_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - TTV Product Count (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_smhm_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - SMHM Product Count (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_tos_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - TOS Product Count (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_wifiplus_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - WiFi Plus Product Count (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_stv_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - STV Product Count (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_other_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - Other Product Count (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_deact_prod_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - Deactivated Product Count (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_act_prod_cnt_r7d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - Activated Product Count in the last 7 days (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_act_wln_cnt_r7d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - Activated Wireless Product Count in the last 7 days (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_deact_prod_cnt_r7d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - Deactivated Product Count in the last 7 days (Aggregated at Customer level)"
+    },
+    {
+      "name": "prod_deact_wln_cnt_r7d",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Product - Deactivated Wireless Product Count in the last 7 days (Aggregated at Customer level)"
+    },
+    {
+      "name": "hsic_tenure_days",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "HSIC Tenure in Days"
+    },
+    {
+      "name": "contract_end_date_hsic",
+      "mode": "NULLABLE",
+      "type": "DATE",
+      "description": "Contract End Date for HSIC"
+    },
+    {
+      "name": "sing_tenure_days",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Home Phone Tenure in Days"
+    },
+    {
+      "name": "contract_end_date_sing",
+      "mode": "NULLABLE",
+      "type": "DATE",
+      "description": "Contract End Date for Home Phone"
+    },
+    {
+      "name": "ttv_tenure_days",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "TTV Tenure in Days"
+    },
+    {
+      "name": "contract_end_date_ttv",
+      "mode": "NULLABLE",
+      "type": "DATE",
+      "description": "Contract End Date for TTV"
+    },
+    {
+      "name": "smhm_tenure_days",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Smart Home Monitoring Tenure in Days"
+    },
+    {
+      "name": "contract_end_date_smhm",
+      "mode": "NULLABLE",
+      "type": "DATE",
+      "description": "Contract End Date for Smart Home Monitoring"
+    },
+    {
+      "name": "ffh_tenure",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "FFH Tenure in Days"
+    },
+    {
+      "name": "new_account_ind",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "New Account Indicator (0/1)"
+    },
+    {
+      "name": "wls_trip_sum_duration_days_1m",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Wireless Trip - Sum of Duration in Days in the last 1 month"
+    },
+    {
+      "name": "wls_trip_sum_duration_days_3m",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Wireless Trip - Sum of Duration in Days in the last 3 months"
+    },
+    {
+      "name": "wls_trip_sum_duration_days_6m",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Wireless Trip - Sum of Duration in Days in the last 6 months"
+    },
+    {
+      "name": "wls_trip_sum_active_roaming_days_1m",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Wireless Trip - Sum of Active Roaming Days in the last 1 month"
+    },
+    {
+      "name": "wls_trip_sum_active_roaming_days_3m",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Wireless Trip - Sum of Active Roaming Days in the last 3 months"
+    },
+    {
+      "name": "wls_trip_sum_active_roaming_days_6m",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Wireless Trip - Sum of Active Roaming Days in the last 6 months"
+    },
+    {
+      "name": "wls_usg_avg_data_qty_1m_roaming",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average Data Quantity in the last 1 month (Roaming)"
+    },
+    {
+      "name": "wls_usg_avg_sms_snd_qty_1m_roaming",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average SMS Sent Quantity in the last 1 month (Roaming)"
+    },
+    {
+      "name": "wls_usg_avg_sms_rcv_qty_1m_roaming",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average SMS Received Quantity in the last 1 month (Roaming)"
+    },
+    {
+      "name": "wls_usg_avg_voice_qty_1m_roaming",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average Voice Quantity in the last 1 month (Roaming)"
+    },
+    {
+      "name": "wls_usg_avg_data_qty_3m_roaming",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average Data Quantity in the last 3 months (Roaming)"
+    },
+    {
+      "name": "wls_usg_avg_sms_snd_qty_3m_roaming",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average SMS Sent Quantity in the last 3 months (Roaming)"
+    },
+    {
+      "name": "wls_usg_avg_sms_rcv_qty_3m_roaming",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average SMS Received Quantity in the last 3 months (Roaming)"
+    },
+    {
+      "name": "wls_usg_avg_voice_qty_3m_roaming",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average Voice Quantity in the last 3 months (Roaming)"
+    },
+    {
+      "name": "wls_usg_avg_data_qty_6m_roaming",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average Data Quantity in the last 6 months (Roaming)"
+    },
+    {
+      "name": "wls_usg_avg_sms_snd_qty_6m_roaming",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average SMS Sent Quantity in the last 6 months (Roaming)"
+    },
+    {
+      "name": "wls_usg_avg_sms_rcv_qty_6m_roaming",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average SMS Received Quantity in the last 6 months (Roaming)"
+    },
+    {
+      "name": "wls_usg_avg_voice_qty_6m_roaming",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average Voice Quantity in the last 6 months (Roaming)"
+    },
+    {
+      "name": "wls_usg_tot_country_code_travelled_6m_roaming",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Wireless Usage - Total Country Code Travelled in the last 6 months (Roaming)"
+    },
+    {
+      "name": "wls_usg_avg_data_qty_1m_domestic",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average Data Quantity in the last 1 month (Domestic)"
+    },
+    {
+      "name": "wls_usg_avg_sms_snd_qty_1m_domestic",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average SMS Sent Quantity in the last 1 month (Domestic)"
+    },
+    {
+      "name": "wls_usg_avg_sms_rcv_qty_1m_domestic",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average SMS Received Quantity in the last 1 month (Domestic)"
+    },
+    {
+      "name": "wls_usg_avg_voice_qty_1m_domestic",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average Voice Quantity in the last 1 month (Domestic)"
+    },
+    {
+      "name": "wls_usg_avg_data_qty_3m_domestic",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average Data Quantity in the last 3 months (Domestic)"
+    },
+    {
+      "name": "wls_usg_avg_sms_snd_qty_3m_domestic",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average SMS Sent Quantity in the last 3 months (Domestic)"
+    },
+    {
+      "name": "wls_usg_avg_sms_rcv_qty_3m_domestic",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average SMS Received Quantity in the last 3 months (Domestic)"
+    },
+    {
+      "name": "wls_usg_avg_voice_qty_3m_domestic",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average Voice Quantity in the last 3 months (Domestic)"
+    },
+    {
+      "name": "wls_usg_avg_data_qty_6m_domestic",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average Data Quantity in the last 6 months (Domestic)"
+    },
+    {
+      "name": "wls_usg_avg_sms_snd_qty_6m_domestic",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average SMS Sent Quantity in the last 6 months (Domestic)"
+    },
+    {
+      "name": "wls_usg_avg_sms_rcv_qty_6m_domestic",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average SMS Received Quantity in the last 6 months (Domestic)"
+    },
+    {
+      "name": "wls_usg_avg_voice_qty_6m_domestic",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Wireless Usage - Average Voice Quantity in the last 6 months (Domestic)"
+    },
+    {
+      "name": "wls_usg_tot_country_code_travelled_6m_domestic",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Wireless Usage - Total Country Code Travelled in the last 6 months (Domestic)"
+    },
+    {
+      "name": "call_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Call - Total Call Count"
+    },
+    {
+      "name": "call_avg_talk_time",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Call - Average Talk Time"
+    },
+    {
+      "name": "call_avg_hold_time",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Call - Average Hold Time"
+    },
+    {
+      "name": "call_avg_emp_cnt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Call - Average Employee Count"
+    },
+    {
+      "name": "call_avg_esc_cnt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Call - Average Escalation Count"
+    },
+    {
+      "name": "call_std_talk_time",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Call - Standard Deviation of Talk Time"
+    },
+    {
+      "name": "call_std_hold_time",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Call - Standard Deviation of Hold Time"
+    },
+    {
+      "name": "call_std_emp_cnt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Call - Standard Deviation of Employee Count"
+    },
+    {
+      "name": "call_std_esc_cnt",
+      "mode": "NULLABLE",
+      "type": "FLOAT",
+      "description": "Call - Standard Deviation of Escalation Count"
+    },
+    {
+      "name": "call_sum_talk_time",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Call - Sum of Talk Time"
+    },
+    {
+      "name": "call_sum_hold_time",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Call - Sum of Hold Time"
+    },
+    {
+      "name": "call_sum_emp_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Call - Sum of Employee Count"
+    },
+    {
+      "name": "call_sum_esc_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Call - Sum of Escalation Count"
+    },
+    {
+      "name": "call_max_talk_time",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Call - Maximum Talk Time"
+    },
+    {
+      "name": "call_max_hold_time",
+      "mode": "NULLABLE",
+      "type": "NUMERIC",
+      "description": "Call - Maximum Hold Time"
+    },
+    {
+      "name": "call_max_emp_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Call - Maximum Employee Count"
+    },
+    {
+      "name": "call_max_esc_cnt",
+      "mode": "NULLABLE",
+      "type": "INTEGER",
+      "description": "Call - Maximum Escalation Count"
+    }
+  ]

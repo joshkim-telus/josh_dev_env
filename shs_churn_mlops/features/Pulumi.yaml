@@ -1,0 +1,590 @@
+
+name: mlops_adna_features
+runtime: yaml
+description: MLOps ADNA Features
+
+config:
+  builder:
+    type: string
+  project:
+    type: string
+  staging_expiry:
+    value: 2049-12-01
+    type: string
+
+variables:
+  # stack_name 
+  stack_name: mlops_adna
+  
+  # dataset_id
+  dataset: mlops_adna
+  location: northamerica-northeast1
+  master_feature_table: ${project}.${dataset}.features_base_cust_ban_tf
+  bq_writer: projects/${project}/roles/biLayerBigQueryWriter.customRole
+
+  # Source File Variables
+  master_features_set:
+    fn::readFile: ./src/schema/master_features_set.json
+
+  # Stored Procedure
+  sp_persist_master_features_set:
+    fn::readFile: ./src/bql/sp_persist_master_features_set.sql
+
+  # Table Functions
+  features_base_cust_ban_lpds_tf:
+    fn::readFile: ./src/bql/features_base_cust_ban_lpds_tf.sql
+  features_base_cust_ban_tf:
+    fn::readFile: ./src/bql/features_base_cust_ban_tf.sql
+  features_base_cust_tf:
+    fn::readFile: ./src/bql/features_base_cust_tf.sql
+  features_base_ban_tf:
+    fn::readFile: ./src/bql/features_base_ban_tf.sql
+  distinct_cnt_sf:
+    fn::readFile: ./src/bql/distinct_cnt_sf.sql
+
+  # Feature Table Functions
+  cust_ban_tf:
+    fn::readFile: ./src/bql/cust_ban_tf.sql
+  prod_mix_cust_tf:
+    fn::readFile: ./src/bql/prod_mix_cust_tf.sql
+  bill_wln_cust_tf:
+    fn::readFile: ./src/bql/bill_wln_cust_tf.sql
+  tenure_cust_ban_tf:
+    fn::readFile: ./src/bql/tenure_cust_ban_tf.sql
+  demogr_cust_tf:
+    fn::readFile: ./src/bql/demogr_cust_tf.sql
+  clickstream_cust_tf:
+    fn::readFile: ./src/bql/clickstream_cust_tf.sql
+  app_usg_cust_tf:
+    fn::readFile: ./src/bql/app_usg_cust_tf.sql
+  call_centre_cust_tf:
+    fn::readFile: ./src/bql/call_centre_cust_tf.sql
+  hs_usage_cust_tf:
+    fn::readFile: ./src/bql/hs_usage_cust_tf.sql
+
+  # Views
+  master_features_set_predict_vw:
+    fn::readFile: ./src/bql/master_features_set_predict_vw.sql
+  master_features_set_train_vw:
+    fn::readFile: ./src/bql/master_features_set_train_vw.sql
+
+  # Replace {} placeholders in .sql files 
+  # 1
+  features_base_cust_ban_lpds_tf_upd1:
+    fn::str:replace:
+      string: ${features_base_cust_ban_lpds_tf}
+      old: "{project}"
+      new: ${project}
+  features_base_cust_ban_lpds_tf_upd:
+    fn::str:replace:
+      string: ${features_base_cust_ban_lpds_tf_upd1.result}
+      old: "{dataset}"
+      new: ${dataset}
+  # 2 
+  features_base_cust_ban_tf_upd1:
+    fn::str:replace:
+      string: ${features_base_cust_ban_tf}
+      old: "{project}"
+      new: ${project}
+  features_base_cust_ban_tf_upd:
+    fn::str:replace:
+      string: ${features_base_cust_ban_tf_upd1.result}
+      old: "{dataset}"
+      new: ${dataset}
+  # 3
+  features_base_cust_tf_upd1:
+    fn::str:replace:
+      string: ${features_base_cust_tf}
+      old: "{project}"
+      new: ${project}
+  features_base_cust_tf_upd:
+    fn::str:replace:
+      string: ${features_base_cust_tf_upd1.result}
+      old: "{dataset}"
+      new: ${dataset}
+  # 4
+  features_base_ban_tf_upd1:
+    fn::str:replace:
+      string: ${features_base_ban_tf}
+      old: "{project}"
+      new: ${project}
+  features_base_ban_tf_upd:
+    fn::str:replace:
+      string: ${features_base_ban_tf_upd1.result}
+      old: "{dataset}"
+      new: ${dataset}
+  
+  # features
+  # prod_mix_cust_tf
+  cust_ban_tf_upd:
+    fn::str:replace:
+      string: ${cust_ban_tf}
+      old: "{master_feature_table}"
+      new: ${master_feature_table}
+  # prod_mix_cust_tf
+  prod_mix_cust_tf_upd:
+    fn::str:replace:
+      string: ${prod_mix_cust_tf}
+      old: "{master_feature_table}"
+      new: ${master_feature_table}
+  # bill_wln_cust_tf
+  bill_wln_cust_tf_upd:
+    fn::str:replace:
+      string: ${bill_wln_cust_tf}
+      old: "{master_feature_table}"
+      new: ${master_feature_table}
+  # tenure_cust_ban_tf
+  tenure_cust_ban_tf_upd:
+    fn::str:replace:
+      string: ${tenure_cust_ban_tf}
+      old: "{master_feature_table}"
+      new: ${master_feature_table}
+  # demogr_cust_tf
+  demogr_cust_tf_upd:
+    fn::str:replace:
+      string: ${demogr_cust_tf}
+      old: "{master_feature_table}"
+      new: ${master_feature_table}
+  # clickstream_cust_tf
+  clickstream_cust_tf_upd:
+    fn::str:replace:
+      string: ${clickstream_cust_tf}
+      old: "{master_feature_table}"
+      new: ${master_feature_table}
+  # app_usg_cust_tf
+  app_usg_cust_tf_upd:
+    fn::str:replace:
+      string: ${app_usg_cust_tf}
+      old: "{master_feature_table}"
+      new: ${master_feature_table}
+  # app_usg_cust_tf
+  call_centre_cust_tf_upd:
+    fn::str:replace:
+      string: ${call_centre_cust_tf}
+      old: "{master_feature_table}"
+      new: ${master_feature_table}
+  # app_usg_cust_tf
+  hs_usage_cust_tf_upd:
+    fn::str:replace:
+      string: ${hs_usage_cust_tf}
+      old: "{master_feature_table}"
+      new: ${master_feature_table}
+  # sp_persist_master_features_set
+  sp_persist_master_features_set_upd1:
+    fn::str:replace:
+      string: ${sp_persist_master_features_set}
+      old: "{project}"
+      new: ${project}
+  sp_persist_master_features_set_upd:
+    fn::str:replace:
+      string: ${sp_persist_master_features_set_upd1.result}
+      old: "{dataset}"
+      new: ${dataset}
+  # master_features_set_predict_vw
+  master_features_set_predict_vw_upd1:
+    fn::str:replace:
+      string: ${master_features_set_predict_vw}
+      old: "{project}"
+      new: ${project}
+  master_features_set_predict_vw_upd:
+    fn::str:replace:
+      string: ${master_features_set_predict_vw_upd1.result}
+      old: "{dataset}"
+      new: ${dataset}
+  # master_features_set_train_vw      
+  master_features_set_train_vw_upd1:
+    fn::str:replace:
+      string: ${master_features_set_train_vw}
+      old: "{project}"
+      new: ${project}
+  master_features_set_train_vw_upd:
+    fn::str:replace:
+      string: ${master_features_set_train_vw_upd1.result}
+      old: "{dataset}"
+      new: ${dataset}
+
+resources:
+  # ----------------------------------------------------------------------------------------------------
+  # Table
+  # ----------------------------------------------------------------------------------------------------
+  # Feature Table
+  r0_table_master_features_set:
+    type: gcp:bigquery:Table
+    properties:
+      datasetId: ${dataset}
+      tableId: master_features_set
+      deletionProtection: false
+      timePartitioning:
+        type: DAY
+        expirationMs: 63072000000
+        field: "ref_dt"
+        requirePartitionFilter: false
+      schema: |
+        ${master_features_set}
+
+  r0_table_master_features_set_iam:
+    type: gcp:bigquery:IamMember
+    properties:
+      project: ${project}
+      datasetId: ${dataset}
+      tableId: master_features_set
+      role: ${bq_writer}
+      member: group:dladna@telus.com
+    options:
+      dependsOn:
+        - ${r0_table_master_features_set}
+
+  # ----------------------------------------------------------------------------------------------------
+  # Scalar Function
+  # ----------------------------------------------------------------------------------------------------
+  # Scalar Functions - distinct_cnt_sf
+  r1_distinct_cnt_sf:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      datasetId: ${dataset}
+      routineId: distinct_cnt_sf
+      routineType: SCALAR_FUNCTION
+      language: SQL
+      definitionBody: |
+        ${distinct_cnt_sf}
+      arguments:
+        - name: arr
+          argumentKind: ANY_TYPE
+      returnType: '{"typeKind" :  "INT64"}'
+
+  # ----------------------------------------------------------------------------------------------------
+  # Table Functions
+  # ----------------------------------------------------------------------------------------------------
+  r2_features_base_cust_ban_lpds_tf:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: features_base_cust_ban_lpds_tf
+      description: |
+        TBD
+      routineType: TABLE_VALUED_FUNCTION
+      datasetId: ${dataset}
+      language: SQL
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+      definitionBody: |
+        ${features_base_cust_ban_lpds_tf_upd.result}
+
+  # Table Functions - features_base_cust_ban_tf
+  r3_features_base_cust_ban_tf:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: features_base_cust_ban_tf
+      description: |
+        TBD
+      routineType: TABLE_VALUED_FUNCTION
+      datasetId: ${dataset}
+      language: SQL
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+      definitionBody: |
+        ${features_base_cust_ban_tf_upd.result}
+
+  # Table Functions - features_base_cust_tf
+  r4_features_base_cust_tf:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: features_base_cust_tf
+      description: |
+        TBD
+      routineType: TABLE_VALUED_FUNCTION
+      datasetId: ${dataset}
+      language: SQL
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+      definitionBody: |
+        ${features_base_cust_tf_upd.result}
+        
+  # Table Functions - features_base_cust_tf
+  r5_features_base_ban_tf:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: features_base_ban_tf
+      description: |
+        TBD
+      routineType: TABLE_VALUED_FUNCTION
+      datasetId: ${dataset}
+      language: SQL
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+      definitionBody: |
+        ${features_base_ban_tf_upd.result}
+
+  # ----------------------------------------------------------------------------------------------------
+  # Table Functions - Features
+  # ----------------------------------------------------------------------------------------------------
+  # Feature 1 - cust_ban_tf
+  feature1_cust_ban_tf:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: cust_ban_tf
+      description: |
+        TBD
+      routineType: TABLE_VALUED_FUNCTION
+      datasetId: ${dataset}
+      language: SQL
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+      definitionBody: |
+        ${cust_ban_tf_upd.result}
+    options:
+      dependsOn:
+        - ${r3_features_base_cust_ban_tf}
+        
+  # Feature 2 - prod_mix_cust_tf
+  feature2_prod_mix_cust_tf:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: prod_mix_cust_tf
+      description: |
+        TBD
+      routineType: TABLE_VALUED_FUNCTION
+      datasetId: ${dataset}
+      language: SQL
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+      definitionBody: |
+        ${prod_mix_cust_tf_upd.result}
+    options:
+      dependsOn:
+        - ${r3_features_base_cust_ban_tf}
+
+  # Feature 3 - bill_wln_cust_tf  --- bi-srv-features-pr-ef5a93:ban_billing.bq_wln_ban_bill_mthly
+  feature3_bill_wln_cust_tf:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: bill_wln_cust_tf
+      description: |
+        TBD
+      routineType: TABLE_VALUED_FUNCTION
+      datasetId: ${dataset}
+      language: SQL
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+      definitionBody: |
+        ${bill_wln_cust_tf_upd.result}
+    options:
+      dependsOn:
+        - ${r3_features_base_cust_ban_tf}
+
+  # Feature 4 - tenure_cust_ban_tf
+  feature4_tenure_cust_ban_tf:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: tenure_cust_ban_tf
+      description: |
+        TBD
+      routineType: TABLE_VALUED_FUNCTION
+      datasetId: ${dataset}
+      language: SQL
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+      definitionBody: |
+        ${tenure_cust_ban_tf_upd.result}
+    options:
+      dependsOn:
+        - ${r3_features_base_cust_ban_tf}
+
+  # Feature 5 - demogr_cust_tf --- access  bi-srv-features-pr-ef5a93:pstl_demogr.bq_pstl_demogr_prizm_vw
+  feature5_demogr_cust_tf:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: demogr_cust_tf
+      description: |
+        TBD
+      routineType: TABLE_VALUED_FUNCTION
+      datasetId: ${dataset}
+      language: SQL
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+      definitionBody: |
+        ${demogr_cust_tf_upd.result}
+    options:
+      dependsOn:
+        - ${r3_features_base_cust_ban_tf}
+        
+  # Feature 6 - clickstream_cust_tf: bi-srv-features-pr-ef5a93:ban_clckstrm.bq_ban_clckstrm_telus
+  feature6_clickstream_cust_tf:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: clickstream_cust_tf
+      description: |
+        TBD
+      routineType: TABLE_VALUED_FUNCTION
+      datasetId: ${dataset}
+      language: SQL
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+      definitionBody: |
+        ${clickstream_cust_tf_upd.result}
+    options:
+      dependsOn:
+        - ${r3_features_base_cust_ban_tf}
+        
+  # Feature 7 - app_usg_cust_tf --- bi-srv-features-pr-ef5a93:app_usage.bq_ban_imsi_app_cat_usg_daily
+  feature7_app_usg_cust_tf:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: app_usg_cust_tf
+      description: |
+        TBD
+      routineType: TABLE_VALUED_FUNCTION
+      datasetId: ${dataset}
+      language: SQL
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+      definitionBody: |
+        ${app_usg_cust_tf_upd.result}
+    options:
+      dependsOn:
+        - ${r3_features_base_cust_ban_tf}      
+        
+  # Feature 8 - call_centre_cust_tf
+  feature8_call_centre_cust_tf:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: call_centre_cust_tf
+      description: |
+        TBD
+      routineType: TABLE_VALUED_FUNCTION
+      datasetId: ${dataset}
+      language: SQL
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+      definitionBody: |
+        ${call_centre_cust_tf_upd.result}
+    options:
+      dependsOn:
+        - ${r3_features_base_cust_ban_tf}
+
+  # Feature 9 - hs_usage_cust_tf
+  feature9_hs_usage_cust_tf:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: hs_usage_cust_tf
+      description: |
+        TBD
+      routineType: TABLE_VALUED_FUNCTION
+      datasetId: ${dataset}
+      language: SQL
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+      definitionBody: |
+        ${hs_usage_cust_tf_upd.result}
+    options:
+      dependsOn:
+        - ${r3_features_base_cust_ban_tf}
+
+  # ----------------------------------------------------------------------------------------------------
+  # Stored Procedures
+  # ----------------------------------------------------------------------------------------------------        
+  # Features Stored Procedure
+  r6_sp_persist_master_features_set:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: sp_persist_master_features_set
+      routineType: PROCEDURE
+      datasetId: ${dataset}
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+      definitionBody: |
+        ${sp_persist_master_features_set_upd.result}
+
+  # ----------------------------------------------------------------------------------------------------
+  # Views
+  # ----------------------------------------------------------------------------------------------------        
+  # Master Features Predict View
+  r7_master_features_set_predict_vw:
+    type: gcp:bigquery:Table
+    properties:
+      datasetId: ${dataset}
+      tableId: master_features_set_predict_vw
+      deletionProtection: false
+      view:
+        useLegacySql: false
+        query: > # change this
+          ${master_features_set_predict_vw_upd.result}
+    options:
+      deleteBeforeReplace: true
+      replaceOnChanges: # note: if schema changes the resource will be re-created
+        - query
+        - tableId
+
+  # Master Features Train View
+  r8_master_features_set_train_vw:
+    type: gcp:bigquery:Table
+    properties:
+      datasetId: ${dataset}
+      tableId: master_features_set_train_vw
+      deletionProtection: false
+      view:
+        useLegacySql: false
+        query: > # change this
+          ${master_features_set_train_vw_upd.result}
+    options:
+      deleteBeforeReplace: true
+      replaceOnChanges: # note: if schema changes the resource will be re-created
+        - query
+        - tableId
+

@@ -1,0 +1,147 @@
+name: mlops_adna
+runtime: yaml
+description: MLOps Standard for AdNA
+
+config:
+  builder:
+    type: string
+  project:
+    type: string
+  staging_expiry:
+    value: 9999-12-31
+    type: string
+
+# Section for user defined input
+variables:
+  pipeline_name: mlops_adna
+  worker_custom_image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest
+  notebook_scripts_bucket: notebook-scripts-${project_sha}
+  stack_name: mlops_adna
+  timeZone: UTC # timezone of the schedule
+
+  # training pipeline variables
+  training_name: ${pipeline_name}-training-pipeline # Name of the job
+  training_pipe_name: "${pipeline_name}-training-pipeline"  # Name for the pipeline
+  training_pipe_description: "${pipeline_name}-training-pipeline" # Description for the pipeline
+  training_pipeline_path: models/${pipeline_name}/training_pipeline # For path
+  training_pipeline_params_path: parameters
+  training_pipeline_ipynb: training_pipeline.ipynb
+  training_pipeline_params_file: {% if PROJECT_TYPE == "bi-stg" -%} "parameters/nb-params-stg.yaml" {%- elif PROJECT_TYPE == "bi-srv" -%} "parameters/nb-params-srv.yaml" {%- endif %}
+  training_schedule: "0 10 3 * *" # Schedule of the job 
+  training_pause_status: {% if PROJECT_TYPE == "bi-stg" -%} false {%- elif PROJECT_TYPE == "bi-srv" -%} false {%- endif %} 
+
+  # serving pipeline variables
+  serving_name: ${pipeline_name}-serving-pipeline # Name of the job
+  serving_pipe_description: "${pipeline_name}-serving-pipeline" # Description for the pipeline
+  serving_pipe_name: "${pipeline_name}-serving-pipeline"  # Name for the pipeline
+  serving_pipeline_params_path: parameters
+  serving_pipeline_path: models/${pipeline_name}/serving_pipeline # For path
+  serving_pipeline_ipynb: serving_pipeline.ipynb
+  serving_pipeline_params_file: {% if PROJECT_TYPE == "bi-stg" -%} "parameters/nb-params-stg.yaml" {%- elif PROJECT_TYPE == "bi-srv" -%} "parameters/nb-params-srv.yaml" {%- endif %}
+  serving_schedule: "40 13 * * *" # Schedule of the job
+  serving_pause_status: {% if PROJECT_TYPE == "bi-stg" -%} false {%- elif PROJECT_TYPE == "bi-srv" -%} true {%- endif %} 
+
+resources:
+  mlops-adna-training-exec:
+    type: gcp:workflows:Workflow
+    properties:
+      region: northamerica-northeast1
+      name: ${training_name}
+      description: Test Workflow For Notebook - training
+      serviceAccount: ${builder}
+      sourceContents: |
+        - init:
+            assign:
+              - project: $${sys.get_env("GOOGLE_CLOUD_PROJECT_NUMBER")}
+              - location: "northamerica-northeast1"
+              - uuid: $${sys.get_env("GOOGLE_CLOUD_WORKFLOW_EXECUTION_ID")}
+        - notebook_execution:
+            call: http.post
+            args:
+              url: $${"https://notebooks.googleapis.com/v1/projects/${project}/locations/northamerica-northeast1/executions?executionId=${training_name}-"+uuid}
+              body:
+                description: ${training_pipe_description}
+                displayName: ${training_pipe_name}
+                executionTemplate:
+                  scaleTier: "CUSTOM"
+                  masterType: "n1-standard-4"
+                  serviceAccount: ${builder}
+                  inputNotebookFile: "gs://${notebook_scripts_bucket}/${stack_name}/${training_pipeline_path}/${training_pipeline_ipynb}"
+                  containerImageUri: ${worker_custom_image}
+                  outputNotebookFolder: "gs://${notebook_scripts_bucket}/${stack_name}/${training_pipeline_path}/out"
+                  jobType: "VERTEX_AI"
+                  paramsYamlFile: "gs://${notebook_scripts_bucket}/${stack_name}/${training_pipeline_path}/${training_pipeline_params_file}"
+              auth:
+                type: OAuth2
+            result: notebook_result
+        - return_output:
+            return: $${notebook_result}
+
+  mlops-adna-training-sched:
+    type: gcp:cloudscheduler:Job
+    properties:
+      description: nb-scheduled-exec-training
+      schedule: ${training_schedule}
+      paused: ${training_pause_status}
+      region: northamerica-northeast1
+      timeZone: ${timeZone}
+      httpTarget:
+        uri: https://workflowexecutions.googleapis.com/v1/${mlops-adna-training-exec.id}/executions
+        oauthToken:
+          serviceAccountEmail: ${builder}
+          scope: https://www.googleapis.com/auth/cloud-platform
+
+  mlops-adna-serving-exec:
+    type: gcp:workflows:Workflow
+    properties:
+      region: northamerica-northeast1
+      name: ${serving_name}
+      description: Test Workflow For Notebook - serving
+      serviceAccount: ${builder}
+      sourceContents: |
+        - init:
+            assign:
+              - project: $${sys.get_env("GOOGLE_CLOUD_PROJECT_NUMBER")}
+              - location: "northamerica-northeast1"
+              - uuid: $${sys.get_env("GOOGLE_CLOUD_WORKFLOW_EXECUTION_ID")}
+        - notebook_execution:
+            call: http.post
+            args:
+              url: $${"https://notebooks.googleapis.com/v1/projects/${project}/locations/northamerica-northeast1/executions?executionId=${serving_name}-"+uuid}
+              body:
+                description: ${serving_pipe_description}
+                displayName: ${serving_pipe_name}
+                executionTemplate:
+                  scaleTier: "CUSTOM"
+                  masterType: "n1-standard-4"
+                  serviceAccount: ${builder}
+                  inputNotebookFile: "gs://${notebook_scripts_bucket}/${stack_name}/${serving_pipeline_path}/${serving_pipeline_ipynb}"
+                  containerImageUri: ${worker_custom_image}
+                  outputNotebookFolder: "gs://${notebook_scripts_bucket}/${stack_name}/${serving_pipeline_path}/out"
+                  jobType: "VERTEX_AI"
+                  paramsYamlFile: "gs://${notebook_scripts_bucket}/${stack_name}/${serving_pipeline_path}/${serving_pipeline_params_file}"
+              auth:
+                type: OAuth2
+            result: notebook_result
+        - return_output:
+            return: $${notebook_result}
+
+  mlops-adna-serving-sched:
+    type: gcp:cloudscheduler:Job
+    properties:
+      description: nb-scheduled-exec-serving
+      schedule: ${serving_schedule}
+      paused: ${serving_pause_status}
+      region: northamerica-northeast1
+      timeZone: ${timeZone}
+      httpTarget:
+        uri: https://workflowexecutions.googleapis.com/v1/${mlops-adna-serving-exec.id}/executions
+        oauthToken:
+          serviceAccountEmail: ${builder}
+          scope: https://www.googleapis.com/auth/cloud-platform
+
+outputs:
+  mlops-adna-training-workflow-id: ${mlops-adna-training-exec.id}
+  mlops-adna-serving-workflow-id: ${mlops-adna-serving-exec.id}
+  
+  

@@ -1,0 +1,171 @@
+
+name: mlops_adna_targets
+runtime: yaml
+description: YAML File containing all the tables and stored procedures for mlops_adna initiative
+
+config:
+  builder:
+    type: string
+  project:
+    type: string
+  staging_expiry:
+    value: 2049-12-31
+    type: string
+
+variables:
+  # stack_name 
+  stack_name: mlops_adna
+  
+  # dataset_id
+  dataset: mlops_adna
+  
+  master_target_table:
+    fn::readFile: ./src/schema/master_target_table.json
+  # read in table function definitions
+  label0_tf:
+    fn::readFile: ./src/bql/label0_tf.sql
+  label1_tf:
+    fn::readFile: ./src/bql/label1_tf.sql
+  # read in stored procedure definitions
+  sp_persist:
+    fn::readFile: ./src/bql/sp_persist.sql
+  sp_persist_targets:
+    fn::readFile: ./src/bql/sp_persist_targets.sql
+    
+  # update variables in sql
+  # sp_persist
+  sp_persist_upd1:
+    fn::str:replace:
+      string: ${sp_persist}
+      old: "{dataset_id}"
+      new: ${dataset}
+  sp_persist_upd:
+    fn::str:replace:
+      string: ${sp_persist_upd1.result}
+      old: "{stack_name}"
+      new: ${stack_name}
+      
+  # sp_persist_targets
+  sp_persist_targets_upd2:
+    fn::str:replace:
+      string: ${sp_persist_targets}
+      old: "{project_id}"
+      new: ${project}
+  sp_persist_targets_upd1:
+    fn::str:replace:
+      string: ${sp_persist_targets_upd2.result}
+      old: "{dataset_id}"
+      new: ${dataset}
+  sp_persist_targets_upd:
+    fn::str:replace:
+      string: ${sp_persist_targets_upd1.result}
+      old: "{stack_name}"
+      new: ${stack_name}
+
+resources:
+  # ----------------------------------------------------------------------------------------------------
+  # Target Table (PROSPECT)
+  # ----------------------------------------------------------------------------------------------------
+  ### master_target_table
+  r1-table-master-target-table:
+    type: gcp:bigquery:Table
+    properties:
+      datasetId: ${dataset}
+      tableId: master_target_table
+      deletionProtection: False
+      description: |
+        master_target_table
+        This table contains the target labels for model training and serving
+      schema: |
+        ${master_target_table}
+    options:
+      deleteBeforeReplace: true
+      replaceOnChanges: # note: if schema changes the resource will be re-created
+        - schema
+        - tableId
+
+  r1-table-master-target-table-table-iam:
+    type: gcp:bigquery:IamMember
+    properties:
+      project: ${project}
+      datasetId: ${dataset}
+      tableId: ${r1-table-master-target-table.tableId}
+      role: roles/bigquery.dataEditor
+      member: group:dladna@telus.com
+
+  # ----------------------------------------------------------------------------------------------------
+  # Table Function
+  # ----------------------------------------------------------------------------------------------------
+  # Target Table Functions - Label 0
+  r2_label0_tf:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: ${stack_name}_label0_tf
+      routineType: TABLE_VALUED_FUNCTION
+      datasetId: ${dataset}
+      language: SQL
+      definitionBody: |
+        ${label0_tf}
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+        
+  # Target Table Functions - Label 1
+  r3_label1_tf:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: ${stack_name}_label1_tf
+      routineType: TABLE_VALUED_FUNCTION
+      datasetId: ${dataset}
+      language: SQL
+      definitionBody: |
+        ${label0_tf}
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+
+  # ----------------------------------------------------------------------------------------------------
+  # Stored Procedure
+  # ----------------------------------------------------------------------------------------------------
+  # sp_persist
+  r4_sp_persist:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: ${stack_name}_sp_persist
+      routineType: PROCEDURE
+      datasetId: ${dataset}
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _date_trunc_day_week_month
+          dataType: '{"typeKind" :  "string"}'
+      definitionBody: |
+        ${sp_persist_upd.result}
+        
+  # sp_persist_targets
+  r5_sp_persist_targets:
+    type: gcp:bigquery:Routine
+    properties:
+      project: ${project}
+      routineId: ${stack_name}_sp_persist_targets
+      routineType: PROCEDURE
+      datasetId: ${dataset}
+      arguments:
+        - name: _from_dt
+          dataType: '{"typeKind" :  "date"}'
+        - name: _to_dt
+          dataType: '{"typeKind" :  "date"}'
+      definitionBody: |
+        ${sp_persist_targets_upd.result}
+        
+    
+    

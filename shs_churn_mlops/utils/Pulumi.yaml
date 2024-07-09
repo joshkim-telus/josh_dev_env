@@ -1,0 +1,16 @@
+name: utils
+runtime: yaml
+description: helper functions and queries for mlops adna
+
+config:
+  builder:
+    type: string
+  project:
+    type: string
+  staging_expiry:
+    value: 9999-12-31
+    type: string
+    
+    
+    
+    

@@ -1,0 +1,76 @@
+# Final output table configuration
+# kfp component: aggregate_results.py
+# output table: bq_product_recommendation_ranked
+
+# main target names
+target_variables:
+    - name: hsic_acquisition  # target name
+      reco: hsic              # target abbreviation
+    - name: ttv_acquisition
+      reco: tv
+    - name: shs_acquisition
+      reco: shs
+    - name: sing_acquisition
+      reco: hp         
+    - name: tos_acquisition
+      reco: tos
+    - name: lwc_acquisition
+      reco: lwc
+    - name: sws_acquisition
+      reco: sws
+    - name: wifi_acquisition
+      reco: wfp     
+    - name: whsia_acquisition
+      reco: whsia
+    - name: hpro_acquisition
+      reco: hpro
+    
+# tiers mapping
+tiers:
+    tos_acquisition:
+        - name: tos_ultimate_tier_acquisition
+          reco: tos_u
+        - name: tos_complete_tier_acquisition
+          reco: tos_c
+    hsic_acquisition:
+        - name: hsic_medium_tier_acquisition
+          reco: hsic_2
+        - name: hsic_high_tier_acquisition
+          reco: hsic_3
+     
+# combos
+combos:
+    - name: hsic_tv_shs_combo_acquisition
+      reco: hts
+      target_variables:
+        - hsic_acquisition
+        - ttv_acquisition
+        - shs_acquisition
+    - name: hsic_tv_combo_acquisition
+      reco: ht
+      target_variables:
+        - hsic_acquisition
+        - ttv_acquisition
+    - name: hsic_shs_combo_acquisition
+      reco: hs
+      target_variables:
+        - hsic_acquisition
+        - shs_acquisition
+    - name: tv_shs_combo_acquisition
+      reco: ts
+      target_variables:
+        - ttv_acquisition
+        - shs_acquisition      
+  
+# output columns
+output_columns:
+    - part_dt
+    - cust_id
+    - ban
+    - ban_src_id
+    - lpds_id
+    - product_name
+    - reco
+    - rank
+    - score
+    - tier_score 

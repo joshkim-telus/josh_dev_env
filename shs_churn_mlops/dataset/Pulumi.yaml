@@ -1,0 +1,37 @@
+
+name: mlops-adna # change this
+runtime: yaml
+description: bigquery dataset for mlops_adna # change this
+
+config:
+  builder:
+    type: string
+  project:
+    type: string
+  staging_expiry:
+    value: 2025-12-31
+    type: string
+
+resources:
+  # start - note: dataset object is just as an example, teams should organize datasets in their own parent folder
+  mlops-adna-dataset:
+    type: gcp:bigquery:Dataset
+    properties:
+      datasetId: mlops_adna
+      friendlyName: mlops_adna
+      description: bigquery dataset for mlops_adna
+      location: northamerica-northeast1
+      deleteContentsOnDestroy: true
+
+  dataset-iam-user-1:
+    type: gcp:bigquery:DatasetIamMember
+    properties:
+      project: ${project}
+      datasetId: mlops_adna
+      role: roles/bigquery.dataViewer
+      member: group:dladna@telus.com
+    options:
+      dependsOn:
+        - ${mlops-adna-dataset}
+
+

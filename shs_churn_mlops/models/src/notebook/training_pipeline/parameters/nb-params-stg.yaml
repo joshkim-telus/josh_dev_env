@@ -1,0 +1,19 @@
+PROJECT_ID: 'bi-stg-mobilityds-pr-db8ce2'
+DATASET_ID: 'nba_features_prospect'
+TABLE_ID: 'master_features_set_prospect_train_vw'
+RESOURCE_BUCKET: 'notebook-scripts-4c4a'
+FILE_BUCKET: 'bi-stg-mobilityds-pr-db8ce2_hs_nba_prospects'
+REGION: 'northamerica-northeast1'
+MODEL_ID: '7002' 
+STACK_NAME: 'ffh_nba'
+MODEL_NAME: 'hs_nba_prospects' # change 
+SERVICE_TYPE: 'hs_nba_prospects' # change
+SERVICE_TYPE_NAME: 'hs-nba-prospects' # change
+PIPELINE_TYPE: 'training_pipeline'
+PIPELINE_PATH: 'vertex_pipelines/hs_nba_prospects/training_pipeline'
+HS_NBA_UTILS_PATH: 'vertex_pipelines/hs_nba_utils/notebook'
+MODEL_TYPE: 'acquisition' # change 
+LOAD_SQL: 'load_train_data.sql'
+PREPROCESS_OUTPUT_CSV: 'df_train.csv' 
+SAVE_FILE_NAME: 'df_test_exp.csv'
+STATS_FILE_NAME: 'df_stats.csv'

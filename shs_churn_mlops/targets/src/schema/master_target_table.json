@@ -1,0 +1,54 @@
+[
+  {
+    "mode": "NULLABLE",
+    "name": "from_dt",
+    "type": "DATE"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "to_dt",
+    "type": "DATE"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "training_mode",
+    "type": "INT64"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "split_type",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "prediction_period",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "ref_dt",
+    "type": "DATE"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "cust_id",
+    "type": "INT64"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "ban",
+    "type": "INT64"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "label",
+    "type": "INT64"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "label_dt",
+    "type": "DATE"
+  }
+]
+
+

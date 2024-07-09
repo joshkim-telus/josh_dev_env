@@ -1,0 +1,37 @@
+name: mlops-adna
+runtime: yaml
+description: gcs bucket for mlops_adna
+
+config:
+  builder:
+    type: string
+  project:
+    type: string
+  staging_expiry:
+    value: 2049-12-31
+    type: string
+    
+variables:
+  bucket_name: bkt_mlops_adna
+
+resources:
+  mlops-adna-bucket:
+    type: gcp:storage:Bucket
+    properties:
+      name: ${project}_${bucket_name}
+      location: northamerica-northeast1
+      uniformBucketLevelAccess: true
+      project: ${project}
+      storageClass: STANDARD
+      forceDestroy: True
+      
+  mlops-adna-bucket-member-1:
+    type: gcp:storage:BucketIAMMember
+    properties:
+      bucket: ${["mlops-adna-bucket"].name}
+      role: roles/storage.objectAdmin
+      member: group:dladna@telus.com
+      condition:
+        title: expires_after_2049_12_31
+        description: Expiring at midnight of 2049-12-31
+        expression: request.time < timestamp("2050-01-01T00:00:00Z")
