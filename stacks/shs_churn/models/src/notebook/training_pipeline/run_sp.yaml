@@ -1,0 +1,56 @@
+name: Run sp
+inputs:
+- {name: from_date, type: String}
+- {name: to_date, type: String}
+- {name: project_id, type: String}
+outputs:
+- {name: col_list, type: JsonArray}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef run_sp(from_date: str\n          , to_date: str \n       \
+      \   , project_id: str\n          # , token: str\n          ) -> NamedTuple(\"\
+      output\", [(\"col_list\", list)]):\n\n    from google.cloud import bigquery\n\
+      \    import logging \n    from datetime import datetime\n\n#     #### For wb\n\
+      #     import google.oauth2.credentials\n#     CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\
+      \n#     client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n\
+      #     job_config = bigquery.QueryJobConfig()\n\n    #### For prod \n    client\
+      \ = bigquery.Client(project=project_id)\n    job_config = bigquery.QueryJobConfig()\n\
+      \n    # Change dataset / table + sp table name to version in bi-layer\n    query\
+      \ =\\\n        f\"\"\"\n            BEGIN\n              DECLARE date_exists\
+      \ BOOL DEFAULT FALSE;\n              DECLARE _from_dt DATE DEFAULT '{from_date}';\n\
+      \              DECLARE _to_dt DATE DEFAULT '{to_date}';\n\n              --\
+      \ Check if the date '2023-05-01' exists in the from_dt column\n            \
+      \  SET date_exists = (\n                SELECT COUNT(1) > 0\n              \
+      \  FROM `{project_id}.nba_features_prospect.master_features_set_prospect`\n\
+      \                WHERE from_dt = '{from_date}'\n              );\n\n       \
+      \       -- Conditionally execute the script if the date does not exist\n   \
+      \           IF date_exists = FALSE THEN\n                CALL `{project_id}.nba_targets.sp_persist_targets_prospect`(_from_dt,\
+      \ _to_dt); \n              END IF;\n\n              IF date_exists = FALSE THEN\n\
+      \                CALL `{project_id}.nba_features_prospect.sp_persist_master_features_set`(_from_dt,\
+      \ _to_dt); \n              END IF;\n\n              SELECT * FROM `{project_id}.nba_features_prospect.master_features_set_prospect`\
+      \ LIMIT 1000; \n\n            END;\n        \"\"\"\n\n    df = client.query(query,\
+      \ job_config=job_config).to_dataframe()\n\n    col_list = list([col for col\
+      \ in df.columns])\n\n    return (col_list,)\n\n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - run_sp

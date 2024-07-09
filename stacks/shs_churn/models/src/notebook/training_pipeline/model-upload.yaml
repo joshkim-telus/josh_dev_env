@@ -1,0 +1,80 @@
+name: Upload model
+description: Upload model to Vertex Model Registry.
+inputs:
+- {name: project_id, type: String, description: project id for where this pipeline
+    is being run}
+- {name: model, type: Model, description: model passed in from training component.
+    Must have path specified in model.uri}
+- {name: region, type: String, description: region for where the query will be run}
+- {name: model_name, type: String, description: name of model to be stored}
+- {name: prediction_image, type: String, description: prediction image uri}
+- {name: col_list, type: JsonArray, description: string of list of columns in serving
+    data}
+- {name: model_uri, type: String}
+outputs:
+- {name: vertex_model, type: Model}
+- {name: model_uri, type: String}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef upload_model(\n    project_id: str,\n    model: Input[Model],\n\
+      \    vertex_model: Output[Model],\n    region: str,\n    model_name: str,\n\
+      \    prediction_image: str,\n    col_list: list, \n    model_uri: str\n    )->\
+      \ NamedTuple(\"output\", [(\"model_uri\", str)]):\n    \"\"\"\n    Upload model\
+      \ to Vertex Model Registry.\n    Args:\n        project_id (str): project id\
+      \ for where this pipeline is being run\n        model (Input[Model]): model\
+      \ passed in from training component. Must have path specified in model.uri\n\
+      \        region (str): region for where the query will be run\n        model_name\
+      \ (str): name of model to be stored\n        prediction_image (str): prediction\
+      \ image uri\n        col_list (str): string of list of columns in serving data\n\
+      \    Returns:\n        vertex_model (Output[Model]): Model saved in Vertex AI\n\
+      \    \"\"\"\n\n    from google.cloud import aiplatform\n    from google.api_core.future.polling\
+      \ import DEFAULT_POLLING\n    import os\n\n    ### Set the default timeoutto\
+      \ 3600 seconds\n    DEFAULT_POLLING._timeout = 3000\n\n    aiplatform.init(project=project_id,\
+      \ location=region)\n\n    ## check if prediction image is custom or not\n  \
+      \  if prediction_image.startswith('northamerica-northeast1-docker'):\n     \
+      \   # custom: must set ports\n        health_route = \"/ping\"\n        predict_route\
+      \ = \"/predict\"\n        serving_container_ports = [7080]\n    else:\n    \
+      \    # Google pre-built\n        health_route = None\n        predict_route\
+      \ = None\n        serving_container_ports = None\n\n    ## check for existing\
+      \ models\n    # if model exists, update the version\n    try:\n        model_uid\
+      \ = aiplatform.Model.list(\n            filter=f'display_name={model_name}',\
+      \ \n            order_by=\"update_time\",\n            location=region)[-1].resource_name\n\
+      \n        uploaded_model = aiplatform.Model.upload(\n            display_name\
+      \ = model_name, \n            artifact_uri = os.path.dirname(model.uri),\n \
+      \           serving_container_image_uri = prediction_image,\n            serving_container_predict_route=predict_route,\n\
+      \            serving_container_health_route=health_route,\n            serving_container_ports=serving_container_ports,\n\
+      \            serving_container_environment_variables =  {\"COL_LIST\":str(col_list),\
+      \ \"model_uri\": model_uri},\n            parent_model = model_uid,\n      \
+      \      is_default_version = True, \n            upload_request_timeout = 3000\n\
+      \        )\n    # if model does not already exist, create a new model\n    except:\n\
+      \        uploaded_model = aiplatform.Model.upload(\n            display_name\
+      \ = model_name,\n            artifact_uri = os.path.dirname(model.uri),\n  \
+      \          serving_container_image_uri=prediction_image,\n            serving_container_predict_route=predict_route,\n\
+      \            serving_container_health_route=health_route,\n            serving_container_ports=serving_container_ports,\n\
+      \            serving_container_environment_variables =  {\"COL_LIST\":str(col_list),\
+      \ \"model_uri\": model_uri},\n            upload_request_timeout = 3000\n\n\
+      \        )\n\n    vertex_model.uri = uploaded_model.resource_name\n\n    return\
+      \ (vertex_model.uri,)\n\n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - upload_model
