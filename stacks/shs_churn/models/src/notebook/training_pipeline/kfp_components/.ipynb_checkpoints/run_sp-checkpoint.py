@@ -5,11 +5,12 @@ from kfp.v2.dsl import (Artifact, Dataset, Input, InputPath, Model, Output,HTML,
 from typing import NamedTuple
 # Create Training Dataset for training pipeline
 @component(
-    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
+    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
     output_component_file="run_sp.yaml",
 )
 def run_sp(from_date: str
           , to_date: str 
+          , stack_name: str
           , project_id: str
           , dataset_id: str
           , token: str
@@ -47,7 +48,7 @@ def run_sp(from_date: str
 
               -- Conditionally execute the script if the date does not exist
               IF date_exists = FALSE THEN
-                CALL `{project_id}.{dataset_id}.sp_persist_targets`(_from_dt, _to_dt); 
+                CALL `{project_id}.{dataset_id}.sp_persist_{stack_name}_targets`(_from_dt, _to_dt); 
               END IF;
               
               IF date_exists = FALSE THEN

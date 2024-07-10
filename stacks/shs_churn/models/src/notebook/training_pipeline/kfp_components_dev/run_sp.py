@@ -65,7 +65,7 @@ def run_sp(from_date: str
     col_list = list([col for col in df.columns])
     
     return (col_list,)
+
     
-    
-    
+
     

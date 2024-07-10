@@ -6,5 +6,3 @@ SELECT
   {feature_names}
 FROM 
   `{project_id}.{dataset_id}.{table_id}`
--- WHERE model_scenario in ({target_labels})
--- AND label > 0

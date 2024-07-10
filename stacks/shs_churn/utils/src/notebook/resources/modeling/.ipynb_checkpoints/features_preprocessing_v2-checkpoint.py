@@ -102,6 +102,12 @@ def process_features(
         df['cust_pref_lang_txt'] = df.apply(
             lambda row: 1 if row['cust_pref_lang_txt'] == 'English' else 0, axis = 1
         )
+        
+    # diff in days of ref dt
+    for f in d_model_config['date_to_days_features']:
+        df[f['name']] = (
+            pd.to_datetime(df[f['name']], errors='coerce') - pd.to_datetime(df['part_dt'], errors='coerce')
+        ).dt.days
 
     # Now we need to transform the features of the feature store.
     def encode_categorical_features(df):
@@ -140,9 +146,8 @@ def process_features(
     df_features = df_features.fillna(0)
 
     if training_mode:
-        
         # map target values
-        df_features['target'] = df_features[target_name]
+        df_features['target'] = df[target_name]
         df_features['part_dt'] = df['part_dt']
 
     else:

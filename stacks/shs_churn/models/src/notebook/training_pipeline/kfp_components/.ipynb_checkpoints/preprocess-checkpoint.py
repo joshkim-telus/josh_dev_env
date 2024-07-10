@@ -2,7 +2,7 @@ from kfp.v2.dsl import component
 from typing import Any
 
 @component(
-    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
+    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
     output_component_file="train_hs_nba_prospects_preprocess.yaml"
 )
 def preprocess(
@@ -92,7 +92,6 @@ def preprocess(
     target_column = d_model_config['target']
     str_feature_names = ','.join([f"cast({f['name']} as {f['type']}) as {f['name']}" for f in d_model_config['features']])
     str_customer_ids = ','.join([f"cast({f['name']} as {f['type']}) as {f['name']}" for f in d_model_config['customer_ids']])
-    # str_target_labels = ','.join([f"\"{f['name']}\"" for f in d_model_config['target_variables'][model_type]])
     
     # extract training data
     sql = (pth_queries / load_sql).read_text().format(
@@ -102,7 +101,6 @@ def preprocess(
         , target_column=target_column
         , customer_ids=str_customer_ids
         , feature_names=str_feature_names
-        # , target_labels=str_target_labels
     )
     
     # save sql to gcs bucket
@@ -130,4 +128,5 @@ def preprocess(
         f'gs://{file_bucket}/{pipeline_type}/{preprocess_output_csv}', index=False
     )
     print(f'Training data saved into {file_bucket}')
+    
     

@@ -19,6 +19,14 @@ customer_ids:
     - name: split_type
       type: string
       
+date_to_days_features:
+    - name: prod_latest_actvn_dt
+    - name: prod_latest_deactvn_dt
+    - name: contract_end_date_smhm
+    - name: contract_end_date_sing
+    - name: contract_end_date_ttv
+    - name: contract_end_date_hsic
+      
 features:
   - name: acct_cr_risk_txt
     type: string
