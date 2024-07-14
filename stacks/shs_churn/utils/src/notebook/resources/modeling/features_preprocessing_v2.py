@@ -147,7 +147,7 @@ def process_features(
 
     if training_mode:
         # map target values
-        df_features['target'] = df[target_name]
+        df_features[target_name] = df[target_name]
         df_features['part_dt'] = df['part_dt']
 
     else:

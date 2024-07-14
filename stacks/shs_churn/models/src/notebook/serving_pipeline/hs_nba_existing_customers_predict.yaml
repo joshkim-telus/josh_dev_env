@@ -1,0 +1,87 @@
+name: Predict
+description: Machine learning predict pipeline.
+inputs:
+- {name: project_id, type: String}
+- {name: resource_bucket, type: String}
+- {name: file_bucket, type: String}
+- {name: stack_name, type: String}
+- {name: service_type, type: String}
+- {name: model_type, type: String}
+- {name: pipeline_type, type: String}
+- {name: training_pipeline_path, type: String}
+- {name: serving_pipeline_path, type: String}
+- {name: preprocess_output_csv, type: String}
+- {name: hs_nba_utils_path, type: String}
+implementation:
+  container:
+    image: northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest
+    command:
+    - sh
+    - -c
+    - |2
+
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+    - "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing\
+      \ import *\n\ndef predict(project_id: str,\n            resource_bucket: str,\n\
+      \            file_bucket: str, \n            stack_name: str,\n            service_type:\
+      \ str, \n            model_type: str,\n            pipeline_type: str,\n   \
+      \         training_pipeline_path: str,\n            serving_pipeline_path: str,\n\
+      \            preprocess_output_csv: str, \n            hs_nba_utils_path: str\n\
+      \            ):\n\n    \"\"\"\n    Machine learning predict pipeline.\n    \"\
+      \"\"\n\n    # Import global modules\n    from google.cloud import storage\n\
+      \    from pathlib import Path\n    from yaml import safe_load\n    import sys\n\
+      \    import os\n    import pandas as pd\n    import pickle\n\n    # set global\
+      \ vars\n    pth_project = Path(os.getcwd())\n    pth_model_config = pth_project\
+      \ / 'model_config.yaml'\n    sys.path.insert(0, pth_project.as_posix())\n\n\
+      \    # init gcp clients\n    storage_client = storage.Client()\n\n    def extract_dir_from_bucket(\n\
+      \        bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline'\
+      \ \n    ):            \n        \"\"\"\n        Download files from a specified\
+      \ bucket to a local path, excluding a specified prefix.\n\n        Parameters:\n\
+      \        - bucket: The bucket object from which to download files.\n       \
+      \ - local_path: The local path where the files will be downloaded to.\n    \
+      \    - prefix: The prefix to filter the files in the bucket. Only files with\
+      \ this prefix will be downloaded.\n        - split_prefix: The prefix to exclude\
+      \ from the downloaded file paths. Default is 'serving_pipeline'.\n        \"\
+      \"\"\n        for blob in bucket.list_blobs(prefix=prefix):\n            if\
+      \ not blob.name.endswith(\"/\"):\n                path = local_path / blob.name.split(f'{split_prefix}/')[-1]\n\
+      \                str_path = path.as_posix()\n                Path(str_path[:str_path.rindex('/')]).mkdir(parents=True,\
+      \ exist_ok=True)\n                blob.download_to_filename(str_path)\n\n  \
+      \  # download utils and model config locally\n    bucket = storage_client.bucket(resource_bucket)\n\
+      \    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}',\
+      \ split_prefix='notebook'\n    )  \n    blob = bucket.blob(f\"{stack_name}/{serving_pipeline_path}/model_config.yaml\"\
+      \ )\n    blob.download_to_filename(pth_model_config)\n\n    # download model\
+      \ pickle file\n    model_name = f'{service_type}_xgb_models_latest.pkl'    \n\
+      \    bucket = storage_client.bucket(file_bucket)\n    blob = bucket.blob(f'models/{model_name}')\n\
+      \    blob.download_to_filename(pth_project / model_name)\n\n    # load model\n\
+      \    d_model_config = safe_load(pth_model_config.open())\n    with open(pth_project\
+      \ / model_name, \"rb\") as f:\n        models_dict = pickle.load(f)\n    model\
+      \ = models_dict['model']\n\n    # load data from bucket\n    df_features = pd.read_csv(f'gs://{file_bucket}/{pipeline_type}/{preprocess_output_csv}',\
+      \ index_col=None)\n\n    print(f'Features df.shape {df_features.shape}')\n\n\
+      \    # select features and model predict  \n    l_customer_ids = [f['name']\
+      \ for f in d_model_config['customer_ids']]\n    l_feature_names = [f['name']\
+      \ for f in d_model_config['features']]\n\n    # make predictions on df_features\n\
+      \    np_preds = model.predict_proba(df_features[l_feature_names])\n\n    # map\
+      \ target index with target names\n    d_rename_mapping = {\n        d_target_info['class_index']:\
+      \ d_target_info['name']\n        for d_target_info in d_model_config['target_variables'][model_type]\n\
+      \    }\n\n    # build result dataframe\n    df_preds = pd.DataFrame(np_preds)\n\
+      \    df_preds = df_preds.rename(columns=d_rename_mapping)\n\n    # add customer\
+      \ ids and partition date\n    df_preds[l_customer_ids] = df_features[l_customer_ids]\
+      \    \n    df_preds['part_dt'] = df_features['part_dt']\n\n    # save data to\
+      \ pipeline bucket\n    location_to_save = f'gs://{file_bucket}/{pipeline_type}/df_score.csv'\n\
+      \    df_preds.to_csv(location_to_save, index=False)\n    print(f'Scores saved\
+      \ into {location_to_save}')\n\n"
+    args:
+    - --executor_input
+    - {executorInput: null}
+    - --function_to_execute
+    - predict

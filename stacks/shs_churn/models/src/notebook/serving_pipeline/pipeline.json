@@ -1,0 +1,647 @@
+{
+  "pipelineSpec": {
+    "components": {
+      "comp-postprocess": {
+        "executorLabel": "exec-postprocess",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "file_bucket": {
+              "type": "STRING"
+            },
+            "model_id": {
+              "type": "STRING"
+            },
+            "model_type": {
+              "type": "STRING"
+            },
+            "pipeline_path": {
+              "type": "STRING"
+            },
+            "pipeline_type": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "resource_bucket": {
+              "type": "STRING"
+            },
+            "score_date_dash": {
+              "type": "STRING"
+            },
+            "score_file_name": {
+              "type": "STRING"
+            },
+            "score_table_id": {
+              "type": "STRING"
+            },
+            "stack_name": {
+              "type": "STRING"
+            },
+            "temp_table": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            },
+            "ucar_score_table": {
+              "type": "STRING"
+            },
+            "utils_path": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-predict": {
+        "executorLabel": "exec-predict",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "file_bucket": {
+              "type": "STRING"
+            },
+            "model_id": {
+              "type": "STRING"
+            },
+            "pipeline_type": {
+              "type": "STRING"
+            },
+            "preprocess_output_csv": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "resource_bucket": {
+              "type": "STRING"
+            },
+            "score_file_name": {
+              "type": "STRING"
+            },
+            "score_table_id": {
+              "type": "STRING"
+            },
+            "service_type": {
+              "type": "STRING"
+            },
+            "serving_pipeline_path": {
+              "type": "STRING"
+            },
+            "stack_name": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            },
+            "training_pipeline_path": {
+              "type": "STRING"
+            },
+            "utils_path": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-preprocess": {
+        "executorLabel": "exec-preprocess",
+        "inputDefinitions": {
+          "parameters": {
+            "dataset_id": {
+              "type": "STRING"
+            },
+            "file_bucket": {
+              "type": "STRING"
+            },
+            "load_sql": {
+              "type": "STRING"
+            },
+            "model_type": {
+              "type": "STRING"
+            },
+            "pipeline_path": {
+              "type": "STRING"
+            },
+            "pipeline_type": {
+              "type": "STRING"
+            },
+            "preprocess_output_csv": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "resource_bucket": {
+              "type": "STRING"
+            },
+            "stack_name": {
+              "type": "STRING"
+            },
+            "table_id": {
+              "type": "STRING"
+            },
+            "token": {
+              "type": "STRING"
+            },
+            "training_mode": {
+              "type": "STRING"
+            },
+            "utils_path": {
+              "type": "STRING"
+            }
+          }
+        }
+      }
+    },
+    "deploymentSpec": {
+      "executors": {
+        "exec-postprocess": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "postprocess"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef postprocess(project_id: str,\n                dataset_id: str,\n                score_table_id: str,\n                ucar_score_table: str,\n                temp_table: str,\n                resource_bucket: str,\n                file_bucket: str,\n                stack_name: str,\n                model_type: str,\n                model_id: str,\n                score_date_dash: str, \n                pipeline_type: str, \n                pipeline_path: str,\n                utils_path: str, \n                score_file_name: str, \n                token: str\n                ):\n\n    # Import global modules\n    import sys\n    import os\n    from pathlib import Path\n    import time\n    from datetime import date\n    from datetime import datetime\n    from dateutil.relativedelta import relativedelta\n    import pandas as pd\n    from google.cloud import bigquery\n\n    def if_tbl_exists(client, table_ref):\n        from google.cloud.exceptions import NotFound\n        try:\n            client.get_table(table_ref)\n            return True\n        except NotFound:\n            return False\n\n    # for prod\n    pth_project = Path(os.getcwd())\n    pth_model_config = pth_project / 'model_config.yaml'\n    pth_queries = pth_project / 'queries'\n    sys.path.insert(0, pth_project.as_posix())\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n\n    # #### For prod \n    # client = bigquery.Client(project=project_id)\n\n    file_name = f'gs://{file_bucket}/{pipeline_type}/{score_file_name}'\n    df_orig = pd.read_csv(file_name, index_col=False)\n    df_orig.dropna(subset=['ban'], inplace=True)\n    df_orig.reset_index(drop=True, inplace=True)\n    df_orig['scoring_date'] = df_orig['score_date']\n    df_orig.ban = df_orig.ban.astype(int)\n    df_orig = df_orig.rename(columns={'ban': 'bus_bacct_num', 'score': 'score_num'})\n    df_orig.score_num = df_orig.score_num.astype(float)\n    df_orig['decile_grp_num'] = pd.qcut(df_orig['score_num'], q=10, labels=[i for i in range(10, 0, -1)])\n    df_orig.decile_grp_num = df_orig.decile_grp_num.astype(int)\n    df_orig['percentile_pct'] = (1 - df_orig.score_num.rank(pct=True))*100\n    df_orig['percentile_pct'] = df_orig['percentile_pct'].apply(round, 0).astype(int)\n    df_orig['predict_model_nm'] = 'SHS CHURN Model - DIVG'\n    df_orig['model_type_cd'] = 'FFH'\n    df_orig['subscriber_no'] = \"\"\n    df_orig['prod_instnc_resrc_str'] = \"\"\n    df_orig['service_instnc_id'] = \"\"\n    df_orig['segment_nm'] = \"\"\n    df_orig['segment_id'] = \"\"\n    df_orig['classn_nm'] = \"\"\n    df_orig['predict_model_id'] = model_id\n    df_orig.drop(columns=['model_id', 'score_date'], axis=1, inplace=True)\n\n    get_cust_id = \"\"\"\n    WITH bq_snpsht_max_date AS(\n    SELECT PARSE_DATE('%Y%m%d', MAX(partition_id)) AS max_date\n        FROM `cio-datahub-enterprise-pr-183a.ent_cust_cust.INFORMATION_SCHEMA.PARTITIONS` \n    WHERE table_name = 'bq_prod_instnc_snpsht' \n        AND partition_id <> '__NULL__'\n    ),\n    -- BANs can have multiple Cust ID. Create rank by product type and status, prioritizing ban/cust id with active FFH products\n    rank_prod_type AS (\n    SELECT DISTINCT\n        bacct_bus_bacct_num,\n        consldt_cust_bus_cust_id AS cust_id,\n        CASE WHEN pi_prod_instnc_resrc_typ_cd IN ('SING', 'HSIC', 'TTV', 'SMHM', 'STV', 'DIIC') AND pi_prod_instnc_stat_cd = 'A' THEN 1\n                WHEN pi_prod_instnc_resrc_typ_cd IN ('SING', 'HSIC', 'TTV', 'SMHM', 'STV', 'DIIC') THEN 2\n                WHEN pi_prod_instnc_stat_cd = 'A' THEN 3\n                ELSE 4\n                END AS prod_rank\n    FROM `cio-datahub-enterprise-pr-183a.ent_cust_cust.bq_prod_instnc_snpsht`\n    CROSS JOIN bq_snpsht_max_date\n    WHERE CAST(prod_instnc_ts AS DATE)=bq_snpsht_max_date.max_date\n    AND bus_prod_instnc_src_id = 1001\n    ),\n    --Rank Cust ID\n    rank_cust_id AS (\n    SELECT DISTINCT\n        bacct_bus_bacct_num,\n        cust_id,\n        RANK() OVER(PARTITION BY bacct_bus_bacct_num\n                        ORDER BY prod_rank,\n                                    cust_id) AS cust_id_rank               \n    FROM rank_prod_type\n    )\n    --Select best cust id\n    SELECT bacct_bus_bacct_num,\n        cust_id\n    FROM rank_cust_id\n    WHERE cust_id_rank = 1\n    \"\"\"\n\n    df_cust = client.query(get_cust_id).to_dataframe()\n    df_final = df_orig.set_index('bus_bacct_num').join(df_cust.set_index('bacct_bus_bacct_num')).reset_index()\n    df_final = df_final.rename(columns={'index': 'bus_bacct_num', 'cust_bus_cust_id': 'cust_id'})\n    df_final = df_final.sort_values(by=['score_num'], ascending=False)\n\n    file_name_only = score_file_name.rsplit('.', 1)[0]\n    save_file_name = f'gs://{file_bucket}/{pipeline_type}/{file_name_only}_final.csv'\n    df_final.to_csv(save_file_name, index=False)\n\n    todays_date = datetime.now().strftime(\"%Y-%m-%d\")\n    backup_file_name = f'gs://{file_bucket}/{pipeline_type}/{file_name_only}_final_{todays_date}.csv'\n    df_final.to_csv(backup_file_name, index=False)\n\n    time.sleep(120)\n\n    # ------------------- directly write into UCAR score tables ----------------- #\n    df_final['segment_fr_nm'] = ''\n    df_final['create_ts'] = pd.Timestamp.now()\n    df_final['create_dt'] = pd.Timestamp('today')\n    df_final['month_used_dt'] = pd.Timestamp('today')\n    df_final['scoring_ts'] = pd.Timestamp(date.today() - relativedelta(days=1))\n    df_final['scoring_dt'] = date.today() - relativedelta(days=1)\n    df_final.rename(columns={'cust_id': 'customer_id'}, inplace=True)\n\n    table_ref = ucar_score_table  # UCAR's score table\n    # client = bigquery.Client(project=project_id)\n    table = client.get_table(table_ref)\n    schema = table.schema\n\n    ll = []\n    for item in schema:\n        col = item.name\n        d_type = item.field_type\n        if 'float' in str(d_type).lower():\n            d_type = 'FLOAT64'\n        ll.append((col, d_type))\n\n        if 'integer' in str(d_type).lower():\n            df_final[col] = df_final[col].fillna(0).astype(int)\n        if 'float' in str(d_type).lower():\n            df_final[col] = df_final[col].fillna(0.0).astype(float)\n        if 'string' in str(d_type).lower():\n            df_final[col] = df_final[col].fillna('').astype(str)\n\n    table_ref = '{}.{}.{}'.format(project_id, dataset_id, temp_table)\n    client = bigquery.Client(project=project_id)\n    if if_tbl_exists(client, table_ref):\n        client.delete_table(table_ref)\n\n    client.create_table(table_ref)\n    config = bigquery.LoadJobConfig(schema=schema)\n    config.write_disposition = bigquery.WriteDisposition.WRITE_TRUNCATE\n    bq_table_instance = client.load_table_from_dataframe(df_final, table_ref, job_config=config)\n    time.sleep(20)\n\n    # check duplicate on ucar score table\n    drop_sql = f''' delete from `{ucar_score_table}` where predict_model_id={model_id} and create_ts='{score_date_dash}' '''\n    # client = bigquery.Client(project=project_id)\n    client.query(drop_sql)\n    time.sleep(20)\n\n    # insert result into ucar score table\n    insert_sql = 'select '\n    for col, d_type in ll[:-1]:\n        insert_sql += '{},'.format(col)\n    insert_sql += '{}'.format(ll[-1][0])\n    insert_sql += ' from `{}.{}.{}`'.format(project_id, dataset_id, temp_table)\n    insert_sql = f'insert into `{ucar_score_table}` ' + insert_sql\n    client = bigquery.Client(project=project_id)\n    code = client.query(insert_sql)\n    print(code.result())\n    time.sleep(20)\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 4.0,
+              "memoryLimit": 64.0
+            }
+          }
+        },
+        "exec-predict": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "predict"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef predict(project_id: str,\n            dataset_id: str,\n            score_table_id: str,\n            resource_bucket: str,\n            file_bucket: str, \n            stack_name: str,\n            service_type: str, \n            model_id: str, \n            pipeline_type: str,\n            training_pipeline_path: str,\n            serving_pipeline_path: str,\n            preprocess_output_csv: str, \n            utils_path: str, \n            score_file_name: str, \n            token: str\n            ):\n\n    \"\"\"\n    Machine learning predict pipeline.\n    \"\"\"\n\n    # Import global modules\n    from google.cloud import storage\n    from pathlib import Path\n    from yaml import safe_load\n    import sys\n    import os\n    import pandas as pd\n    import pickle\n    from google.cloud import bigquery\n\n    # for prod\n    pth_project = Path(os.getcwd())\n    pth_model_config = pth_project / 'model_config.yaml'\n    pth_queries = pth_project / 'queries'\n    sys.path.insert(0, pth_project.as_posix())\n\n    # init gcp clients\n    storage_client = storage.Client()\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    # #### For prod \n    # client = bigquery.Client(project=project_id)\n    # job_config = bigquery.QueryJobConfig()\n\n    def extract_dir_from_bucket(\n        bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline' \n    ):\n        \"\"\"\n        Download files from a specified bucket to a local path, excluding a specified prefix.\n\n        Parameters:\n        - bucket: The bucket object from which to download files.\n        - local_path: The local path where the files will be downloaded to.\n        - prefix: The prefix to filter the files in the bucket. Only files with this prefix will be downloaded.\n        - split_prefix: The prefix to exclude from the downloaded file paths. Default is 'serving_pipeline'.\n        \"\"\"\n        for blob in bucket.list_blobs(prefix=prefix):\n            if not blob.name.endswith(\"/\"):\n                path = local_path / blob.name.split(f'{split_prefix}/')[-1]\n                str_path = path.as_posix()\n                Path(str_path[:str_path.rindex('/')]).mkdir(parents=True, exist_ok=True)\n                blob.download_to_filename(str_path)\n\n    # download utils and model config locally\n    storage_client = storage.Client()\n    bucket = storage_client.bucket(resource_bucket)\n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{utils_path}', split_prefix='resources'\n    ) \n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{serving_pipeline_path}/queries', split_prefix=pipeline_type\n    )\n\n    blob = bucket.blob(f\"{stack_name}/{serving_pipeline_path}/model_config.yaml\" )\n    blob.download_to_filename(pth_model_config)\n\n    # download model pickle file\n    model_name = f'{service_type}_xgb_models_latest.pkl'\n    bucket = storage_client.bucket(file_bucket)\n    blob = bucket.blob(f'models/{model_name}')\n    blob.download_to_filename(pth_project / model_name)\n\n    # load model\n    d_model_config = safe_load(pth_model_config.open())\n    with open(pth_project / model_name, \"rb\") as f:\n        models_dict = pickle.load(f)\n    model = models_dict['model']\n\n    # load data from bucket\n    df_features = pd.read_csv(f'gs://{file_bucket}/{pipeline_type}/{preprocess_output_csv}', index_col=None)\n\n    print(f'Features df.shape {df_features.shape}')\n\n    # select features and model predict  \n    l_feature_names = [f['name'] for f in d_model_config['features']]\n\n    # make predictions on df_features\n    pred_prob = model.predict_proba(df_features[l_feature_names], ntree_limit=model.best_iteration)[:, 1]\n\n    # import local modules\n    from etl.load import create_temp_table, insert_from_temp_table\n\n    # build result dataframe\n    result = pd.DataFrame(columns=['ban', 'score_date', 'model_id', 'score'])\n    result['score'] = list(pred_prob)\n    result['score'] = result['score'].fillna(0.0).astype('float64')\n    result['ban'] = list(df_features['ban'])\n    result['ban'] = result['ban'].astype('str')\n    result['score_date'] = df_features['part_dt']\n    result['model_id'] = model_id\n\n    # save data to pipeline bucket\n    location_to_save = f'gs://{file_bucket}/{pipeline_type}/{score_file_name}'\n    result.to_csv(location_to_save, index=False)\n    print(f'Scores saved into {location_to_save}')\n\n    # create temp table in bq\n    temp_table_name = create_temp_table(\n        bq_client=client, project_id=project_id, dataset_id=dataset_id, table_id=score_table_id, df_to_load=result\n    )\n\n    print(f'created a temp table {temp_table_name}')\n\n    # insert data from temp into main table\n    current_part_dt = str(result['score_date'].max())\n    insert_from_temp_table(\n        bq_client=client, project_id=project_id, dataset_id=dataset_id, table_id=score_table_id, temp_table_id=temp_table_name, current_part_dt=current_part_dt,\n        pth_drop_query=pth_queries / 'drop_current_part_dt.sql', pth_insert_query=pth_queries / 'insert_from_temp_score_table.sql'\n    )\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 8.0,
+              "memoryLimit": 64.0
+            }
+          }
+        },
+        "exec-preprocess": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "preprocess"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet     --no-warn-script-location 'kfp==1.8.18' && \"$0\" \"$@\"\n",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef preprocess(\n    project_id: str,\n    dataset_id: str,\n    table_id: str,\n    file_bucket: str,\n    resource_bucket: str,\n    stack_name: str,\n    pipeline_path: str,\n    utils_path: str, \n    model_type: str,\n    load_sql: str, \n    preprocess_output_csv: str,\n    pipeline_type: str, \n    training_mode: bool, \n    token: str\n):\n    \"\"\"\n    Preprocess data for a machine learning training pipeline.\n    \"\"\"\n\n    # import global modules\n    from google.cloud import storage\n    from google.cloud import bigquery\n    from pathlib import Path\n    from yaml import safe_load\n    import sys\n    import os\n\n    # for prod\n    pth_project = Path(os.getcwd())\n    pth_model_config = pth_project / 'model_config.yaml'\n    pth_queries = pth_project / 'queries'\n    sys.path.insert(0, pth_project.as_posix())\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    # #### For prod \n    # client = bigquery.Client(project=project_id)\n    # job_config = bigquery.QueryJobConfig()\n\n    def extract_dir_from_bucket(\n        bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline' \n    ):\n        \"\"\"\n        Download files from a specified bucket to a local path, excluding a specified prefix.\n\n        Parameters:\n        - bucket: The bucket object from which to download files.\n        - local_path: The local path where the files will be downloaded to.\n        - prefix: The prefix to filter the files in the bucket. Only files with this prefix will be downloaded.\n        - split_prefix: The prefix to exclude from the downloaded file paths. Default is 'serving_pipeline'.\n        \"\"\"\n        for blob in bucket.list_blobs(prefix=prefix):\n            if not blob.name.endswith(\"/\"):\n                path = local_path / blob.name.split(f'{split_prefix}/')[-1]\n                str_path = path.as_posix()\n                Path(str_path[:str_path.rindex('/')]).mkdir(parents=True, exist_ok=True)\n                blob.download_to_filename(str_path)\n\n    # download utils and model config locally\n    storage_client = storage.Client()\n    bucket = storage_client.bucket(resource_bucket)\n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{utils_path}', split_prefix='resources'\n    ) \n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix=pipeline_type\n    )\n\n    blob = bucket.blob(f'{stack_name}/{pipeline_path}/model_config.yaml')\n    blob.download_to_filename(pth_model_config)\n\n    # import local modules\n    from etl.extract import extract_bq_data\n    from modeling.features_preprocessing_v2 import process_features\n\n    # load model config\n    d_model_config = safe_load(pth_model_config.open())\n\n    # select columns to query\n    target_column = d_model_config['target']\n    str_feature_names = ','.join([f\"cast({f['name']} as {f['type']}) as {f['name']}\" for f in d_model_config['features']])\n    str_customer_ids = ','.join([f\"cast({f['name']} as {f['type']}) as {f['name']}\" for f in d_model_config['customer_ids']])\n\n    # extract training data\n    sql = (pth_queries / load_sql).read_text().format(\n        project_id=project_id\n        , dataset_id=dataset_id\n        , table_id=table_id\n        , target_column=target_column\n        , customer_ids=str_customer_ids\n        , feature_names=str_feature_names\n    )\n\n    # save sql to gcs bucket\n    file_name = f'{pipeline_type}_queries/{load_sql}_formatted.sql'\n\n    # Convert the string to bytes\n    content_bytes = sql.encode('utf-8')\n\n    # Upload the file to GCS\n    bucket = storage_client.bucket(file_bucket)\n    blob = bucket.blob(file_name)\n    blob.upload_from_string(content_bytes)\n\n    df = extract_bq_data(client, sql)\n    print(f\"Training dataset df.shape {df.shape}\")\n\n    # process features\n    df_processed = process_features(\n        df, d_model_config, training_mode=training_mode, model_type=model_type, target_name=target_column\n    )\n    print(f\"Training dataset processed df.shape {df_processed.shape}\")\n\n    # save data to pipeline bucket\n    df_processed.to_csv(\n        f'gs://{file_bucket}/{pipeline_type}/{preprocess_output_csv}', index=False\n    )\n    print(f'Training data saved into {file_bucket}')\n\n"
+            ],
+            "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+            "resources": {
+              "cpuLimit": 8.0,
+              "memoryLimit": 64.0
+            }
+          }
+        }
+      }
+    },
+    "pipelineInfo": {
+      "name": "shs-churn-serving-pipeline"
+    },
+    "root": {
+      "dag": {
+        "tasks": {
+          "postprocess": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-postprocess"
+            },
+            "dependentTasks": [
+              "predict"
+            ],
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "shs_churn"
+                    }
+                  }
+                },
+                "file_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4_shs_churn"
+                    }
+                  }
+                },
+                "model_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "5023"
+                    }
+                  }
+                },
+                "model_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "churn"
+                    }
+                  }
+                },
+                "pipeline_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "models/serving_pipeline"
+                    }
+                  }
+                },
+                "pipeline_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "serving_pipeline"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "resource_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default"
+                    }
+                  }
+                },
+                "score_date_dash": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "2024-01-01"
+                    }
+                  }
+                },
+                "score_file_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "df_score.csv"
+                    }
+                  }
+                },
+                "score_table_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bq_shs_churn_scores"
+                    }
+                  }
+                },
+                "stack_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "shs_churn"
+                    }
+                  }
+                },
+                "temp_table": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bq_product_instance_model_score_temp"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.a0AXooCguahlP7NgpH19PR-Tzd85YMIWolRNLKJFCbyojw6qeOdfh3VTNfqpieLYaA7N-VzBk8aTmHX7LF2zCSGggToVtvNnoBTi73F1U5JXgKoMlX1IK9kyew2aru8WzYgX7CQu5C4pmZAQT6U87JbQxlxsiGdA5ENga4IVc2alnoaCgYKAbASARISFQHGX2MimQ7lpFSW0E-cNmn0BMxkkA0179"
+                    }
+                  }
+                },
+                "ucar_score_table": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4.ucar_ingestion.bq_product_instance_model_score"
+                    }
+                  }
+                },
+                "utils_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "utils/resources"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "postprocess"
+            }
+          },
+          "predict": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-predict"
+            },
+            "dependentTasks": [
+              "preprocess"
+            ],
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "shs_churn"
+                    }
+                  }
+                },
+                "file_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4_shs_churn"
+                    }
+                  }
+                },
+                "model_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "5023"
+                    }
+                  }
+                },
+                "pipeline_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "serving_pipeline"
+                    }
+                  }
+                },
+                "preprocess_output_csv": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "df_serving.csv"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "resource_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default"
+                    }
+                  }
+                },
+                "score_file_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "df_score.csv"
+                    }
+                  }
+                },
+                "score_table_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bq_shs_churn_scores"
+                    }
+                  }
+                },
+                "service_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "shs_churn"
+                    }
+                  }
+                },
+                "serving_pipeline_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "models/serving_pipeline"
+                    }
+                  }
+                },
+                "stack_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "shs_churn"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.a0AXooCguahlP7NgpH19PR-Tzd85YMIWolRNLKJFCbyojw6qeOdfh3VTNfqpieLYaA7N-VzBk8aTmHX7LF2zCSGggToVtvNnoBTi73F1U5JXgKoMlX1IK9kyew2aru8WzYgX7CQu5C4pmZAQT6U87JbQxlxsiGdA5ENga4IVc2alnoaCgYKAbASARISFQHGX2MimQ7lpFSW0E-cNmn0BMxkkA0179"
+                    }
+                  }
+                },
+                "training_pipeline_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "models/training_pipeline"
+                    }
+                  }
+                },
+                "utils_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "utils/resources"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "predict"
+            }
+          },
+          "preprocess": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-preprocess"
+            },
+            "inputs": {
+              "parameters": {
+                "dataset_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "shs_churn"
+                    }
+                  }
+                },
+                "file_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4_shs_churn"
+                    }
+                  }
+                },
+                "load_sql": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "load_serving_data.sql"
+                    }
+                  }
+                },
+                "model_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "churn"
+                    }
+                  }
+                },
+                "pipeline_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "models/serving_pipeline"
+                    }
+                  }
+                },
+                "pipeline_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "serving_pipeline"
+                    }
+                  }
+                },
+                "preprocess_output_csv": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "df_serving.csv"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4"
+                    }
+                  }
+                },
+                "resource_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default"
+                    }
+                  }
+                },
+                "stack_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "shs_churn"
+                    }
+                  }
+                },
+                "table_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "master_features_set_predict_vw"
+                    }
+                  }
+                },
+                "token": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "ya29.a0AXooCguahlP7NgpH19PR-Tzd85YMIWolRNLKJFCbyojw6qeOdfh3VTNfqpieLYaA7N-VzBk8aTmHX7LF2zCSGggToVtvNnoBTi73F1U5JXgKoMlX1IK9kyew2aru8WzYgX7CQu5C4pmZAQT6U87JbQxlxsiGdA5ENga4IVc2alnoaCgYKAbASARISFQHGX2MimQ7lpFSW0E-cNmn0BMxkkA0179"
+                    }
+                  }
+                },
+                "training_mode": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "0"
+                    }
+                  }
+                },
+                "utils_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "utils/resources"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "preprocess"
+            }
+          }
+        }
+      },
+      "inputDefinitions": {
+        "parameters": {
+          "file_bucket": {
+            "type": "STRING"
+          },
+          "project_id": {
+            "type": "STRING"
+          },
+          "region": {
+            "type": "STRING"
+          },
+          "resource_bucket": {
+            "type": "STRING"
+          }
+        }
+      }
+    },
+    "schemaVersion": "2.0.0",
+    "sdkVersion": "kfp-1.8.18"
+  },
+  "runtimeConfig": {
+    "parameters": {
+      "file_bucket": {
+        "stringValue": "divg-groovyhoon-pr-d2eab4_shs_churn"
+      },
+      "project_id": {
+        "stringValue": "divg-groovyhoon-pr-d2eab4"
+      },
+      "region": {
+        "stringValue": "northamerica-northeast1"
+      },
+      "resource_bucket": {
+        "stringValue": "divg-groovyhoon-pr-d2eab4-default"
+      }
+    }
+  }
+}

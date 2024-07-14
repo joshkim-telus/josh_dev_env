@@ -3,7 +3,7 @@ from typing import Any
 
 @component(
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
-    output_component_file="train_hs_nba_prospects_preprocess.yaml"
+    output_component_file="preprocess.yaml"
 )
 def preprocess(
     project_id: str,
@@ -13,11 +13,12 @@ def preprocess(
     resource_bucket: str,
     stack_name: str,
     pipeline_path: str,
-    hs_nba_utils_path: str, 
+    utils_path: str, 
     model_type: str,
     load_sql: str, 
     preprocess_output_csv: str,
     pipeline_type: str, 
+    training_mode=bool, 
     token: str
 ):
     """
@@ -45,9 +46,9 @@ def preprocess(
     client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
     job_config = bigquery.QueryJobConfig()
 
-#     #### For prod 
-#     client = bigquery.Client(project=project_id)
-#     job_config = bigquery.QueryJobConfig()
+    # #### For prod 
+    # client = bigquery.Client(project=project_id)
+    # job_config = bigquery.QueryJobConfig()
 
     def extract_dir_from_bucket(
         bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline' 
@@ -72,7 +73,7 @@ def preprocess(
     storage_client = storage.Client()
     bucket = storage_client.bucket(resource_bucket)
     extract_dir_from_bucket(
-        bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}', split_prefix='notebook'
+        bucket, pth_project, f'{stack_name}/{utils_path}', split_prefix='resources'
     ) 
     extract_dir_from_bucket(
         bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix=pipeline_type
@@ -82,17 +83,16 @@ def preprocess(
     blob.download_to_filename(pth_model_config)
     
     # import local modules
-    from hs_nba_utils.etl.extract import extract_bq_data
-    from hs_nba_utils.modeling.prospects_features_preprocessing import process_prospects_features
+    from etl.extract import extract_bq_data
+    from modeling.features_preprocessing_v2 import process_features
     
     # load model config
     d_model_config = safe_load(pth_model_config.open())
     
     # select columns to query
-    target_column = d_model_config['target_column']
+    target_column = d_model_config['target']
     str_feature_names = ','.join([f"cast({f['name']} as {f['type']}) as {f['name']}" for f in d_model_config['features']])
     str_customer_ids = ','.join([f"cast({f['name']} as {f['type']}) as {f['name']}" for f in d_model_config['customer_ids']])
-    str_target_labels = ','.join([f"\"{f['name']}\"" for f in d_model_config['target_variables']['acquisition']])
     
     # extract training data
     sql = (pth_queries / load_sql).read_text().format(
@@ -102,11 +102,10 @@ def preprocess(
         , target_column=target_column
         , customer_ids=str_customer_ids
         , feature_names=str_feature_names
-        , target_labels=str_target_labels
     )
     
     # save sql to gcs bucket
-    file_name = f'{pipeline_type}_queries/load_train_data_formatted.sql'
+    file_name = f'{pipeline_type}_queries/{load_sql}_formatted.sql'
 
     # Convert the string to bytes
     content_bytes = sql.encode('utf-8')
@@ -120,8 +119,8 @@ def preprocess(
     print(f"Training dataset df.shape {df.shape}")
     
     # process features
-    df_processed = process_prospects_features(
-        df, d_model_config, training_mode=True, model_type=model_type, target_name=target_column
+    df_processed = process_features(
+        df, d_model_config, training_mode=training_mode, model_type=model_type, target_name=target_column
     )
     print(f"Training dataset processed df.shape {df_processed.shape}")
 
@@ -130,4 +129,5 @@ def preprocess(
         f'gs://{file_bucket}/{pipeline_type}/{preprocess_output_csv}', index=False
     )
     print(f'Training data saved into {file_bucket}')
+
     

@@ -3,7 +3,7 @@ from typing import Any
 
 @component(
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
-    output_component_file="train_hs_nba_prospects_preprocess.yaml"
+    output_component_file="preprocess.yaml"
 )
 def preprocess(
     project_id: str,
@@ -18,6 +18,7 @@ def preprocess(
     load_sql: str, 
     preprocess_output_csv: str,
     pipeline_type: str, 
+    training_mode: bool, 
     token: str
 ):
     """
@@ -104,7 +105,7 @@ def preprocess(
     )
     
     # save sql to gcs bucket
-    file_name = f'{pipeline_type}_queries/load_train_data_formatted.sql'
+    file_name = f'{pipeline_type}_queries/{load_sql}_formatted.sql'
 
     # Convert the string to bytes
     content_bytes = sql.encode('utf-8')
@@ -119,7 +120,7 @@ def preprocess(
     
     # process features
     df_processed = process_features(
-        df, d_model_config, training_mode=True, model_type=model_type, target_name=target_column
+        df, d_model_config, training_mode=training_mode, model_type=model_type, target_name=target_column
     )
     print(f"Training dataset processed df.shape {df_processed.shape}")
 

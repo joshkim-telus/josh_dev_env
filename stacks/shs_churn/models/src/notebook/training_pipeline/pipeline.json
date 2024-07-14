@@ -41,39 +41,89 @@
             "token": {
               "type": "STRING"
             },
+            "training_mode": {
+              "type": "STRING"
+            },
             "utils_path": {
               "type": "STRING"
             }
           }
         }
       },
-      "comp-run-sp": {
-        "executorLabel": "exec-run-sp",
+      "comp-train-and-save-model": {
+        "executorLabel": "exec-train-and-save-model",
         "inputDefinitions": {
           "parameters": {
             "dataset_id": {
               "type": "STRING"
             },
-            "from_date": {
+            "file_bucket": {
+              "type": "STRING"
+            },
+            "model_type": {
+              "type": "STRING"
+            },
+            "pipeline_path": {
+              "type": "STRING"
+            },
+            "pipeline_type": {
+              "type": "STRING"
+            },
+            "preprocess_output_csv": {
               "type": "STRING"
             },
             "project_id": {
               "type": "STRING"
             },
+            "resource_bucket": {
+              "type": "STRING"
+            },
+            "save_file_name": {
+              "type": "STRING"
+            },
+            "service_type": {
+              "type": "STRING"
+            },
             "stack_name": {
               "type": "STRING"
             },
-            "to_date": {
+            "stats_file_name": {
               "type": "STRING"
             },
             "token": {
+              "type": "STRING"
+            },
+            "utils_path": {
               "type": "STRING"
             }
           }
         },
         "outputDefinitions": {
+          "artifacts": {
+            "metrics": {
+              "artifactType": {
+                "schemaTitle": "system.Metrics",
+                "schemaVersion": "0.0.1"
+              }
+            },
+            "metricsc": {
+              "artifactType": {
+                "schemaTitle": "system.ClassificationMetrics",
+                "schemaVersion": "0.0.1"
+              }
+            },
+            "model": {
+              "artifactType": {
+                "schemaTitle": "system.Model",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          },
           "parameters": {
             "col_list": {
+              "type": "STRING"
+            },
+            "model_uri": {
               "type": "STRING"
             }
           }
@@ -97,7 +147,7 @@
               "sh",
               "-ec",
               "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
-              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef preprocess(\n    project_id: str,\n    dataset_id: str,\n    table_id: str,\n    file_bucket: str,\n    resource_bucket: str,\n    stack_name: str,\n    pipeline_path: str,\n    utils_path: str, \n    model_type: str,\n    load_sql: str, \n    preprocess_output_csv: str,\n    pipeline_type: str, \n    token: str\n):\n    \"\"\"\n    Preprocess data for a machine learning training pipeline.\n    \"\"\"\n\n    # import global modules\n    from google.cloud import storage\n    from google.cloud import bigquery\n    from pathlib import Path\n    from yaml import safe_load\n    import sys\n    import os\n\n    # for prod\n    pth_project = Path(os.getcwd())\n    pth_model_config = pth_project / 'model_config.yaml'\n    pth_queries = pth_project / 'queries'\n    sys.path.insert(0, pth_project.as_posix())\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    # #### For prod \n    # client = bigquery.Client(project=project_id)\n    # job_config = bigquery.QueryJobConfig()\n\n    def extract_dir_from_bucket(\n        bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline' \n    ):\n        \"\"\"\n        Download files from a specified bucket to a local path, excluding a specified prefix.\n\n        Parameters:\n        - bucket: The bucket object from which to download files.\n        - local_path: The local path where the files will be downloaded to.\n        - prefix: The prefix to filter the files in the bucket. Only files with this prefix will be downloaded.\n        - split_prefix: The prefix to exclude from the downloaded file paths. Default is 'serving_pipeline'.\n        \"\"\"\n        for blob in bucket.list_blobs(prefix=prefix):\n            if not blob.name.endswith(\"/\"):\n                path = local_path / blob.name.split(f'{split_prefix}/')[-1]\n                str_path = path.as_posix()\n                Path(str_path[:str_path.rindex('/')]).mkdir(parents=True, exist_ok=True)\n                blob.download_to_filename(str_path)\n\n    # download utils and model config locally\n    storage_client = storage.Client()\n    bucket = storage_client.bucket(resource_bucket)\n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{utils_path}', split_prefix='resources'\n    ) \n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix=pipeline_type\n    )\n\n    blob = bucket.blob(f'{stack_name}/{pipeline_path}/model_config.yaml')\n    blob.download_to_filename(pth_model_config)\n\n    # import local modules\n    from etl.extract import extract_bq_data\n    from modeling.features_preprocessing_v2 import process_features\n\n    # load model config\n    d_model_config = safe_load(pth_model_config.open())\n\n    # select columns to query\n    target_column = d_model_config['target']\n    str_feature_names = ','.join([f\"cast({f['name']} as {f['type']}) as {f['name']}\" for f in d_model_config['features']])\n    str_customer_ids = ','.join([f\"cast({f['name']} as {f['type']}) as {f['name']}\" for f in d_model_config['customer_ids']])\n\n    # extract training data\n    sql = (pth_queries / load_sql).read_text().format(\n        project_id=project_id\n        , dataset_id=dataset_id\n        , table_id=table_id\n        , target_column=target_column\n        , customer_ids=str_customer_ids\n        , feature_names=str_feature_names\n    )\n\n    # save sql to gcs bucket\n    file_name = f'{pipeline_type}_queries/load_train_data_formatted.sql'\n\n    # Convert the string to bytes\n    content_bytes = sql.encode('utf-8')\n\n    # Upload the file to GCS\n    bucket = storage_client.bucket(file_bucket)\n    blob = bucket.blob(file_name)\n    blob.upload_from_string(content_bytes)\n\n    df = extract_bq_data(client, sql)\n    print(f\"Training dataset df.shape {df.shape}\")\n\n    # process features\n    df_processed = process_features(\n        df, d_model_config, training_mode=True, model_type=model_type, target_name=target_column\n    )\n    print(f\"Training dataset processed df.shape {df_processed.shape}\")\n\n    # save data to pipeline bucket\n    df_processed.to_csv(\n        f'gs://{file_bucket}/{pipeline_type}/{preprocess_output_csv}', index=False\n    )\n    print(f'Training data saved into {file_bucket}')\n\n"
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef preprocess(\n    project_id: str,\n    dataset_id: str,\n    table_id: str,\n    file_bucket: str,\n    resource_bucket: str,\n    stack_name: str,\n    pipeline_path: str,\n    utils_path: str, \n    model_type: str,\n    load_sql: str, \n    preprocess_output_csv: str,\n    pipeline_type: str, \n    training_mode: bool, \n    token: str\n):\n    \"\"\"\n    Preprocess data for a machine learning training pipeline.\n    \"\"\"\n\n    # import global modules\n    from google.cloud import storage\n    from google.cloud import bigquery\n    from pathlib import Path\n    from yaml import safe_load\n    import sys\n    import os\n\n    # for prod\n    pth_project = Path(os.getcwd())\n    pth_model_config = pth_project / 'model_config.yaml'\n    pth_queries = pth_project / 'queries'\n    sys.path.insert(0, pth_project.as_posix())\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    # #### For prod \n    # client = bigquery.Client(project=project_id)\n    # job_config = bigquery.QueryJobConfig()\n\n    def extract_dir_from_bucket(\n        bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline' \n    ):\n        \"\"\"\n        Download files from a specified bucket to a local path, excluding a specified prefix.\n\n        Parameters:\n        - bucket: The bucket object from which to download files.\n        - local_path: The local path where the files will be downloaded to.\n        - prefix: The prefix to filter the files in the bucket. Only files with this prefix will be downloaded.\n        - split_prefix: The prefix to exclude from the downloaded file paths. Default is 'serving_pipeline'.\n        \"\"\"\n        for blob in bucket.list_blobs(prefix=prefix):\n            if not blob.name.endswith(\"/\"):\n                path = local_path / blob.name.split(f'{split_prefix}/')[-1]\n                str_path = path.as_posix()\n                Path(str_path[:str_path.rindex('/')]).mkdir(parents=True, exist_ok=True)\n                blob.download_to_filename(str_path)\n\n    # download utils and model config locally\n    storage_client = storage.Client()\n    bucket = storage_client.bucket(resource_bucket)\n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{utils_path}', split_prefix='resources'\n    ) \n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix=pipeline_type\n    )\n\n    blob = bucket.blob(f'{stack_name}/{pipeline_path}/model_config.yaml')\n    blob.download_to_filename(pth_model_config)\n\n    # import local modules\n    from etl.extract import extract_bq_data\n    from modeling.features_preprocessing_v2 import process_features\n\n    # load model config\n    d_model_config = safe_load(pth_model_config.open())\n\n    # select columns to query\n    target_column = d_model_config['target']\n    str_feature_names = ','.join([f\"cast({f['name']} as {f['type']}) as {f['name']}\" for f in d_model_config['features']])\n    str_customer_ids = ','.join([f\"cast({f['name']} as {f['type']}) as {f['name']}\" for f in d_model_config['customer_ids']])\n\n    # extract training data\n    sql = (pth_queries / load_sql).read_text().format(\n        project_id=project_id\n        , dataset_id=dataset_id\n        , table_id=table_id\n        , target_column=target_column\n        , customer_ids=str_customer_ids\n        , feature_names=str_feature_names\n    )\n\n    # save sql to gcs bucket\n    file_name = f'{pipeline_type}_queries/{load_sql}_formatted.sql'\n\n    # Convert the string to bytes\n    content_bytes = sql.encode('utf-8')\n\n    # Upload the file to GCS\n    bucket = storage_client.bucket(file_bucket)\n    blob = bucket.blob(file_name)\n    blob.upload_from_string(content_bytes)\n\n    df = extract_bq_data(client, sql)\n    print(f\"Training dataset df.shape {df.shape}\")\n\n    # process features\n    df_processed = process_features(\n        df, d_model_config, training_mode=training_mode, model_type=model_type, target_name=target_column\n    )\n    print(f\"Training dataset processed df.shape {df_processed.shape}\")\n\n    # save data to pipeline bucket\n    df_processed.to_csv(\n        f'gs://{file_bucket}/{pipeline_type}/{preprocess_output_csv}', index=False\n    )\n    print(f'Training data saved into {file_bucket}')\n\n"
             ],
             "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
             "resources": {
@@ -106,13 +156,13 @@
             }
           }
         },
-        "exec-run-sp": {
+        "exec-train-and-save-model": {
           "container": {
             "args": [
               "--executor_input",
               "{{$}}",
               "--function_to_execute",
-              "run_sp"
+              "train_and_save_model"
             ],
             "command": [
               "sh",
@@ -121,11 +171,11 @@
               "sh",
               "-ec",
               "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
-              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef run_sp(from_date: str\n          , to_date: str \n          , stack_name: str\n          , project_id: str\n          , dataset_id: str\n          , token: str\n          ) -> NamedTuple(\"output\", [(\"col_list\", list)]):\n\n    from google.cloud import bigquery\n    import logging \n    from datetime import datetime\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    # #### For prod \n    # client = bigquery.Client(project=project_id)\n    # job_config = bigquery.QueryJobConfig()\n\n    # Change dataset / table + sp table name to version in bi-layer\n    query =\\\n        f\"\"\"\n            BEGIN\n              DECLARE date_exists BOOL DEFAULT FALSE;\n              DECLARE _from_dt DATE DEFAULT '{from_date}';\n              DECLARE _to_dt DATE DEFAULT '{to_date}';\n\n              -- Check if the date '2023-05-01' exists in the from_dt column\n              SET date_exists = (\n                SELECT COUNT(1) > 0\n                FROM `{project_id}.{dataset_id}.master_features_set`\n                WHERE from_dt = '{from_date}'\n              );\n\n              -- Conditionally execute the script if the date does not exist\n              IF date_exists = FALSE THEN\n                CALL `{project_id}.{dataset_id}.sp_persist_{stack_name}_targets`(_from_dt, _to_dt); \n              END IF;\n\n              IF date_exists = FALSE THEN\n                CALL `{project_id}.{dataset_id}.sp_persist_master_features_set`(_from_dt, _to_dt); \n              END IF;\n\n              SELECT * FROM `{project_id}.{dataset_id}.master_features_set` LIMIT 1000; \n\n            END;\n        \"\"\"\n\n    df = client.query(query, job_config=job_config).to_dataframe()\n\n    col_list = list([col for col in df.columns])\n\n    return (col_list,)\n\n"
+              "\nimport kfp\nfrom kfp.v2 import dsl\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef train_and_save_model(file_bucket: str\n                        , resource_bucket: str\n                        , stack_name: str\n                        , service_type: str\n                        , project_id: str\n                        , dataset_id: str\n                        , model_type: str\n                        , pipeline_type: str \n                        , preprocess_output_csv: str\n                        , save_file_name: str\n                        , stats_file_name: str\n                        , pipeline_path: str\n                        , utils_path: str\n                        , metrics: Output[Metrics]\n                        , metricsc: Output[ClassificationMetrics]\n                        , model: Output[Model]\n                        , token: str\n                        )-> NamedTuple(\"output\", [(\"col_list\", list), (\"model_uri\", str)]):\n\n    #### Import Libraries ####\n    import os \n    import gc\n    import sys\n    import time\n    import pickle\n    import pandas as pd\n    import numpy as np\n    import xgboost as xgb\n\n    from pathlib import Path\n    from yaml import safe_load\n\n    from datetime import datetime\n    from google.cloud import storage\n    from google.cloud import bigquery\n\n    # for prod\n    pth_project = Path(os.getcwd())\n    pth_model_config = pth_project / 'model_config.yaml'\n    sys.path.insert(0, pth_project.as_posix())\n\n    #### For wb\n    import google.oauth2.credentials\n    CREDENTIALS = google.oauth2.credentials.Credentials(token)\n    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)\n    job_config = bigquery.QueryJobConfig()\n\n    # #### For prod\n    # client = bigquery.Client(project=project_id)\n    # job_config = bigquery.QueryJobConfig()\n\n    def extract_dir_from_bucket(\n        bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline' \n    ):\n        \"\"\"\n        Download files from a specified bucket to a local path, excluding a specified prefix.\n\n        Parameters:\n        - bucket: The bucket object from which to download files.\n        - local_path: The local path where the files will be downloaded to.\n        - prefix: The prefix to filter the files in the bucket. Only files with this prefix will be downloaded.\n        - split_prefix: The prefix to exclude from the downloaded file paths. Default is 'serving_pipeline'.\n        \"\"\"\n        for blob in bucket.list_blobs(prefix=prefix):\n            if not blob.name.endswith(\"/\"):\n                path = local_path / blob.name.split(f'{split_prefix}/')[-1]\n                str_path = path.as_posix()\n                Path(str_path[:str_path.rindex('/')]).mkdir(parents=True, exist_ok=True)\n                blob.download_to_filename(str_path)\n\n    # download utils and model config locally\n    storage_client = storage.Client()\n    bucket = storage_client.bucket(resource_bucket)\n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{utils_path}', split_prefix='resources'\n    ) \n    extract_dir_from_bucket(\n        bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix='training_pipeline'\n    )\n\n    blob = bucket.blob(f'{stack_name}/{pipeline_path}/model_config.yaml')\n    blob.download_to_filename(pth_model_config)\n\n    # import local modules\n    from modeling.train import train\n    from modeling.evaluate import evaluate\n    from modeling.save_model import save_model\n\n    # load model config\n    d_model_config = safe_load(pth_model_config.open())\n\n    # train    \n    df_result, xgb_model, y_true, y_pred, y_score = train(file_bucket=file_bucket, \n                stack_name=stack_name, \n                pipeline_path=pipeline_path, \n                service_type=service_type, \n                model_type=model_type, \n                pipeline_type=pipeline_type, \n                d_model_config=d_model_config, \n                preprocess_output_csv=preprocess_output_csv, \n                save_file_name=save_file_name\n                ) \n\n    print('training step successfully completed')\n\n    # evaluate\n    lg = evaluate(df_result=df_result, \n                file_bucket=file_bucket, \n                stack_name=stack_name, \n                pipeline_path=pipeline_path, \n                pipeline_type=pipeline_type,\n                service_type=service_type, \n                model_type=model_type, \n                d_model_config=d_model_config, \n                stats_file_name=stats_file_name, \n                model=xgb_model, \n                y_true=y_true, \n                y_pred=y_pred, \n                y_score=y_score\n                )\n\n    print('evaluate step successfully completed')\n\n    # save model \n    col_list, model_uri = save_model(model=xgb_model, \n                file_bucket=file_bucket, \n                stack_name=stack_name, \n                pipeline_path=pipeline_path, \n                service_type=service_type, \n                d_model_config=d_model_config\n                )\n\n    print('save model step successfully completed')\n\n    print(model_uri)\n\n    return (col_list, model_uri)\n\n"
             ],
             "image": "northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
             "resources": {
-              "cpuLimit": 4.0,
+              "cpuLimit": 8.0,
               "memoryLimit": 32.0
             }
           }
@@ -137,6 +187,26 @@
     },
     "root": {
       "dag": {
+        "outputs": {
+          "artifacts": {
+            "train-and-save-model-metrics": {
+              "artifactSelectors": [
+                {
+                  "outputArtifactKey": "metrics",
+                  "producerSubtask": "train-and-save-model"
+                }
+              ]
+            },
+            "train-and-save-model-metricsc": {
+              "artifactSelectors": [
+                {
+                  "outputArtifactKey": "metricsc",
+                  "producerSubtask": "train-and-save-model"
+                }
+              ]
+            }
+          }
+        },
         "tasks": {
           "preprocess": {
             "cachingOptions": {
@@ -145,9 +215,6 @@
             "componentRef": {
               "name": "comp-preprocess"
             },
-            "dependentTasks": [
-              "run-sp"
-            ],
             "inputs": {
               "parameters": {
                 "dataset_id": {
@@ -230,7 +297,14 @@
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0AXooCgsfnalL4PwqC7vGgoFX9loApApfUn0UfbZUEQQcwM6SEajVuy1x06DU8_uQ0vyhc8YlQo_ATiv6eNo3kbHKWvW9cOK2Xl5HGq_g_O37_ShUgfGbhm4ur6LFKLnKiPSrVipn5oaZSoZV7otXdiDJZ9zqMO1DcYV7AFlr3j-uaCgYKAdYSARISFQHGX2Mi60isOmIdokdS6w6oEfe2ww0179"
+                      "stringValue": "ya29.a0AXooCgtz5WDnux4rrii54J687MvK2e6qjkysLGk4bwRZYS9Ed9oA3wQRZNkCERSJpmvDdoffcjPn58W8HBGYVRep_lbNQZ97Jvn2b9DFTTfU4WWPuMrTAMedLsB-hIr91divO4TAV7lwqaHE3HDggkHZtpmqojdklf4acqNTmXOdaCgYKASMSARISFQHGX2Mim73snmbblvQHAUyZC3GjJg0179"
+                    }
+                  }
+                },
+                "training_mode": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "1"
                     }
                   }
                 },
@@ -247,13 +321,16 @@
               "name": "preprocess"
             }
           },
-          "run-sp": {
+          "train-and-save-model": {
             "cachingOptions": {
               "enableCache": true
             },
             "componentRef": {
-              "name": "comp-run-sp"
+              "name": "comp-train-and-save-model"
             },
+            "dependentTasks": [
+              "preprocess"
+            ],
             "inputs": {
               "parameters": {
                 "dataset_id": {
@@ -263,10 +340,38 @@
                     }
                   }
                 },
-                "from_date": {
+                "file_bucket": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-06-01"
+                      "stringValue": "divg-groovyhoon-pr-d2eab4_shs_churn"
+                    }
+                  }
+                },
+                "model_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "churn"
+                    }
+                  }
+                },
+                "pipeline_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "models/training_pipeline"
+                    }
+                  }
+                },
+                "pipeline_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "training_pipeline"
+                    }
+                  }
+                },
+                "preprocess_output_csv": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "df_train.csv"
                     }
                   }
                 },
@@ -277,6 +382,27 @@
                     }
                   }
                 },
+                "resource_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "divg-groovyhoon-pr-d2eab4-default"
+                    }
+                  }
+                },
+                "save_file_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "df_test_exp.csv"
+                    }
+                  }
+                },
+                "service_type": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "shs_churn"
+                    }
+                  }
+                },
                 "stack_name": {
                   "runtimeValue": {
                     "constantValue": {
@@ -284,24 +410,31 @@
                     }
                   }
                 },
-                "to_date": {
+                "stats_file_name": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "2023-12-31"
+                      "stringValue": "df_stats.csv"
                     }
                   }
                 },
                 "token": {
                   "runtimeValue": {
                     "constantValue": {
-                      "stringValue": "ya29.a0AXooCgsfnalL4PwqC7vGgoFX9loApApfUn0UfbZUEQQcwM6SEajVuy1x06DU8_uQ0vyhc8YlQo_ATiv6eNo3kbHKWvW9cOK2Xl5HGq_g_O37_ShUgfGbhm4ur6LFKLnKiPSrVipn5oaZSoZV7otXdiDJZ9zqMO1DcYV7AFlr3j-uaCgYKAdYSARISFQHGX2Mi60isOmIdokdS6w6oEfe2ww0179"
+                      "stringValue": "ya29.a0AXooCgtz5WDnux4rrii54J687MvK2e6qjkysLGk4bwRZYS9Ed9oA3wQRZNkCERSJpmvDdoffcjPn58W8HBGYVRep_lbNQZ97Jvn2b9DFTTfU4WWPuMrTAMedLsB-hIr91divO4TAV7lwqaHE3HDggkHZtpmqojdklf4acqNTmXOdaCgYKASMSARISFQHGX2Mim73snmbblvQHAUyZC3GjJg0179"
+                    }
+                  }
+                },
+                "utils_path": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "utils/resources"
                     }
                   }
                 }
               }
             },
             "taskInfo": {
-              "name": "run-sp"
+              "name": "train-and-save-model"
             }
           }
         }
@@ -319,6 +452,22 @@
           },
           "resource_bucket": {
             "type": "STRING"
+          }
+        }
+      },
+      "outputDefinitions": {
+        "artifacts": {
+          "train-and-save-model-metrics": {
+            "artifactType": {
+              "schemaTitle": "system.Metrics",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "train-and-save-model-metricsc": {
+            "artifactType": {
+              "schemaTitle": "system.ClassificationMetrics",
+              "schemaVersion": "0.0.1"
+            }
           }
         }
       }

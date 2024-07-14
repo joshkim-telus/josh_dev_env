@@ -3,7 +3,7 @@ from typing import Any
 
 @component(
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
-    output_component_file="train_hs_nba_prospects_preprocess.yaml"
+    output_component_file="preprocess.yaml"
 )
 def preprocess(
     project_id: str,

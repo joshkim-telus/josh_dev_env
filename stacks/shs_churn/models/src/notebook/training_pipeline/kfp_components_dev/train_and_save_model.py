@@ -6,8 +6,8 @@ from kfp.v2.dsl import (Artifact, Dataset, Input, InputPath, Model, Output, Outp
 from typing import NamedTuple
 
 @component(
-    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
-    output_component_file="nba_product_reco_prospects_xgb_train_model.yaml",
+    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
+    output_component_file="train_and_save_model.yaml",
 )
 def train_and_save_model(file_bucket: str
                         , resource_bucket: str
@@ -21,11 +21,11 @@ def train_and_save_model(file_bucket: str
                         , save_file_name: str
                         , stats_file_name: str
                         , pipeline_path: str
-                        , hs_nba_utils_path: str
+                        , utils_path: str
                         , metrics: Output[Metrics]
                         , metricsc: Output[ClassificationMetrics]
                         , model: Output[Model]
-                        # , token: str
+                        , token: str
                         )-> NamedTuple("output", [("col_list", list), ("model_uri", str)]):
 
     #### Import Libraries ####
@@ -50,15 +50,15 @@ def train_and_save_model(file_bucket: str
     pth_model_config = pth_project / 'model_config.yaml'
     sys.path.insert(0, pth_project.as_posix())
 
-#     #### For wb
-#     import google.oauth2.credentials
-#     CREDENTIALS = google.oauth2.credentials.Credentials(token)
-#     client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
-#     job_config = bigquery.QueryJobConfig()
-
-    #### For prod
-    client = bigquery.Client(project=project_id)
+    #### For wb
+    import google.oauth2.credentials
+    CREDENTIALS = google.oauth2.credentials.Credentials(token)
+    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
     job_config = bigquery.QueryJobConfig()
+
+    # #### For prod
+    # client = bigquery.Client(project=project_id)
+    # job_config = bigquery.QueryJobConfig()
     
     def extract_dir_from_bucket(
         bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline' 
@@ -83,7 +83,7 @@ def train_and_save_model(file_bucket: str
     storage_client = storage.Client()
     bucket = storage_client.bucket(resource_bucket)
     extract_dir_from_bucket(
-        bucket, pth_project, f'{stack_name}/{hs_nba_utils_path}', split_prefix='notebook'
+        bucket, pth_project, f'{stack_name}/{utils_path}', split_prefix='resources'
     ) 
     extract_dir_from_bucket(
         bucket, pth_project, f'{stack_name}/{pipeline_path}/queries', split_prefix='training_pipeline'
@@ -93,15 +93,15 @@ def train_and_save_model(file_bucket: str
     blob.download_to_filename(pth_model_config)
 
     # import local modules
-    from hs_nba_utils.modeling.train import train
-    from hs_nba_utils.modeling.evaluate import evaluate
-    from hs_nba_utils.modeling.save_model import save_model
+    from modeling.train import train
+    from modeling.evaluate import evaluate
+    from modeling.save_model import save_model
 
     # load model config
     d_model_config = safe_load(pth_model_config.open())
 
     # train    
-    df_result, xgb_model = train(file_bucket=file_bucket, 
+    df_result, xgb_model, y_true, y_pred, y_score = train(file_bucket=file_bucket, 
                 stack_name=stack_name, 
                 pipeline_path=pipeline_path, 
                 service_type=service_type, 
@@ -115,14 +115,19 @@ def train_and_save_model(file_bucket: str
     print('training step successfully completed')
     
     # evaluate
-    df_stats = evaluate(df_result=df_result, 
+    lg = evaluate(df_result=df_result, 
                 file_bucket=file_bucket, 
                 stack_name=stack_name, 
                 pipeline_path=pipeline_path, 
+                pipeline_type=pipeline_type,
                 service_type=service_type, 
                 model_type=model_type, 
                 d_model_config=d_model_config, 
-                stats_file_name=stats_file_name
+                stats_file_name=stats_file_name, 
+                model=xgb_model, 
+                y_true=y_true, 
+                y_pred=y_pred, 
+                y_score=y_score
                 )
     
     print('evaluate step successfully completed')
