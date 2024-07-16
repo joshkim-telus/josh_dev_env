@@ -96,6 +96,6 @@ def aggregate_results(
         project_id, output_dataset_id, aggregate_results_table_id, temp_table_name, current_part_dt,
         pth_queries / 'drop_current_part_dt.sql', pth_queries / 'insert_from_temp_table_aggregate_results.sql'
     )
+
     
-    
-    
+

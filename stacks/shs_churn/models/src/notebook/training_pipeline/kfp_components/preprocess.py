@@ -18,8 +18,7 @@ def preprocess(
     load_sql: str, 
     preprocess_output_csv: str,
     pipeline_type: str, 
-    training_mode: bool, 
-    token: str
+    # token: str
 ):
     """
     Preprocess data for a machine learning training pipeline.
@@ -39,16 +38,16 @@ def preprocess(
     pth_queries = pth_project / 'queries'
     sys.path.insert(0, pth_project.as_posix())
     
-    #### For wb
-    import google.oauth2.credentials
-    CREDENTIALS = google.oauth2.credentials.Credentials(token)
+#     #### For wb
+#     import google.oauth2.credentials
+#     CREDENTIALS = google.oauth2.credentials.Credentials(token)
     
-    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
-    job_config = bigquery.QueryJobConfig()
+#     client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
+#     job_config = bigquery.QueryJobConfig()
 
-    # #### For prod 
-    # client = bigquery.Client(project=project_id)
-    # job_config = bigquery.QueryJobConfig()
+    #### For prod 
+    client = bigquery.Client(project=project_id)
+    job_config = bigquery.QueryJobConfig()
 
     def extract_dir_from_bucket(
         bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline' 
@@ -105,7 +104,7 @@ def preprocess(
     )
     
     # save sql to gcs bucket
-    file_name = f'{pipeline_type}_queries/{load_sql}_formatted.sql'
+    file_name = f'{pipeline_type}_queries/load_train_data_formatted.sql'
 
     # Convert the string to bytes
     content_bytes = sql.encode('utf-8')
@@ -120,7 +119,7 @@ def preprocess(
     
     # process features
     df_processed = process_features(
-        df, d_model_config, training_mode=training_mode, model_type=model_type, target_name=target_column
+        df, d_model_config, training_mode=True, model_type=model_type, target_name=target_column
     )
     print(f"Training dataset processed df.shape {df_processed.shape}")
 

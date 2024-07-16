@@ -18,7 +18,7 @@ def preprocess(
     load_sql: str, 
     preprocess_output_csv: str,
     pipeline_type: str, 
-    training_mode: bool, 
+    training_mode=bool, 
     token: str
 ):
     """

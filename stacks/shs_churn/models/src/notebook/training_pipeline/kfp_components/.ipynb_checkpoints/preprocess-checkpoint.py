@@ -3,7 +3,7 @@ from typing import Any
 
 @component(
     base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
-    output_component_file="train_hs_nba_prospects_preprocess.yaml"
+    output_component_file="preprocess.yaml"
 )
 def preprocess(
     project_id: str,
@@ -18,7 +18,7 @@ def preprocess(
     load_sql: str, 
     preprocess_output_csv: str,
     pipeline_type: str, 
-    token: str
+    # token: str
 ):
     """
     Preprocess data for a machine learning training pipeline.
@@ -38,16 +38,16 @@ def preprocess(
     pth_queries = pth_project / 'queries'
     sys.path.insert(0, pth_project.as_posix())
     
-    #### For wb
-    import google.oauth2.credentials
-    CREDENTIALS = google.oauth2.credentials.Credentials(token)
+#     #### For wb
+#     import google.oauth2.credentials
+#     CREDENTIALS = google.oauth2.credentials.Credentials(token)
     
-    client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
-    job_config = bigquery.QueryJobConfig()
+#     client = bigquery.Client(project=project_id, credentials=CREDENTIALS)
+#     job_config = bigquery.QueryJobConfig()
 
-    # #### For prod 
-    # client = bigquery.Client(project=project_id)
-    # job_config = bigquery.QueryJobConfig()
+    #### For prod 
+    client = bigquery.Client(project=project_id)
+    job_config = bigquery.QueryJobConfig()
 
     def extract_dir_from_bucket(
         bucket: Any, local_path: Path, prefix: str, split_prefix: str = 'serving_pipeline' 
@@ -82,8 +82,8 @@ def preprocess(
     blob.download_to_filename(pth_model_config)
     
     # import local modules
-    from resources.etl.extract import extract_bq_data
-    from resources.modeling.features_preprocessing_v2 import process_features
+    from etl.extract import extract_bq_data
+    from modeling.features_preprocessing_v2 import process_features
     
     # load model config
     d_model_config = safe_load(pth_model_config.open())
@@ -128,5 +128,5 @@ def preprocess(
         f'gs://{file_bucket}/{pipeline_type}/{preprocess_output_csv}', index=False
     )
     print(f'Training data saved into {file_bucket}')
-    
+
     

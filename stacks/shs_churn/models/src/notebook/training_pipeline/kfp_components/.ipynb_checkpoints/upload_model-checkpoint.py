@@ -7,7 +7,7 @@ from typing import NamedTuple
 # Component for uploading model to Vertex Model Registry
 @component(
 # Uploads model
-    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/wb-platform/pipelines/kubeflow-pycaret:latest",
+    base_image="northamerica-northeast1-docker.pkg.dev/cio-workbench-image-np-0ddefe/bi-platform/bi-aaaie/images/kfp-pycaret-slim:latest",
     output_component_file="model-upload.yaml",
 )
 

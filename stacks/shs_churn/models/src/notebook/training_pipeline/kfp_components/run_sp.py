@@ -13,7 +13,7 @@ def run_sp(from_date: str
           , stack_name: str
           , project_id: str
           , dataset_id: str
-          , token: str
+          # , token: str
           ) -> NamedTuple("output", [("col_list", list)]):
  
     from google.cloud import bigquery
@@ -65,7 +65,7 @@ def run_sp(from_date: str
     col_list = list([col for col in df.columns])
     
     return (col_list,)
+
     
-    
-    
+
     
